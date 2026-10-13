@@ -21,6 +21,7 @@ jobs:
           cat build-input/part-* > source.tar.gz
           echo "$SOURCE_SHA256  source.tar.gz" | sha256sum -c -
           tar xzf source.tar.gz
+          python3 apply-release-fixes.py
       - name: Install test tools
         run: |
           npm install --no-save playwright@1.56.1 @napi-rs/canvas
@@ -52,6 +53,7 @@ jobs:
           cat build-input/part-* > source.tar.gz
           echo "$SOURCE_SHA256  source.tar.gz" | sha256sum -c -
           tar xzf source.tar.gz
+          python3 apply-release-fixes.py
       - name: Install Android SDK
         run: sdkmanager "platforms;android-36" "build-tools;35.0.0"
       - name: Build release APK without private signing key
@@ -84,6 +86,7 @@ jobs:
           cat build-input/part-* > source.tar.gz
           echo "$SOURCE_SHA256  source.tar.gz" | shasum -a 256 -c -
           tar xzf source.tar.gz
+          python3 apply-release-fixes.py
       - name: Generate native iOS project with latest game assets
         run: |
           mkdir ios-project
