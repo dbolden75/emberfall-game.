@@ -1,0 +1,124 @@
+name: Thornhaven 1.0.29 Android and iOS
+on:
+  push:
+    branches: [thornhaven-1.0.29-dual-build]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA256: 7134802fc64dc95f5160ff8351d83c82008757ae853961c97572592fc5fe5cce
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify and unpack shared game source
+        run: |
+          cat build-input/part-* > source.tar.gz
+          echo "$SOURCE_SHA256  source.tar.gz" | sha256sum -c -
+          tar xzf source.tar.gz
+      - name: Install test tools
+        run: |
+          npm install --no-save playwright@1.56.1 @napi-rs/canvas
+          npx playwright install --with-deps chromium webkit
+      - name: Run current game regression suites
+        run: python3 cloud-regression.py
+      - name: WebKit mobile compatibility smoke test
+        run: node webkit-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: thornhaven-1.0.29-test-results
+          path: qa-results/
+          retention-days: 14
+  android:
+    needs: regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify and unpack tested source
+        run: |
+          cat build-input/part-* > source.tar.gz
+          echo "$SOURCE_SHA256  source.tar.gz" | sha256sum -c -
+          tar xzf source.tar.gz
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;35.0.0"
+      - name: Build release APK without private signing key
+        working-directory: thornhaven
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+      - name: Align APK and collect local signing tool
+        run: |
+          mkdir -p android-output
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -f -p 4 thornhaven/app/build/outputs/apk/release/app-release-unsigned.apk android-output/thornhaven-1.0.29-unsigned-aligned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" android-output/
+          sha256sum thornhaven/app/src/main/assets/index.html > android-output/game-source.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thornhaven-1.0.29-android-unsigned
+          path: android-output/
+          retention-days: 14
+  ios:
+    needs: regression
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify and unpack tested source
+        run: |
+          cat build-input/part-* > source.tar.gz
+          echo "$SOURCE_SHA256  source.tar.gz" | shasum -a 256 -c -
+          tar xzf source.tar.gz
+      - name: Generate native iOS project with latest game assets
+        run: |
+          mkdir ios-project
+          cp -R thornhaven/app/src/main/assets ios-project/www
+          cd ios-project
+          npm init -y
+          npm install --save-exact @capacitor/core@7 @capacitor/ios@7 @capacitor/cli@7 @capacitor/screen-orientation@7 @capacitor/browser@7 esbuild
+          npx cap init Thornhaven com.thornhaven.game --web-dir www
+          npx cap add ios
+          cp ../ios-platform.js .
+          npx esbuild ios-platform.js --bundle --format=iife --outfile=www/ios-platform.js
+          cd ..
+          python3 prepare-ios.py
+          cd ios-project
+          npx cap sync ios
+      - name: Compile unsigned iPhone and simulator apps
+        run: |
+          xcodebuild -workspace ios-project/ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/ios-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=1.0.29 CURRENT_PROJECT_VERSION=131 build
+          xcodebuild -workspace ios-project/ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios-simulator CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=1.0.29 CURRENT_PROJECT_VERSION=131 build
+      - name: Verify packaged source and archive builds
+        run: |
+          cmp ios-project/www/index.html build/ios-device/Build/Products/Release-iphoneos/App.app/public/index.html
+          cmp ios-project/www/index.html build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app/public/index.html
+          mkdir -p ios-output/Payload
+          cp -R build/ios-device/Build/Products/Release-iphoneos/App.app ios-output/Payload/
+          cd ios-output
+          zip -qr thornhaven-1.0.29-UNSIGNED.ipa Payload
+          rm -rf Payload
+          cd ..
+          ditto -c -k --sequesterRsrc --keepParent build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app ios-output/thornhaven-1.0.29-simulator.zip
+          cp ios-project/package-lock.json ios-output/ios-package-lock.json
+          printf '%s\n' 'Unsigned iOS build. Not installable on a normal iPhone until Apple signing/provisioning is configured. WebKit smoke checks do not replace actual iPhone testing. Payments are disabled.' > ios-output/BUILD-NOTES.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thornhaven-1.0.29-ios
+          path: ios-output/
+          retention-days: 14
+
