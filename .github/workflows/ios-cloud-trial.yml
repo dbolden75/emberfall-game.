@@ -1,0 +1,52 @@
+name: iOS cloud compilation trial
+on:
+  push:
+    branches: [ios-cloud-build-trial]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare existing game for Capacitor
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir ios-trial
+          mkdir ios-trial/www
+          cp index.html ios-trial/www/index.html
+          cp -R assets ios-trial/www/assets
+          cd ios-trial
+          npm init -y
+          npm install --save-exact @capacitor/core@7 @capacitor/ios@7 @capacitor/cli@7
+          npx cap init Thornhaven com.thornhaven.game --web-dir www
+          npx cap add ios
+          npx cap sync ios
+      - name: Compile unsigned iOS device app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace ios-trial/ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/ios-device CODE_SIGNING_ALLOWED=NO build
+      - name: Compile iOS simulator app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace ios-trial/ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios-simulator CODE_SIGNING_ALLOWED=NO build
+      - name: Package unsigned proof builds
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          ditto -c -k --sequesterRsrc --keepParent build/ios-device/Build/Products/Debug-iphoneos/App.app artifacts/Thornhaven-unsigned-device.zip
+          ditto -c -k --sequesterRsrc --keepParent build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app artifacts/Thornhaven-simulator.zip
+          printf '%s\n' 'Compilation trial from older GitHub game source. Not the latest Thornhaven release. Device build is unsigned and cannot be directly installed on an iPhone. No gameplay validation has been performed.' > artifacts/BUILD-NOTES.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thornhaven-ios-compilation-trial
+          path: artifacts/
+          retention-days: 7
