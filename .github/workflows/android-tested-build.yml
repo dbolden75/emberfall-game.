@@ -1,0 +1,49 @@
+name: Thornhaven 1.0.29 tested Android build
+on:
+  push:
+    branches: [thornhaven-1.0.29-android-build]
+permissions:
+  contents: read
+env:
+  SOURCE_SHA256: 7134802fc64dc95f5160ff8351d83c82008757ae853961c97572592fc5fe5cce
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 64f353355bad6d1ae5bbb9addf8388f1377727d9
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify and unpack tested source
+        run: |
+          cat build-input/part-* > source.tar.gz
+          echo "$SOURCE_SHA256  source.tar.gz" | sha256sum -c -
+          tar xzf source.tar.gz
+          python3 apply-release-fixes.py
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;35.0.0"
+      - name: Build release APK without private signing key
+        working-directory: thornhaven
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+      - name: Align APK and collect local signing tool
+        run: |
+          mkdir -p android-output
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -f -p 4 thornhaven/app/build/outputs/apk/release/app-release-unsigned.apk android-output/thornhaven-1.0.29-unsigned-aligned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" android-output/
+          sha256sum thornhaven/app/src/main/assets/index.html > android-output/game-source.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thornhaven-1.0.29-android-unsigned
+          path: android-output/
+          retention-days: 14
