@@ -13,7 +13,9 @@ for p in (root/"qa").glob("*.cjs"):
  for port in re.findall(r"listen\((\d+)",p.read_text()):locks.setdefault(port,threading.Lock())
 def run(item):
  name,hero=item;label=name+('-'+hero if hero else '')
- work=pathlib.Path('qa-work')/label;work.mkdir(parents=True,exist_ok=True)
+ work=pathlib.Path('qa-work')/label
+ if work.exists():shutil.rmtree(work)
+ work.mkdir(parents=True,exist_ok=True)
  shutil.copytree(root/'app',work/'app',copy_function=os.link,dirs_exist_ok=True)
  shutil.copytree(root/'qa',work/'qa',dirs_exist_ok=True)
  (work/'qa/full-captures').mkdir(exist_ok=True)
