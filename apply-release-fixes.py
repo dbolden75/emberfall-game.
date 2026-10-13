@@ -21,3 +21,21 @@ old="closePanel('adventureScreen');const catalog=questCatalog()"
 assert s.count(old)==1
 new="closePanel('adventureScreen');setMap('briarhollow',480,315,false);briarInteract(object('briar_sign'));adventureChoices[0].action();closePanel('adventureScreen');for(const id of ['briar_bell','briar_clinic','briar_gate']){briarInteract(object(id));closePanel('adventureScreen');}briarInteract(object('briar_cellar'));adventureChoices[0].action();closePanel('adventureScreen');briarInteract(object('briar_signal'));closePanel('adventureScreen');briarInteract(object('briar_memorial'));closePanel('adventureScreen');check(briarState().claimed,'Briar Hollow clues, survivor rescue and memorial completed');const catalog=questCatalog()"
 p.write_text(s.replace(old,new,1))
+
+# Reserve space for the actual map on short landscape screens. The header close
+# control remains available; the footer repeats that same action.
+p=root/'app/src/main/assets/index.html';s=p.read_text()
+s=s.replace('</head>','<style>@media(orientation:landscape) and (max-height:560px){#travelScreen .screenFoot{display:none}}</style></head>',1)
+s=s.replace('New Journey · v1.0.24 ·','New Journey · v1.0.29 ·')
+p.write_text(s)
+
+# Compare state within one browser task, before the live clock advances.
+p=root/'qa/dan-max.cjs';s=p.read_text()
+start=s.index('await run("closePanel(\'adventureScreen\');soundEnabled=false;saveGame();window.beforeDan=')
+end=s.index('await p.reload();',start)
+s=s[:start]+'''const reapply=await run("(()=>{closePanel('adventureScreen');soundEnabled=false;saveGame();const snapshot=()=>JSON.parse(JSON.stringify({inventory:player.inventory,coins:player.coins,skills:gatheringSkills,quests:townQuestState,forge:gearUpgradeLevels}));const before=snapshot();applyDanTestProfile();saveGame();return {before,after:snapshot()};})()");assert.deepEqual(reapply.after,reapply.before);'''+s[end:]
+p.write_text(s)
+p=root/'qa/tutorial-browser.cjs';s=p.read_text()
+old="await run('saveGame()');const remaining=await run('xpBoostSeconds()');"
+assert old in s
+p.write_text(s.replace(old,"const remaining=await run('saveGame();xpBoostSeconds()');",1))

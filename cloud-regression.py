@@ -4,6 +4,8 @@ out=pathlib.Path('qa-results').resolve();out.mkdir(exist_ok=True)
 # Helpers, historical-version checks and superseded suites are not current release tests.
 excluded={'qa-runtime','browser-preload','capture-construction','crown-rate','crown-rate-outskirts','placement-audit','release110-offline','pet-movement-1.0.5','town-layout-1.0.6','expanded-world','current-expanded-world','normal-playthrough','release-polish','workforce','politics'}
 tests=[(p.stem,h) for p in sorted((root/'qa').glob('*.cjs')) if p.stem not in excluded for h in (['warrior','rogue','mage','cleric'] if p.stem=='class-playthrough' else [''])]
+selected=os.environ.get('THORNHAVEN_QA_SUITES','')
+if selected:tests=[t for t in tests if t[0] in selected.split(',')]
 browser=subprocess.check_output(['node','-e',"process.stdout.write(require('playwright').chromium.executablePath())"],text=True).strip()
 env=dict(os.environ,NODE_PATH=str(pathlib.Path('node_modules').resolve()),CODEX_PRIMARY_RUNTIME_NODE_MODULES=str(pathlib.Path('node_modules').resolve()),THORNHAVEN_QA_BROWSER=browser)
 locks={}
