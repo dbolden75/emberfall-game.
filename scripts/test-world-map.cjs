@@ -1,0 +1,12 @@
+const fs=require('node:fs');const assert=require('node:assert/strict');const vm=require('node:vm');
+const html=fs.readFileSync('index.html','utf8');
+const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(Boolean);
+assert(scripts.length,'Game scripts must exist');
+for(const script of scripts)new vm.Script(script,{filename:'game-inline.js'});
+assert(html.includes('id="thornhavenAtlasFog"'),'Fog overlay is present');
+assert(html.includes('paintExplorationFog();const focus='),'Fog renders when atlas opens');
+assert(html.includes('townQuestState._visited'),'Visited regions are persisted in game state');
+assert(html.includes('.atlasNode.unexplored{visibility:hidden'),'Undiscovered region markers stay hidden');
+assert(html.includes('destination-out'),'Explored regions are cut out of the fog');
+assert(html.includes('id="themedWorldMap"'),'Existing atlas remains intact');
+console.log('PASS: game scripts parse and fog-of-war integration checks');
