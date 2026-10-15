@@ -513,7 +513,7 @@ body:has(#characterSetup:not([hidden])){background:radial-gradient(ellipse at to
 #adventureScreen.narrativeView .adventureChoices button{min-height:44px}
 </style>
 <style>.earnedTitleSection{padding:8px 12px;max-height:28dvh;overflow-y:auto;flex-shrink:0;font:12px system-ui;color:#ddceaa}.earnedTitleSection summary{cursor:pointer;padding:7px}#earnedTitleList{display:grid;gap:5px}#earnedTitleList button{padding:9px;min-height:44px;border:1px solid #82926c;background:#26382a;color:#f1e4bb;text-align:left}#earnedTitleList button:disabled{opacity:.6}</style><style>.questState{float:none;display:block;margin-bottom:6px}.questEntry h3{overflow-wrap:anywhere}.questTitleRow{flex-wrap:wrap}.hud .quest p{line-height:1.25}</style>
-</head>
+<style id="thornhavenFogStyles">.atlasView .atlasNode.unexplored{visibility:hidden!important}.atlasFog{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}.atlasView .atlasNode{z-index:3}.atlasView .mapLabel{z-index:3}</style></head>
 <body><div id="assetLoading" role="status" aria-live="polite" style="position:fixed;inset:0;z-index:9999;display:grid;place-content:center;text-align:center;padding:24px;background:#111d18;color:#f2dfb3;font:18px Georgia"><p>Preparing Ashvale…</p><button hidden type="button" style="min-height:44px;padding:10px 24px">Try again</button></div>
 <main class="shell">
 <header class="top"><div class="brand">VAELBRINK <small>Ashvale Reach · playable prototype · v1.81</small></div><div class="status"><span class="pill">🗺 <b id="mapName">Ashvale Reach</b></span><span class="pill" id="itemPill" hidden>✦ Ember Rune</span><span class="pill" id="keystonePill" hidden>✥ Fourfold Keystone</span><span class="pill">✦ Level <b id="level">1</b></span><span class="pill">◈ <b id="coins">12</b> crowns</span><span class="pill autosavePill">Autosaved locally</span><button class="optionsToggle" id="optionsToggle" type="button" aria-expanded="false" aria-controls="optionsMenu">⚙ OPTIONS</button></div></header>
@@ -1553,6 +1553,20 @@ function drawThemedWorldMap(){
  // Assets also load asynchronously when opening a freshly downloaded game.
  for(const group of ['terrain','environment'])if(!artReady(group)&&detailedArt[group]&&!detailedArt[group]._worldMapWait){detailedArt[group]._worldMapWait=true;detailedArt[group].addEventListener('load',()=>{detailedArt[group]._worldMapWait=false;drawThemedWorldMap();},{once:true});}
 }
+
+// Persistent exploration fog: revealed locations remain visible on future visits.
+function paintExplorationFog(){
+ const canvas=document.getElementById('thornhavenAtlasFog');if(!canvas)return;
+ const base=document.getElementById('themedWorldMap');if(!base)return;
+ canvas.width=base.width;canvas.height=base.height;
+ const ctx=canvas.getContext('2d');if(!ctx)return;
+ const visited=new Set(Object.keys(townQuestState._visited||{}).filter(id=>townQuestState._visited[id]));visited.add(mapId);
+ ctx.fillStyle='rgba(9,14,19,.94)';ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.globalCompositeOperation='destination-out';
+ for(const id of visited){const pos=worldPositions[id];if(!pos)continue;const x=canvas.width*pos[0]/100,y=canvas.height*pos[1]/100;
+ const radius=canvas.width*.105;const grad=ctx.createRadialGradient(x,y,radius*.58,x,y,radius);grad.addColorStop(0,'rgba(0,0,0,1)');grad.addColorStop(.75,'rgba(0,0,0,.98)');grad.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();}
+ ctx.globalCompositeOperation='source-over';
+}
 function renderTravel(){
  const el=document.getElementById('travelDestinations');
  document.getElementById('travelCurrent').textContent='Current location: '+activeMap.name;
@@ -1560,8 +1574,8 @@ function renderTravel(){
  document.querySelector('#travelScreen .screenFoot span').textContent=fastTravelArmed?'One journey per activation. The Compass is reusable.':'Travel on foot, or activate the Wayfarer’s Compass from BAG.';
  const shortName={glassridge:'Frostglass Ridge',northridge:'North Ridge',stonewatchroad:'Stonewatch Road',mosslight:'Mosslight Shrine',emberdeep:'Ashvault Depths'};
  const node=id=>{const m=maps[id],locked=travelLock(id)||(fastTravelArmed&&!townQuestState._visited?.[id]&&id!==mapId?'Explore on foot first':''),current=id===mapId,visited=!!townQuestState._visited?.[id]||current,label=(m.name||id)+(locked?' · '+locked:current?' · Your location':'');return '<button type="button" class="mapNode atlasNode '+(m.town?'atlasTown ':'')+(visited?'visited':'unexplored')+'" data-travel-to="'+id+'" style="left:'+worldPositions[id][0]+'%;top:'+worldPositions[id][1]+'%" '+(locked?'disabled':'')+(current?' aria-current="location"':'')+' aria-label="'+questEscape(label)+'"><span class="atlasStamp"><canvas class="mapLocationArt" width="70" height="62" data-map-icon="'+id+'" aria-hidden="true"></canvas></span><span class="mapName">'+questEscape(shortName[id]||m.name)+'</span><span class="mapKind">'+(locked?'LOCKED':current?'YOU ARE HERE':m.town?'TOWN':visited?'EXPLORED':'LV '+(m.level||1)+' · WILDS')+'</span></button>';};
- el.innerHTML='<div class="atlasLegend"><span>◆ Your location</span><span>✦ Tracked quest</span><span>◇ Unexplored</span></div><div class="atlasScroller" id="atlasScroller" tabindex="0" aria-label="Scrollable world map"><div class="worldMapView atlasView"><canvas id="themedWorldMap" class="atlasArt" width="1620" height="1620" aria-hidden="true"></canvas><span class="mapLabel north">NORTH · FROSTLANDS</span><span class="mapLabel south">SOUTH · ASHEN FRONTIER</span><span class="mapLabel west">WEST · OLD FORESTS</span><span class="mapLabel east">EAST · TIDELANDS</span>'+Object.keys(worldPositions).map(node).join('')+'</div></div><div class="atlasHint" id="atlasSelection">Follow the dirt roads through the Reach. Select a region for its travel details.</div>';
- requestAnimationFrame(()=>{drawThemedWorldMap();const focus=document.querySelector('.atlasNode[data-travel-to="'+mapId+'"]'),scroller=document.getElementById('atlasScroller');if(focus&&scroller){scroller.scrollLeft=Math.max(0,focus.offsetLeft-scroller.clientWidth/2);scroller.scrollTop=Math.max(0,focus.offsetTop-scroller.clientHeight/2);}});
+ el.innerHTML='<div class="atlasLegend"><span>◆ Your location</span><span>✦ Tracked quest</span><span>◇ Unexplored</span></div><div class="atlasScroller" id="atlasScroller" tabindex="0" aria-label="Scrollable world map"><div class="worldMapView atlasView"><canvas id="themedWorldMap" class="atlasArt" width="1620" height="1620" aria-hidden="true"></canvas><canvas id="thornhavenAtlasFog" class="atlasFog" aria-hidden="true"></canvas><span class="mapLabel north">NORTH · FROSTLANDS</span><span class="mapLabel south">SOUTH · ASHEN FRONTIER</span><span class="mapLabel west">WEST · OLD FORESTS</span><span class="mapLabel east">EAST · TIDELANDS</span>'+Object.keys(worldPositions).map(node).join('')+'</div></div><div class="atlasHint" id="atlasSelection">Follow the dirt roads through the Reach. Select a region for its travel details.</div>';
+ requestAnimationFrame(()=>{drawThemedWorldMap();paintExplorationFog();const focus=document.querySelector('.atlasNode[data-travel-to="'+mapId+'"]'),scroller=document.getElementById('atlasScroller');if(focus&&scroller){scroller.scrollLeft=Math.max(0,focus.offsetLeft-scroller.clientWidth/2);scroller.scrollTop=Math.max(0,focus.offsetTop-scroller.clientHeight/2);}});
 }
 
 function openTravelScreen(activate=false){fastTravelArmed=activate===true&&!compassActivationLock();preparePanel('travelScreen');keys.clear();travelScreen.hidden=false;inventoryScreen.hidden=true;characterScreen.hidden=true;shopScreen.hidden=true;questScreen.hidden=true;saveFilesScreen.hidden=true;document.getElementById('gameView').hidden=true;document.getElementById('controlRow').hidden=true;renderTravel();markQuestDestination();refreshPanelState()}
