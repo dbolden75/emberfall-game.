@@ -1,46 +1,75 @@
-name: Build Android APK
+name: Build complete Thornhaven Android update
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, fix/thornhaven-1.0.30]
   pull_request:
     branches: [main]
+permissions:
+  contents: read
 jobs:
-  android:
+  regression:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 64f353355bad6d1ae5bbb9addf8388f1377727d9
+          path: build-baseline
+      - name: Recover full game source and apply tested update
+        run: |
+          cat build-baseline/build-input/part-* > source.tar.gz
+          echo "7134802fc64dc95f5160ff8351d83c82008757ae853961c97572592fc5fe5cce  source.tar.gz" | sha256sum -c -
+          tar xzf source.tar.gz
+          git apply release-1.0.30.patch
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: |
+          npm install --no-save playwright@1.56.1 @napi-rs/canvas
+          npx playwright install --with-deps chromium webkit
+      - run: python3 cloud-regression.py
+      - run: node webkit-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: thornhaven-1.0.30-tests
+          path: qa-results/
+  android:
+    needs: regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 64f353355bad6d1ae5bbb9addf8388f1377727d9
+          path: build-baseline
+      - name: Recover full game source and apply tested update
+        run: |
+          cat build-baseline/build-input/part-* > source.tar.gz
+          echo "7134802fc64dc95f5160ff8351d83c82008757ae853961c97572592fc5fe5cce  source.tar.gz" | sha256sum -c -
+          tar xzf source.tar.gz
+          git apply release-1.0.30.patch
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
-      - name: Configure Android SDK
-        shell: bash
+          java-version: '17'
+      - name: Install supported Android SDK
         run: |
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(command -v sdkmanager)"
-          fi
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-      - name: Validate game scripts and world map
-        run: node scripts/test-world-map.cjs
-      - run: |
-          mkdir -p www
-          cp index.html www/index.html
-          npm init -y
-          npm install @capacitor/core@7 @capacitor/android@7
-          npm install -D @capacitor/cli@7
-          printf '{"appId":"com.thornhaven.game","appName":"Thornhaven","webDir":"www"}\n' > capacitor.config.json
-          npx cap add android
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0"
+      - name: Compile full native app with original application ID
+        working-directory: thornhaven
+        run: bash gradlew --no-daemon assembleRelease
+      - name: Align APK for private signing
+        run: |
+          mkdir -p android-output
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -f -p 4 thornhaven/app/build/outputs/apk/release/app-release-unsigned.apk android-output/thornhaven-1.0.30-unsigned-aligned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" android-output/
+          sha256sum thornhaven/app/src/main/assets/index.html > android-output/game-source.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: thornhaven-1.0.30-unsigned-for-private-signing
+          path: android-output/
