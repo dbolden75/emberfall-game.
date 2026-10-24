@@ -11,13 +11,17 @@ public class MainActivity extends Activity {
  Button mic=new Button(this);mic.setText("Voice input");mic.setOnClickListener(v->{try{Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);startActivityForResult(i,9);}catch(Exception e){say("Voice recognition unavailable");}});root.addView(mic);
  voice=new TextToSpeech(this,s->{if(s==TextToSpeech.SUCCESS)voice.setLanguage(Locale.US);});say("Jarvis ready. Type help.");}
  void command(String s){say("You: "+s);String x=s.toLowerCase(Locale.US);
- if(x.equals("help"))say("Commands: help, time, date, remember: note, memory, clear memory, settings, models");
+ if(x.equals("help"))say("Commands: help, time, date, remember: note, memory, clear memory, settings, models, status, limitations, solve: problem, plan");
  else if(x.equals("time")||x.equals("date"))say(new Date().toString());
  else if(x.startsWith("remember:")){String notes=getPreferences(0).getString("notes","");getPreferences(0).edit().putString("notes",notes+"\n"+s.substring(9)).apply();say("Remembered.");}
  else if(x.equals("memory"))say(getPreferences(0).getString("notes","No memories yet."));
  else if(x.equals("clear memory")){getPreferences(0).edit().remove("notes").apply();say("Memory cleared.");}
  else if(x.equals("settings"))startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));
- else if(x.equals("models"))say("AI model discovery and model connections require a future update.");
+ else if(x.equals("models"))say("Model discovery requires an AI provider connection. I cannot access model catalogs yet.");
+ else if(x.equals("self check")||x.equals("status"))say("Jarvis 1.4 diagnostic: keyboard available; local memory available; voice depends on Android speech service; internet AI not connected; autonomous background execution not enabled.");
+ else if(x.startsWith("solve:")){String goal=s.substring(6).trim();getPreferences(0).edit().putString("goal",goal).apply();say("Goal recorded: "+goal+". I will identify what I can do, what is missing, and a next step. Type plan.");}
+ else if(x.equals("plan")){String goal=getPreferences(0).getString("goal","");if(goal.isEmpty())say("No goal yet. Use solve: followed by a problem.");else say("Goal: "+goal+". Step 1: check capabilities using status. Step 2: identify required access or data. Step 3: use a connected AI service to research options (not yet configured). Step 4: test a proposed solution before applying changes. I cannot execute these steps automatically yet.");}
+ else if(x.equals("limitations"))say("No cloud AI connection, web research, app installation, or unrestricted device control. I will not claim a task succeeded without verification.");
  else say("I heard: "+s+". AI chat is not connected yet.");}
  protected void onActivityResult(int r,int c,Intent d){super.onActivityResult(r,c,d);if(r==9&&c==RESULT_OK&&d!=null){ArrayList<String> a=d.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);if(a!=null&&!a.isEmpty())command(a.get(0));}}
  protected void onDestroy(){if(voice!=null){voice.stop();voice.shutdown();}super.onDestroy();}
