@@ -1,5 +1,14 @@
 Thornhaven 1.0.56-dev (Android versionCode 158).
-Static source/asset verification and all nine bundled Node regression suites passed on 2026-10-26.
-Android APK NOT built on this host: Android SDK and Gradle distribution unavailable.
-Device testing, Play Billing purchase verification, signing and release readiness remain outstanding.
-See BUILD-WORKFLOW.md and AUDIT-2026-10-26.md.
+
+Verified 2026-10-26: GitHub Actions run 40419132445 succeeded for source commit 25841342bc77290df0f27efe5761c6a237e750e3.
+Run: https://github.com/dbolden75/emberfall-game./actions/runs/40419132445
+
+PASSED: exact audited HTML reconstruction and SHA-256, source syntax/static assets, eight Node regression suites, Android lintDebug, assembleDebug, APK package/version check, apksigner verification, artifact ZIP and APK ZIP integrity.
+Application ID: com.vaelbrink.ashvale.newjourney.
+APK SHA-256: ba221f7b43ebedb07599687ac503302d3e3223db3d98abdb013e7524c1608f4b.
+Embedded game HTML SHA-256: 9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f.
+
+This is a DEBUG TEST APK signed by an Android Debug certificate, NOT the maintained Play release certificate. The maintained signing key was not accessed or changed. Do not uninstall an existing Play/release app to install this artifact; that can erase saves. Use only an isolated test device/profile without an existing install.
+Browser/device gameplay, Play Billing and release-signed upgrade verification are still outstanding. No Play production release was performed.
+
+Build source: run python3 tools/restore-game-source.py before tests/builds. It rejoins bounded HTML transfer parts and checks the audited hash; no game content was redesigned.
