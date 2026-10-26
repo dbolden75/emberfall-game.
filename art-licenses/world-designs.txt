@@ -1,0 +1,1 @@
+Original generated Emberfall artwork: 20 environment objects, 16 enemies and villagers, 16 item icons, 8 terrain surfaces, 12 additional props and effects. Atlas artwork embedded for offline play.

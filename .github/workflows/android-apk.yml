@@ -1,10 +1,6 @@
-name: Build Android APK
+name: Legacy alternate-package APK (manual only)
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
 jobs:
   android:
     runs-on: ubuntu-latest

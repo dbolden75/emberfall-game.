@@ -1,0 +1,27 @@
+THORNHAVEN — STANDING MAP AND INTERFACE DIRECTION
+User instruction, October 16 2026: Use Exiled Kingdoms Sorrow Mod 7.2 as the reference for all future builds. Make maps and interfaces similar in readability, less cluttered and more efficient. Maps are the primary focus.
+
+Reference: Exiled_Kingdoms_Sorrow_Mod_ver_7_2(1).apk, Library libfile_35dad1ba6e548191a9cff4376ba6219d. Earlier conversational name “Shadow” was inaccurate; the uploaded filename identifies Sorrow.
+
+Verified by static APK inspection:
+- World map artwork shows coherent landmasses, roads, rivers, mountain barriers, forests, settlements and a hierarchy of regional/place labels.
+- Sample local maps C10, C7_house and C12_cave are isometric, using 64x32 tiles. Their dimensions are 96x96, 20x25 and 80x86 respectively.
+- Local map files separate collision, water, ground, scenery, objects and roofs. Bridges are a distinct layer in C10.
+- UI includes dedicated attack, exit, joystick base/knob and player-marker assets; skin definitions centralize buttons, fonts, dialog dimming and state styles.
+- Regional thumbnail artwork provides distinct biome identities.
+These observations come from files and artwork, not a live playthrough. No claim is made about measured reference performance or every menu's live arrangement.
+
+Thornhaven implementation direction:
+1. Design traversable local spaces first: readable main routes, side routes, visible entrances, open combat space and meaningful landmarks. Derive map depiction and collision from the same geometry.
+2. Separate terrain, collision, scenery, roofs, characters and effects. Keep obstacles out of doorways and exits. Preserve occlusion readability around buildings and trees.
+3. Use terrain and landmarks to communicate location. Display labels only when nearby, selected or relevant; avoid persistent overlapping text.
+4. Favor a compact HUD with vitality, primary combat controls and map access. Put equipment, pets, quests, crafting and secondary management in consistent panels through the character menu.
+5. Standardize back/close positions, button states, type scale, spacing and touch targets. Retain readable labels and accessibility; do not hide essential actions behind unexplained icons.
+6. Keep the world atlas open and local exploration fog, as previously authorized. Local markers must reflect actual discovered locations.
+7. Preserve Thornhaven's own world, story, artwork and identity. The mod is a design reference; do not bundle its extracted artwork or map files in Thornhaven releases.
+8. Isometric local presentation is a reference target, not an implemented feature. Any projection change must also update input conversion, camera, depth sorting, collision and map markers together.
+9. Maintain A14 performance: culling, cached terrain, limited alpha/effects and no unnecessary idle redraws. Measure device results before claiming FPS improvements.
+
+Release checks: portrait/landscape readability, touch target overlap, entering/leaving every altered area, map markers against actual positions, quest access, frame timing on a device, existing package identity and signing certificate.
+
+State: Reference review and standing direction recorded. APK 1.0.47 contains the preceding performance pass, NOT a completed Sorrow-inspired map/interface redesign.

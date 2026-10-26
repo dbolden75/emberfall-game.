@@ -1,0 +1,105 @@
+{
+  "module": "vampire_frontier",
+  "version": "0.1.0",
+  "integration_status": "bundled content definitions only; gameplay integration pending",
+  "enemies": [
+    {
+      "id": "blood_stalker",
+      "name": "Blood Stalker",
+      "level_min": 4,
+      "role": "ambusher",
+      "abilities": [
+        "shadow_lunge",
+        "retreat_to_cover"
+      ],
+      "loot_table": "frontier_common"
+    },
+    {
+      "id": "sanguine_adept",
+      "name": "Sanguine Adept",
+      "level_min": 9,
+      "role": "ranged_caster",
+      "abilities": [
+        "blood_bolt",
+        "drain_life"
+      ],
+      "loot_table": "frontier_rare"
+    },
+    {
+      "id": "crypt_warden",
+      "name": "Crypt Warden",
+      "level_min": 15,
+      "role": "boss",
+      "abilities": [
+        "guard_stance",
+        "summon_bats",
+        "grave_shockwave"
+      ],
+      "loot_table": "frontier_boss"
+    }
+  ],
+  "items": [
+    {
+      "id": "duskfang",
+      "slot": "weapon",
+      "class": "rogue",
+      "rarity": "rare",
+      "effect": "bonus damage on first hit"
+    },
+    {
+      "id": "sunward_mace",
+      "slot": "weapon",
+      "class": "cleric",
+      "rarity": "rare",
+      "effect": "bonus damage to undead"
+    },
+    {
+      "id": "warden_plate",
+      "slot": "chest",
+      "class": "warrior",
+      "rarity": "epic",
+      "effect": "brief damage reduction after blocking"
+    },
+    {
+      "id": "emberglass_focus",
+      "slot": "weapon",
+      "class": "mage",
+      "rarity": "rare",
+      "effect": "fire damage over time"
+    }
+  ],
+  "resources": [
+    {
+      "id": "copper_ore",
+      "zone_tier": 1,
+      "mining_level": 1
+    },
+    {
+      "id": "iron_ore",
+      "zone_tier": 2,
+      "mining_level": 3
+    },
+    {
+      "id": "silver_ore",
+      "zone_tier": 3,
+      "mining_level": 5
+    }
+  ],
+  "quest": {
+    "id": "silence_at_hollowmere",
+    "stages": [
+      "investigate abandoned houses",
+      "find blood-marked journal",
+      "unlock ruined chapel",
+      "defeat crypt warden",
+      "return evidence to town"
+    ],
+    "repeatable_dungeon": true
+  },
+  "rules": {
+    "town_enemy_spawns": false,
+    "spawn_during_dialogue": false,
+    "starter_zone_has_copper": true,
+    "all_new_items_class_restricted": true
+  }
+}

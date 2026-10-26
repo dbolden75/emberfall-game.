@@ -1,0 +1,2 @@
+# Thornhaven project instructions
+Read DESIGN-REFERENCE.txt and BUILD-WORKFLOW.md before changing maps, interface, rendering or release packaging. Exiled Kingdoms Sorrow Mod 7.2 is the user's standing design reference for all future builds, emphasizing clear maps, less clutter and efficient controls. Preserve existing authorized gameplay decisions and the maintained signing key. Do not claim the reference redesign is implemented merely because this direction has been recorded.

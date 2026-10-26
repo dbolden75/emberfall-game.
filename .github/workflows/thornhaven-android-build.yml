@@ -14,6 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Restore exact audited game payload
+        run: python3 tools/restore-game-source.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source and regression tests
+        run: |
+          python3 tools/verify.py
+          for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -30,7 +39,15 @@ jobs:
       - name: Build APK
         run: |
           test -f app/build.gradle || { echo 'Android project not uploaded yet'; exit 1; }
-          gradle --no-daemon :app:assembleDebug
+          gradle --no-daemon :app:lintDebug :app:assembleDebug
+      - name: Verify APK identity and signature
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee apk-badging.txt
+          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='158' versionName='1.0.56-dev'" apk-badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          sha256sum "$APK"
       - uses: actions/upload-artifact@v4
         with:
           name: thornhaven-test-apk

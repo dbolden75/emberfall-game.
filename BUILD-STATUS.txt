@@ -1,0 +1,5 @@
+Thornhaven 1.0.56-dev (Android versionCode 158).
+Static source/asset verification and all nine bundled Node regression suites passed on 2026-10-26.
+Android APK NOT built on this host: Android SDK and Gradle distribution unavailable.
+Device testing, Play Billing purchase verification, signing and release readiness remain outstanding.
+See BUILD-WORKFLOW.md and AUDIT-2026-10-26.md.

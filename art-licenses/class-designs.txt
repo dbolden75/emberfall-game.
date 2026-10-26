@@ -1,0 +1,1 @@
+Original Emberfall class artwork generated for this project. Warrior, Rogue, Mage, Cleric. Embedded atlas with front, right and rear views; left view mirrored. Movement uses procedural bob and attack tilt.

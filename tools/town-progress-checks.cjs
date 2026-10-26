@@ -1,0 +1,10 @@
+const vm=require('vm'),fs=require('fs'),assert=require('assert');
+let town={founded:true,kills:10,levels:{hall:1},stock:{wood:0,stone:0,food:0}},bag={wood_log:6,iron_ore:4},atTown=true;
+const c={settlementState:()=>town,settlementAtTown:()=>atTown,saveGame(){},ui(){},openSettlement(){},bagCount:id=>bag[id]||0,removeItem:(id,n)=>bag[id]-=n,settlementSupplies:a=>['wood','stone','food'].forEach((k,i)=>town.stock[k]+=a[i])};vm.createContext(c);vm.runInContext(fs.readFileSync('app/src/main/assets/town-progress.js','utf8'),c);c.openTownCommission=()=>{};
+assert(c.acceptTownCommission());assert(!c.acceptTownCommission());assert(!c.deliverTownCommission(0));town.kills+=3;
+atTown=false;assert(!c.deliverTownCommission(0));atTown=true;
+town.stock.wood=159;assert(!c.deliverTownCommission(0));assert.equal(bag.wood_log,6);town.stock.wood=0;
+assert(c.deliverTownCommission(0));assert.equal(bag.wood_log,3);assert.equal(town.stock.wood,8);assert(!c.deliverTownCommission(0));
+assert(c.acceptTownCommission());assert(!c.deliverTownCommission(1));town.kills+=3;
+town=JSON.parse(JSON.stringify(town));assert.equal(c.townCommission().kills,3);assert(c.deliverTownCommission(1));assert.equal(bag.iron_ore,2);assert.equal(town.commissions.completed,2);
+console.log('PASS: acceptance, fresh patrol requirement, town-only delivery, capacity protection, duplicate reward protection, save roundtrip and rotation');
