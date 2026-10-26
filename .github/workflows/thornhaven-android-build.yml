@@ -23,11 +23,14 @@ jobs:
           packages: ''
       - name: Install SDK
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
       - name: Build APK
         run: |
           test -f app/build.gradle || { echo 'Android project not uploaded yet'; exit 1; }
-          chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleDebug
+          gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: thornhaven-test-apk
