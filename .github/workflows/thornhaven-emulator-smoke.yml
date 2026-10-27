@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - qa/163-multislot-upgrade
+      - fix/163-native-save-backups
       - qa/163-android-emulator-smoke
       - qa/163-interactive-emulator-smoke
       - qa/163-native-upgrade-probe
