@@ -12,7 +12,7 @@ android {
         minSdk 24
         targetSdk 36
         versionCode 159
-        versionName '1.0.57-dev'
+        versionName '1.0.57'
     }
 }
 dependencies {
