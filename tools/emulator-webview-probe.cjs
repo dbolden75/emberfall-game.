@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','verify'].includes(phase),'Usage: node emulator-webview-probe.cjs create|verify');
+assert(['create','preupgrade','verify'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -89,7 +89,6 @@ const verify=String.raw`(()=>{
     throw Error('Character save slot disappeared after -r upgrade');
   if(localStorage.getItem(ACTIVE_SLOT_KEY)!==expected.slot)
     throw Error('Active character slot changed after -r upgrade');
-  localStorage.removeItem(key);
   return JSON.stringify({name:save.player.name,coins:save.player.coins,map:save.mapId,slot:expected.slot});
 })()`;
 
