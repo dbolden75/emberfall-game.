@@ -39,7 +39,7 @@ jobs:
       - name: Build APK
         run: |
           test -f app/build.gradle || { echo 'Android project not uploaded yet'; exit 1; }
-          gradle --no-daemon :app:lintDebug :app:assembleDebug
+          gradle --no-daemon :app:lintDebug :app:assembleDebug :app:assembleRelease :app:bundleRelease
       - name: Verify APK identity and signature
         run: |
           APK=app/build/outputs/apk/debug/app-debug.apk
@@ -53,3 +53,23 @@ jobs:
           name: thornhaven-test-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Stage unsigned release outputs and Android signing utilities
+        run: |
+          set -eu
+          mkdir -p release-payload/tools/lib
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s app/build/outputs/bundle/release/app-release.aab
+          cp app/build/outputs/apk/release/app-release-unsigned.apk release-payload/
+          cp app/build/outputs/bundle/release/app-release.aab release-payload/
+          cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" release-payload/tools/zipalign
+          cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" release-payload/tools/apksigner
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" release-payload/tools/lib/apksigner.jar
+          chmod +x release-payload/tools/zipalign release-payload/tools/apksigner
+          echo "Release outputs are UNSIGNED. Never install or distribute as a Play update."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thornhaven-1.0.57-UNSIGNED-release-payload
+          path: release-payload/
+          if-no-files-found: error
+          retention-days: 7
