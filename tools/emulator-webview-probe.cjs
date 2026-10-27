@@ -88,14 +88,37 @@ const create=String.raw`(async()=>{
       throw Error('Town save failed: '+id);
     observed.push({id,npcs:activeMap.npcs.length,renderedFrames:renderedFrames-before});
   }
-  player.name='EmulatorUpgradeQA';player.coins=173;saveGame();
+  // Persist real inventory and gathering progression, not just identity/coins.
+  player.name='EmulatorUpgradeQA';player.coins=173;player.level=7;player.xp=83;
+  // health_tonic exists in the audited 1.0.57 catalog; reset only the QA hero bag.
+  player.inventory=[];
+  if(!addItem('health_tonic',2))throw Error('Historical inventory fixture failed');
+  gatheringSkills.mining.xp=150;gatheringSkills.mining.level=4;
+  saveGame();
   const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
   const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
   if(saved?.player?.name!=='EmulatorUpgradeQA'||saved.player.coins!==173||
-     !slots||!slots[activeSlotId])throw Error('Character/slot save failed');
+     saved.player.level!==7||saved.player.xp!==83||
+     !saved.player.inventory.some(x=>x.id==='health_tonic'&&x.count>=2)||
+     saved.gatheringSkills?.mining?.xp!==150||
+     !slots||!slots[activeSlotId])throw Error('Character/progression/slot save failed');
+  // Create a *distinct* valid historical 1.0.57 secondary character record.
+  // Active slot1 still owns SAVE_KEY; slot2 is preserved separately in SLOTS_KEY.
+  const secondary=JSON.parse(JSON.stringify(saved));
+  Object.assign(secondary.player,{name:'BackupUpgradeQA',class:'cleric',level:3,xp:21,coins:441});
+  secondary.player.inventory=[{id:'health_tonic',count:3}];
+  secondary.mapId='stonewatch';
+  secondary.gatheringSkills.fishing={xp:120,level:3};
+  saveSlots.slot2={id:'slot2',name:'BackupUpgradeQA',class:'cleric',level:3,
+    updated:Date.now(),state:secondary};
+  localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(saveSlots));
   localStorage.setItem('thornhaven_emulator_upgrade_qa',
-    JSON.stringify({name:saved.player.name,coins:saved.player.coins,map:saved.mapId,slot:activeSlotId}));
-  return JSON.stringify({towns:observed,savedName:saved.player.name,coins:saved.player.coins,map:saved.mapId});
+    JSON.stringify({name:saved.player.name,coins:saved.player.coins,map:saved.mapId,
+      slot:activeSlotId,level:7,xp:83,miningXp:150,inventoryCount:2,
+      secondary:{name:'BackupUpgradeQA',map:'stonewatch',coins:441,
+        level:3,xp:21,fishingXp:120,inventoryCount:3}}));
+  return JSON.stringify({towns:observed,savedName:saved.player.name,
+    coins:saved.player.coins,map:saved.mapId,secondary:'BackupUpgradeQA'});
 })()`;
 const verify=String.raw`(()=>{
   const key='thornhaven_emulator_upgrade_qa';
@@ -104,12 +127,27 @@ const verify=String.raw`(()=>{
   const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
   if(!expected)throw Error('QA sentinel disappeared during -r upgrade');
   if(!save||save.player?.name!==expected.name||save.player?.coins!==expected.coins||
-     save.mapId!==expected.map)throw Error('Player progression changed after -r upgrade');
+     save.mapId!==expected.map||save.player?.level!==expected.level||
+     save.player?.xp!==expected.xp||save.gatheringSkills?.mining?.xp!==expected.miningXp||
+     !save.player?.inventory?.some(x=>x.id==='health_tonic'&&x.count>=expected.inventoryCount))
+    throw Error('Primary character, inventory or mining progression changed during restart/upgrade');
   if(!slots?.[expected.slot]||slots[expected.slot].state?.player?.name!==expected.name)
-    throw Error('Character save slot disappeared after -r upgrade');
+    throw Error('Primary character save slot disappeared after -r upgrade');
+  const second=slots?.slot2?.state;
+  if(!second||second.player?.name!==expected.secondary.name||
+     second.player?.coins!==expected.secondary.coins||
+     second.mapId!==expected.secondary.map||
+     second.player?.level!==expected.secondary.level||
+     second.player?.xp!==expected.secondary.xp||
+     second.gatheringSkills?.fishing?.xp!==expected.secondary.fishingXp||
+     !second.player?.inventory?.some(x=>x.id==='health_tonic'&&x.count>=expected.secondary.inventoryCount))
+    throw Error('Secondary character save slot/progression disappeared during restart/upgrade');
   if(localStorage.getItem(ACTIVE_SLOT_KEY)!==expected.slot)
     throw Error('Active character slot changed after -r upgrade');
-  return JSON.stringify({name:save.player.name,coins:save.player.coins,map:save.mapId,slot:expected.slot});
+  return JSON.stringify({name:save.player.name,coins:save.player.coins,map:save.mapId,
+    slot:expected.slot,level:save.player.level,inventory:save.player.inventory.length,
+    miningXp:save.gatheringSkills.mining.xp,secondary:second.player.name,
+    secondaryCoins:second.player.coins,secondaryFishingXp:second.gatheringSkills.fishing.xp});
 })()`;
 
 (async()=>{

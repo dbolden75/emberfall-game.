@@ -1,15 +1,21 @@
 name: Thornhaven Android emulator smoke
 on:
   workflow_dispatch:
-  # Exercise the new workflow once on its QA branch; main keeps manual dispatch.
+  # Run Android WebView/save-upgrade regressions on main source changes
+  # and on targeted QA branches. This never accesses a release keystore.
   push:
     branches:
+      - main
+      - qa/163-multislot-upgrade
       - qa/163-android-emulator-smoke
       - qa/163-interactive-emulator-smoke
       - qa/163-native-upgrade-probe
       - qa/163-render-stress
       - qa/163-historical-157-upgrade
     paths:
+      - 'app/**'
+      - 'source-payload/**'
+      - 'tools/restore-game-source.py'
       - '.github/workflows/thornhaven-emulator-smoke.yml'
       - 'tools/emulator-smoke.sh'
       - 'tools/emulator-save-upgrade.sh'
