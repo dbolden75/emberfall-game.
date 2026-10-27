@@ -161,6 +161,12 @@ const verify=String.raw`(()=>{
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
     const result=JSON.parse(await evaluate(phase==='create'?create:verify));
+    // Only the current candidate has Android's SAF backup bridge. The historical
+    // 1.0.57 source deliberately did not expose it.
+    if(phase==='verify'){
+      const check=await evaluate("typeof window.ThornhavenCloudSave==='object' && typeof window.ThornhavenCloudSave.save==='function' && typeof window.ThornhavenCloudSave.load==='function' && typeof window.ThornhavenCloudSave.manage==='function' && !!document.getElementById('titleCloudSave') && document.getElementById('cloudSaveHelp').textContent.includes('Google Drive')");
+      assert(check,'Android WebView save backup bridge/menu is unavailable');
+    }
     console.log('PASS native Android WebView '+phase+': '+JSON.stringify(result));
   }finally{ws.close()}
 })().catch(e=>{console.error('FAIL native Android WebView '+phase,e);process.exitCode=1});
