@@ -1,6 +1,11 @@
 name: Thornhaven 1.0.57 maintained-key AAB
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - ci/verify-maintained-release-157
+    paths:
+      - '.github/workflows/thornhaven-release.yml'
 jobs:
   release:
     runs-on: ubuntu-latest
