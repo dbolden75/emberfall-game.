@@ -85,6 +85,11 @@ jobs:
           api-level: 34
           arch: x86_64
           profile: pixel_5
+          # Pixel profile defaults can exceed runner RAM; keep the disposable
+          # AVD within the hosted Linux job's memory budget (exit 137 in QA).
+          ram-size: 2048M
+          heap-size: 512M
+          cores: 2
           disable-animations: true
           script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh
       - name: Preserve smoke-test screenshot and logs
