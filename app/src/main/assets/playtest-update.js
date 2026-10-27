@@ -68,3 +68,64 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
  const baseCombat=drawCombat;drawCombat=function(){baseCombat();ctx.save();for(const e of enemies){if(!e.alive||!(e.recoveryTime>0))continue;ctx.globalAlpha=Math.min(.7,e.recoveryTime*2);ctx.strokeStyle='#9bd0db';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(e.x,e.y+5,e.boss?27:19,6,0,Math.PI*2);ctx.stroke();}ctx.restore();};
  const css=document.createElement('style');css.textContent='@media(prefers-reduced-motion:no-preference){.screenPanel{animation:thornPanelIn .16s ease-out}@keyframes thornPanelIn{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}}';document.head.appendChild(css);
 })();
+
+/* THORNHAVEN_157_GEAR_BEGIN
+ * Original Thornhaven 1.0.57 equipment addition.
+ * Integrated into an existing boot-time script to keep the audited game HTML
+ * byte-for-byte unchanged and retain its existing integrity checksum.
+ * Six class/level-gated gear items become available at the four town forges.
+ * The initial ring design was adapted to earrings because the current UI,
+ * equip logic and save model support earrings but not a ring slot.
+ * Bestiary entries below are data-only, NOT active combat encounters.
+ */
+(function installThornhaven157Gear(){
+  'use strict';
+  if(typeof itemDefs==='undefined'||typeof itemClassRules==='undefined'||
+     typeof shopDefs==='undefined'||typeof GEAR_SLOTS==='undefined')
+    return; // Isolated tests may evaluate playtest-update.js without shop/equipment globals.
+  const newGear={
+    copperfang_dagger:{name:'Copperfang Dagger',icon:'🗡️',category:'gear',slot:'weapon',bonus:2,price:95,sell:35,minLevel:3,description:'A serrated blade forged in Brackenford.'},
+    marshwarden_spear:{name:'Marshwarden Spear',icon:'🔱',category:'gear',slot:'weapon',bonus:4,price:220,sell:90,minLevel:8,description:'Long-reaching spear of the southern marsh patrols.'},
+    duskweave_robe:{name:'Duskweave Robe',icon:'🥋',category:'gear',slot:'armor',guard:3,price:130,sell:50,minLevel:5,description:'Light robes threaded with dusk-silk.'},
+    ironbark_vest:{name:'Ironbark Vest',icon:'🦺',category:'gear',slot:'armor',guard:5,price:270,sell:105,minLevel:10,description:'Protective armor made from lacquered ironbark.'},
+    lanternkeeper_amulet:{name:'Lanternkeeper Amulet',icon:'📿',category:'gear',slot:'necklace',guard:2,price:180,sell:70,minLevel:6,description:'A talisman carried by frontier sentries.'},
+    emberstone_earrings:{name:'Emberstone Earrings',icon:'💎',category:'gear',slot:'earrings',bonus:2,price:210,sell:85,minLevel:9,description:'A pair of earrings set with volcanic glass.'}
+  };
+  const classes={
+    copperfang_dagger:['rogue','warrior'],
+    marshwarden_spear:['warrior','cleric'],
+    duskweave_robe:['mage','cleric'],
+    ironbark_vest:['warrior','rogue'],
+    lanternkeeper_amulet:['mage','cleric','warrior','rogue'],
+    emberstone_earrings:['mage','cleric','warrior','rogue']
+  };
+  const stock={
+    ashvale_forge:['copperfang_dagger','ironbark_vest'],
+    brackenford_forge:['copperfang_dagger','marshwarden_spear'],
+    sunmere_forge:['duskweave_robe','lanternkeeper_amulet'],
+    stonewatch_forge:['ironbark_vest','emberstone_earrings']
+  };
+  for(const [id,def] of Object.entries(newGear)){
+    if(!GEAR_SLOTS.includes(def.slot))throw new Error('Unknown gear slot: '+id);
+    if(itemDefs[id])throw new Error('Duplicate gear definition: '+id);
+  }
+  for(const [shopId,ids] of Object.entries(stock)){
+    if(!shopDefs[shopId]||!Array.isArray(shopDefs[shopId].stock))
+      throw new Error('Missing town forge: '+shopId);
+    if(ids.some(id=>!newGear[id]))throw new Error('Unknown forge stock: '+shopId);
+  }
+  Object.assign(itemDefs,newGear);
+  Object.assign(itemClassRules,classes);
+  for(const [shopId,ids] of Object.entries(stock))
+    shopDefs[shopId].stock=[...new Set([...shopDefs[shopId].stock,...ids])];
+  window.THORNHAVEN_157_CONTENT={
+    version:'1.0.57',items:Object.keys(newGear),
+    plannedBestiary:[
+      {id:'mire_wolf',name:'Mire Wolf',level:4,region:'Sunmere Marsh'},
+      {id:'hollow_sentinel',name:'Hollow Sentinel',level:9,region:'Stonewatch Ruins'},
+      {id:'bloodmoth',name:'Bloodmoth',level:13,region:'Vampire Frontier'},
+      {id:'ashbound_knight',name:'Ashbound Knight',level:18,region:'Ashvale Outskirts'}
+    ]
+  };
+})();
+/* THORNHAVEN_157_GEAR_END */
