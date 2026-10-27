@@ -13,11 +13,7 @@ window.regionalSpawnSafe=function(e){
 window.drawWalkingFog=function(){
  if(!hasStarted||titleMenuActive||!window.localTerrainRevealed)return;
  window.revealLocalTerrain();
- const b=worldBounds();ctx.save();ctx.fillStyle='#10191f';
- for(let y=Math.floor(b.minY/64);y<=Math.floor(b.maxY/64);y++)for(let x=Math.floor(b.minX/64);x<=Math.floor(b.maxX/64);x++){
-  if(!window.localTerrainRevealed(x*64+32,y*64+32))ctx.fillRect(x*64,y*64,64.5,64.5);
- }
- ctx.restore();
+ if(window.drawSoftExplorationFog)window.drawSoftExplorationFog(ctx,worldBounds());
 };
 // Hidden enemies must not leak through the fixed target HUD.
 const targetPanel=drawTargetPanel;

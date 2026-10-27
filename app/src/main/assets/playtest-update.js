@@ -65,7 +65,7 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
  drawDetailedMonster=function(e){if(reduced||!e.alive)return baseMonster(e);const anticipation=e.windup>0?Math.sin(Math.PI*(1-e.windup/(e.windupLength||1))):0,recovery=e.recoveryTime>0?Math.min(1,e.recoveryTime/.65):0,breathe=Math.sin(animationClock*2.2+(e.seed||0))*.008;
   ctx.save();ctx.translate(e.x,e.y);ctx.scale(1+anticipation*.025,1+breathe-anticipation*.035-recovery*.018);ctx.translate(-e.x,-e.y);const result=baseMonster(e);ctx.restore();return result;
  };
- const baseCombat=drawCombat;drawCombat=function(){baseCombat();ctx.save();for(const e of enemies){if(!e.alive||!(e.recoveryTime>0))continue;ctx.globalAlpha=Math.min(.7,e.recoveryTime*2);ctx.strokeStyle='#9bd0db';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(e.x,e.y+5,e.boss?27:19,6,0,Math.PI*2);ctx.stroke();}ctx.restore();};
+ const baseCombat=drawCombat;drawCombat=function(){baseCombat();ctx.save();for(const e of enemies){if(!e.alive||!(e.recoveryTime>0))continue;ctx.globalAlpha=Math.min(.7,e.recoveryTime*2);ctx.strokeStyle='#9bd0db';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(e.x,e.y+5,e.boss?27:19,6,0,0,Math.PI*2);ctx.stroke();}ctx.restore();};
  const css=document.createElement('style');css.textContent='@media(prefers-reduced-motion:no-preference){.screenPanel{animation:thornPanelIn .16s ease-out}@keyframes thornPanelIn{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}}';document.head.appendChild(css);
 })();
 

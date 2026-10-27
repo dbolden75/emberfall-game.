@@ -1,21 +1,30 @@
 plugins { id 'com.android.application' }
+
 android {
     namespace 'com.emberfall.ashvale'
     compileSdk 36
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    buildTypes { release { debuggable false; minifyEnabled false } }
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled false
+        }
+    }
+
     defaultConfig {
         applicationId 'com.vaelbrink.ashvale.newjourney'
         minSdk 24
         targetSdk 36
-        versionCode 159
-        versionName '1.0.57'
+        versionCode 165
+        versionName '1.0.63'
     }
 }
+
 dependencies {
-    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
-    implementation 'com.android.billingclient:billing:9.1.0'
+    implementation platform("org.jetbrains.kotlin:kotlin-bom:1.8.22")
+    implementation "com.android.billingclient:billing:9.1.0"
 }
