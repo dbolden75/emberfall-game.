@@ -56,17 +56,37 @@ const create=String.raw`(async()=>{
   if(typeof setMap!=='function'||typeof frame!=='function'||typeof saveGame!=='function')
     throw Error('Actual WebView game functions unavailable');
   hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
+  // On-device rendering can catch exceptions internally and only log a warning.
+  // Observe those failures and require the actual requestAnimationFrame loop to
+  // keep rendering each town; mapId changes alone do not prove no freeze.
+  if(typeof renderScene!=='function')throw Error('Native game renderer unavailable');
+  const runtimeFaults=[];
+  window.addEventListener('error',e=>runtimeFaults.push('uncaught: '+String(e.message||e.error)));
+  window.addEventListener('unhandledrejection',e=>runtimeFaults.push('unhandled: '+String(e.reason)));
+  const originalConsoleError=console.error;
+  console.error=function(...args){
+    const message=args.map(x=>String(x)).join(' ');
+    if(/Map rendering error|Thornhaven save failed/i.test(message))runtimeFaults.push(message);
+    return originalConsoleError.apply(this,args);
+  };
+  const originalRenderScene=renderScene;
+  let renderedFrames=0;
+  renderScene=function(...args){renderedFrames++;return originalRenderScene.apply(this,args)};
   document.getElementById('gameView').hidden=false;
   const observed=[];
   for(const id of ids){
+    const before=renderedFrames;
     if(!setMap(id,480,320,false))throw Error('Town transition rejected: '+id);
-    // Let Android's real requestAnimationFrame loop advance naturally.
-    await new Promise(resolve=>setTimeout(resolve,500));
+    // Require real Android WebView rendering to continue, not just mapId updates.
+    await new Promise(resolve=>setTimeout(resolve,750));
     if(mapId!==id||!activeMap.town||!activeMap.npcs.length)throw Error('Town unusable: '+id);
+    if(renderedFrames<=before)throw Error('Town renderer stopped: '+id);
+    if(renderErrorShown||runtimeFaults.length)throw Error('Town runtime fault: '+id+' '+runtimeFaults.join(' | '));
     saveGame();
     const snap=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
-    if(!snap||snap.mapId!==id)throw Error('Town save failed: '+id);
-    observed.push({id,npcs:activeMap.npcs.length});
+    if(!snap||snap.mapId!==id||document.getElementById('saveFailureWarning'))
+      throw Error('Town save failed: '+id);
+    observed.push({id,npcs:activeMap.npcs.length,renderedFrames:renderedFrames-before});
   }
   player.name='EmulatorUpgradeQA';player.coins=173;saveGame();
   const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
