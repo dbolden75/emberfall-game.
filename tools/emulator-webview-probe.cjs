@@ -51,7 +51,7 @@ async function session(url){
   return {ws,evaluate};
 }
 
-const create=String.raw`(()=>{
+const create=String.raw`(async()=>{
   const ids=['ashvale','brackenford','stonewatch','sunmere'];
   if(typeof setMap!=='function'||typeof frame!=='function'||typeof saveGame!=='function')
     throw Error('Actual WebView game functions unavailable');
@@ -60,7 +60,8 @@ const create=String.raw`(()=>{
   const observed=[];
   for(const id of ids){
     if(!setMap(id,480,320,false))throw Error('Town transition rejected: '+id);
-    for(let n=0;n<4;n++)frame(performance.now()+n*16);
+    // Let Android's real requestAnimationFrame loop advance naturally.
+    await new Promise(resolve=>setTimeout(resolve,500));
     if(mapId!==id||!activeMap.town||!activeMap.npcs.length)throw Error('Town unusable: '+id);
     saveGame();
     const snap=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
