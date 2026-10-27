@@ -25,7 +25,13 @@ for first, last, insertion in edits:
     start = last
 assembled.extend(lines[start:])
 content = b''.join(assembled)
-assert hashlib.sha256(content).hexdigest() == 'ddaf5af6e4e4310d774b9231d823bce5c4eafd5063ed105e379bfb3e3363fcf4', 'Migrated HTML hash mismatch'
+# The reviewed 1.0.62 source retained one stale title-screen footer.
+# Fix that single display label and authenticate the resulting 1.0.63 HTML.
+stale = 'Version 1.0.62 · Ashvale Reach'.encode('utf-8')
+correct = 'Version 1.0.63 · Ashvale Reach'.encode('utf-8')
+assert content.count(stale) == 1, 'Expected exactly one stale title version label'
+content = content.replace(stale, correct, 1)
+assert hashlib.sha256(content).hexdigest() == 'c9085391c1ad9c76e42502682d16c717fc73b39a4e906759a3463845cf2f14a0', 'Migrated HTML hash mismatch'
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
