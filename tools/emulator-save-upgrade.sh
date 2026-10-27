@@ -58,6 +58,32 @@ test -n "$newpid"
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$newpid"
 node tools/emulator-webview-probe.cjs verify | tee reports/emulator/qa-save-retained.txt
 adb forward --remove tcp:9222
+# Verify the newly wired cloud backup button actually opens Android's SAF
+# document picker, and that cancelling never replaces character saves.
+# These are intentionally cancel-only tests; successful Drive upload/download
+# needs a real provider/account and remains unverified.
+for action in save load; do
+  activepid="$(adb shell pidof "$PKG" | tr -d '\r')"
+  test -n "$activepid"
+  adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
+  node tools/emulator-webview-probe.cjs "picker-$action" | tee "reports/emulator/qa-picker-$action.txt"
+  adb forward --remove tcp:9222
+  sleep 4
+  adb shell uiautomator dump /sdcard/thornhaven-documents.xml >/dev/null
+  adb shell cat /sdcard/thornhaven-documents.xml > "reports/emulator/qa-picker-$action-ui.xml"
+  # Android 14's DocumentsUI may be Google's or the AOSP provider.
+  grep -Eiq 'documentsui|com.android.documents|com.google.android.documents' "reports/emulator/qa-picker-$action-ui.xml" ||
+    { echo "FAIL: Android document picker was not presented for $action"; exit 1; }
+  adb exec-out screencap -p > "reports/emulator/qa-picker-$action.png"
+  adb shell input keyevent KEYCODE_BACK
+  sleep 4
+  resumed="$(adb shell pidof "$PKG" | tr -d '\r')"
+  test -n "$resumed"
+  adb forward tcp:9222 "localabstract:webview_devtools_remote_$resumed"
+  node tools/emulator-webview-probe.cjs picker-cancel | tee "reports/emulator/qa-picker-$action-cancel.txt"
+  node tools/emulator-webview-probe.cjs verify | tee "reports/emulator/qa-picker-$action-saves.txt"
+  adb forward --remove tcp:9222
+done
 adb logcat -d -v time > reports/emulator/qa-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-logcat.txt; then
   echo 'FAIL: Android Runtime recorded Thornhaven process crash during synthetic update'
