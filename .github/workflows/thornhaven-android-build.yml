@@ -65,6 +65,9 @@ jobs:
           cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" release-payload/tools/zipalign
           cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" release-payload/tools/apksigner
           cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" release-payload/tools/lib/apksigner.jar
+          mkdir -p release-payload/tools/lib64
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib64/libc++.so" release-payload/tools/lib64/libc++.so
+          cp "$ANDROID_HOME/build-tools/36.0.0/aapt" release-payload/tools/aapt
           chmod +x release-payload/tools/zipalign release-payload/tools/apksigner
           echo "Release outputs are UNSIGNED. Never install or distribute as a Play update."
       - uses: actions/upload-artifact@v4
