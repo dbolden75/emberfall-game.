@@ -34,3 +34,21 @@ assert.throws(()=>core.parse(' '.repeat(core.MAX_BYTES+1)),/8 MB/);
 assert.equal({}.polluted,undefined);
 assert.throws(()=>core.encode({},'slot1'),/no saved characters/);
 console.log('PASS: corrupt, future-format, unsafe, oversized and incomplete backups rejected.');
+
+
+const fs=require('node:fs');
+const activity=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/MainActivity.java','utf8');
+const bridge=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/CloudSaveDocuments.java','utf8');
+const manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
+const ui=fs.readFileSync('app/src/main/assets/cloud-save.js','utf8');
+assert.match(activity,/addJavascriptInterface\(cloudSave, "ThornhavenCloudSave"\)/);
+assert.match(activity,/cloudSave\.onActivityResult\(requestCode, resultCode, data\)/);
+for(const method of ['save','load','manage'])assert(bridge.includes('public void '+method+'('));
+for(const intent of ['Intent.ACTION_CREATE_DOCUMENT','Intent.ACTION_OPEN_DOCUMENT'])assert(bridge.includes(intent));
+assert(bridge.includes('MAX_BYTES = 8 * 1024 * 1024'));
+assert(bridge.includes('output.write(request.bytes)'));
+assert(bridge.includes('input.read(buffer)'));
+assert(bridge.includes("thornhavenCloudResult"));
+assert(ui.includes('core.restore(localStorage,pending,{confirmed:true'));
+assert(!manifest.includes('android.permission.WRITE_EXTERNAL_STORAGE'));
+console.log('PASS: Android backup bridge uses user-selected documents, capped I/O, and explicit restore review without broad storage permissions.');
