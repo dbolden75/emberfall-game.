@@ -7,5 +7,7 @@ assert(gradle.includes("applicationId 'com.vaelbrink.ashvale.newjourney'"), 'App
 assert(gradle.includes('versionCode 165'), 'Unexpected Android version code');
 assert(gradle.includes("versionName '1.0.63'"), 'Unexpected version name');
 assert(html.includes(Buffer.from('New Journey · v1.0.63')), 'Game menu should identify 1.0.63');
-assert.strictEqual(crypto.createHash('sha256').update(html).digest('hex'), 'ddaf5af6e4e4310d774b9231d823bce5c4eafd5063ed105e379bfb3e3363fcf4');
+assert(html.includes(Buffer.from('Version 1.0.63 · Ashvale Reach')), 'Title screen footer should identify 1.0.63');
+assert(!html.includes(Buffer.from('Version 1.0.62 · Ashvale Reach')), 'Stale title screen footer remains');
+assert.strictEqual(crypto.createHash('sha256').update(html).digest('hex'), 'c9085391c1ad9c76e42502682d16c717fc73b39a4e906759a3463845cf2f14a0');
 console.log('PASS: 1.0.63 release package, menu label and game source hash');
