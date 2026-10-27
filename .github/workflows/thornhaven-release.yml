@@ -78,6 +78,7 @@ jobs:
           unzip -p "$apk" assets/playtest-update.js | grep THORNHAVEN_157_GEAR_BEGIN >/dev/null
           jarsigner -keystore "$RUNNER_TEMP/thornhaven-signing/maintained.jks" -storepass:env STORE_PASSWORD -keypass:env KEY_PASSWORD "$aab" "$KEY_ALIAS"
           jarsigner -verify "$aab" | grep -q 'jar verified'
+          python3 tools/release-payload-checks.py --apk "$apk" --aab "$aab" --assets app/src/main/assets --gradle app/build.gradle --activity app/src/main/java/com/emberfall/ashvale/MainActivity.java --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           unzip -t "$aab" >/dev/null
           unzip -p "$aab" base/assets/playtest-update.js | grep THORNHAVEN_157_GEAR_BEGIN >/dev/null
           cp "$aab" release-output/Thornhaven-1.0.63-maintained-key.aab
