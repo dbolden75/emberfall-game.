@@ -1,0 +1,11 @@
+const fs = require('fs');
+const assert = require('assert');
+const crypto = require('crypto');
+const gradle = fs.readFileSync('app/build.gradle', 'utf8');
+const html = fs.readFileSync('app/src/main/assets/index.html');
+assert(gradle.includes("applicationId 'com.vaelbrink.ashvale.newjourney'"), 'App package identity changed');
+assert(gradle.includes('versionCode 165'), 'Unexpected Android version code');
+assert(gradle.includes("versionName '1.0.63'"), 'Unexpected version name');
+assert(html.includes(Buffer.from('New Journey · v1.0.63')), 'Game menu should identify 1.0.63');
+assert.strictEqual(crypto.createHash('sha256').update(html).digest('hex'), 'ddaf5af6e4e4310d774b9231d823bce5c4eafd5063ed105e379bfb3e3363fcf4');
+console.log('PASS: 1.0.63 release package, menu label and game source hash');
