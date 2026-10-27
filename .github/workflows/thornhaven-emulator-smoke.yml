@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - qa/163-android-emulator-smoke
+      - qa/163-interactive-emulator-smoke
     paths:
       - '.github/workflows/thornhaven-emulator-smoke.yml'
       - 'tools/emulator-smoke.sh'
