@@ -1,14 +1,16 @@
-Thornhaven 1.0.56-dev (Android versionCode 158).
+Thornhaven 1.0.57 Android (versionCode 159, versionName 1.0.57).
+Updated 2026-10-27.
 
-Verified 2026-10-26: GitHub Actions run 40419132445 succeeded for source commit 25841342bc77290df0f27efe5761c6a237e750e3.
-Run: https://github.com/dbolden75/emberfall-game./actions/runs/40419132445
+SOURCE: Pull request #4 merged to main at ec7236466c7efa494826c584f95fa61f236ec8ca.
+MAIN CI: GitHub Actions 40492524466 PASSED (source restoration SHA-256, eight mock regression suites including 1.0.57 gear/shop/save integration, lintDebug, assembleDebug, assembleRelease, bundleRelease, package/version and debug signature validation).
+Branch CI used for offline-maintained-key signing: 40492027242 PASSED.
 
-PASSED: exact audited HTML reconstruction and SHA-256, source syntax/static assets, eight Node regression suites, Android lintDebug, assembleDebug, APK package/version check, apksigner verification, artifact ZIP and APK ZIP integrity.
-Application ID: com.vaelbrink.ashvale.newjourney.
-APK SHA-256: ba221f7b43ebedb07599687ac503302d3e3223db3d98abdb013e7524c1608f4b.
-Embedded game HTML SHA-256: 9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f.
+ORIGINAL KEY RECOVERED AND VERIFIED from the user's private signing backup. Its certificate SHA-256 is 38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22. This matches archived signed Thornhaven 1.0.53 APK and AAB.
+Locally produced signed release candidates (NOT committed to GitHub):
+- Thornhaven-1.0.57-maintained-key.apk SHA-256 6d69b3cf968b7681625e53333fc35203e9c4807f85201f4235f6de93990e1bfa; verified ZIP alignment and Android signature v2/v3.
+- Thornhaven-1.0.57-maintained-key.aab SHA-256 542f220dc9965f5508abe4a5eec1bdf5a122c17a934c167b5d038445ae1576d5; verified JAR signature and asset integrity.
+The key and signing passwords remain private, not in the repo or artifacts.
 
-This is a DEBUG TEST APK signed by an Android Debug certificate, NOT the maintained Play release certificate. The maintained signing key was not accessed or changed. Do not uninstall an existing Play/release app to install this artifact; that can erase saves. Use only an isolated test device/profile without an existing install.
-Browser/device gameplay, Play Billing and release-signed upgrade verification are still outstanding. No Play production release was performed.
+CONTENT: Six original class- and level-gated gear items integrated into Ashvale, Brackenford, Sunmere and Stonewatch forges, with shop labels and save-snapshot regression coverage. Four bestiary entries are data-only; no monster spawning was integrated. Audited 1.0.56 index.html remains byte-for-byte identical.
 
-Build source: run python3 tools/restore-game-source.py before tests/builds. It rejoins bounded HTML transfer parts and checks the audited hash; no game content was redesigned.
+NOT YET VERIFIED: Physical device installation/upgrade, compatibility with the currently installed Google Play app-signing certificate, Play Console upload-key and versionCode acceptance, store track delivery, town-entry freezes, real gameplay or purchases. Do NOT uninstall the current Play app. For Play updates, upload maintained-key AAB to internal testing and verify a Play-delivered upgrade with preserved saves before public release.
