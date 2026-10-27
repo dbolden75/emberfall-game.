@@ -26,7 +26,7 @@ adb install "$OLD" | tee reports/emulator/qa-install-157.txt
 adb shell am start -W -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-157.txt
 sleep 12
 adb shell dumpsys package "$PKG" > reports/emulator/qa-package-157.txt
-grep -q 'versionCode=159' reports/emulator/qa-package-164.txt
+grep -q 'versionCode=159' reports/emulator/qa-package-157.txt
 oldpid="$(adb shell pidof "$PKG" | tr -d '\r')"
 test -n "$oldpid"
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$oldpid"
