@@ -24,6 +24,21 @@ test -n "$oldpid"
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$oldpid"
 node tools/emulator-webview-probe.cjs create | tee reports/emulator/qa-town-save.txt
 adb forward --remove tcp:9222
+# Allow Chromium DOM-storage writes to commit and the native activity to
+# receive onPause. Force-stopping immediately after evaluate can drop writes.
+adb shell input keyevent KEYCODE_HOME
+sleep 6
+adb shell am force-stop "$PKG"
+# Distinguish baseline cold-start persistence from a versionCode upgrade bug.
+adb shell am start -W -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-restart-164.txt
+sleep 10
+checkpid="$(adb shell pidof "$PKG" | tr -d '\r')"
+test -n "$checkpid"
+adb forward tcp:9222 "localabstract:webview_devtools_remote_$checkpid"
+node tools/emulator-webview-probe.cjs preupgrade | tee reports/emulator/qa-preupgrade-save.txt
+adb forward --remove tcp:9222
+adb shell input keyevent KEYCODE_HOME
+sleep 5
 adb shell am force-stop "$PKG"
 adb install -r "$NEW" | tee reports/emulator/qa-upgrade-165.txt
 adb shell dumpsys package "$PKG" > reports/emulator/qa-package-165.txt
