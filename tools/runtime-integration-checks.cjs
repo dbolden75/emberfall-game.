@@ -72,3 +72,39 @@ vm.runInContext(`
  const save=snapshotGameState();applySavedGame(save);if(player.weapon!=='briar_fang'||!bagCount('briar_fang'))throw Error('Item save roundtrip');
 `,root);
 console.log('PASS: 44 items, shop availability, class restrictions, equipping, healing and save roundtrip.');
+
+
+// Regression guard for the previously reported town-entry freeze. This checks
+// all four town transitions, multiple simulation/render frames, a save, and
+// restoration of that saved town state. The DOM/canvas remain mocked.
+const townIds=vm.runInContext('Object.keys(maps).filter(id=>maps[id].town)',root);
+const expectedTowns=['ashvale','brackenford','stonewatch','sunmere'];
+if(townIds.length!==4||expectedTowns.some(id=>!townIds.includes(id)))
+ throw Error('Expected four functioning town maps: '+townIds.join(','));
+for(const townId of expectedTowns){
+ const result=vm.runInContext(`(function(){
+  for(const panel of ['optionsMenu','adventureScreen','travelScreen',
+    'inventoryScreen','characterScreen','skillsScreen','shopScreen',
+    'partyScreen','storageScreen','questScreen','saveFilesScreen'])
+   document.getElementById(panel).hidden=true;
+  hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
+  if(!setMap(${JSON.stringify(townId)},480,320,false))
+   throw Error('Unable to enter town');
+  for(let i=1;i<=8;i++)frame(200+i*20);
+  if(!activeMap.town||mapId!==${JSON.stringify(townId)}||!activeMap.npcs.length)
+   throw Error('Town is missing or has no NPCs');
+  const snapshot=snapshotGameState();
+  saveGame();
+  const saved=JSON.parse(localStorage.getItem(SAVE_KEY));
+  if(saved.mapId!==${JSON.stringify(townId)}||snapshot.mapId!==${JSON.stringify(townId)})
+   throw Error('Town save did not retain map location');
+  applySavedGame(snapshot);
+  for(let i=1;i<=3;i++)frame(500+i*20);
+  if(mapId!==${JSON.stringify(townId)}||!activeMap.town)
+   throw Error('Town reload lost the map');
+  return {town:mapId,npcs:activeMap.npcs.length};
+ })()`,root);
+ console.log('PASS: town entry, render cycles and save reload',result.town,'NPCs:',result.npcs);
+}
+if(runtimeErrors.length)throw Error('Town runtime error: '+runtimeErrors.join('\n'));
+console.log('PASS: four town-entry mock runtime regressions (not Android/Play testing).');
