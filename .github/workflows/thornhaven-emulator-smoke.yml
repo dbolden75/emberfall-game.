@@ -7,6 +7,7 @@ on:
       - qa/163-android-emulator-smoke
       - qa/163-interactive-emulator-smoke
       - qa/163-native-upgrade-probe
+      - qa/163-render-stress
     paths:
       - '.github/workflows/thornhaven-emulator-smoke.yml'
       - 'tools/emulator-smoke.sh'
@@ -37,6 +38,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
+      - name: Syntax-check native WebView QA inspector
+        run: node --check tools/emulator-webview-probe.cjs
       - name: Build isolated QA debug APKs for synthetic in-place upgrade
         run: |
           set -euo pipefail
