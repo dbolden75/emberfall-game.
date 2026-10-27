@@ -90,21 +90,23 @@ const create=String.raw`(async()=>{
   }
   // Persist real inventory and gathering progression, not just identity/coins.
   player.name='EmulatorUpgradeQA';player.coins=173;player.level=7;player.xp=83;
-  if(!addItem('crypt_salve',2))throw Error('Historical inventory fixture failed');
+  // health_tonic exists in the audited 1.0.57 catalog; reset only the QA hero bag.
+  player.inventory=[];
+  if(!addItem('health_tonic',2))throw Error('Historical inventory fixture failed');
   gatheringSkills.mining.xp=150;gatheringSkills.mining.level=4;
   saveGame();
   const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
   const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
   if(saved?.player?.name!=='EmulatorUpgradeQA'||saved.player.coins!==173||
      saved.player.level!==7||saved.player.xp!==83||
-     !saved.player.inventory.some(x=>x.id==='crypt_salve'&&x.count>=2)||
+     !saved.player.inventory.some(x=>x.id==='health_tonic'&&x.count>=2)||
      saved.gatheringSkills?.mining?.xp!==150||
      !slots||!slots[activeSlotId])throw Error('Character/progression/slot save failed');
   // Create a *distinct* valid historical 1.0.57 secondary character record.
   // Active slot1 still owns SAVE_KEY; slot2 is preserved separately in SLOTS_KEY.
   const secondary=JSON.parse(JSON.stringify(saved));
   Object.assign(secondary.player,{name:'BackupUpgradeQA',class:'cleric',level:3,xp:21,coins:441});
-  secondary.player.inventory=[{id:'crypt_salve',count:3}];
+  secondary.player.inventory=[{id:'health_tonic',count:3}];
   secondary.mapId='stonewatch';
   secondary.gatheringSkills.fishing={xp:120,level:3};
   saveSlots.slot2={id:'slot2',name:'BackupUpgradeQA',class:'cleric',level:3,
@@ -127,7 +129,7 @@ const verify=String.raw`(()=>{
   if(!save||save.player?.name!==expected.name||save.player?.coins!==expected.coins||
      save.mapId!==expected.map||save.player?.level!==expected.level||
      save.player?.xp!==expected.xp||save.gatheringSkills?.mining?.xp!==expected.miningXp||
-     !save.player?.inventory?.some(x=>x.id==='crypt_salve'&&x.count>=expected.inventoryCount))
+     !save.player?.inventory?.some(x=>x.id==='health_tonic'&&x.count>=expected.inventoryCount))
     throw Error('Primary character, inventory or mining progression changed during restart/upgrade');
   if(!slots?.[expected.slot]||slots[expected.slot].state?.player?.name!==expected.name)
     throw Error('Primary character save slot disappeared after -r upgrade');
@@ -138,7 +140,7 @@ const verify=String.raw`(()=>{
      second.player?.level!==expected.secondary.level||
      second.player?.xp!==expected.secondary.xp||
      second.gatheringSkills?.fishing?.xp!==expected.secondary.fishingXp||
-     !second.player?.inventory?.some(x=>x.id==='crypt_salve'&&x.count>=expected.secondary.inventoryCount))
+     !second.player?.inventory?.some(x=>x.id==='health_tonic'&&x.count>=expected.secondary.inventoryCount))
     throw Error('Secondary character save slot/progression disappeared during restart/upgrade');
   if(localStorage.getItem(ACTIVE_SLOT_KEY)!==expected.slot)
     throw Error('Active character slot changed after -r upgrade');
