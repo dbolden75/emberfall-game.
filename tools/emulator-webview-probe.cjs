@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -150,6 +150,32 @@ const verify=String.raw`(()=>{
     secondaryCoins:second.player.coins,secondaryFishingXp:second.gatheringSkills.fishing.xp});
 })()`;
 
+
+const pickerSave=String.raw`(()=>{
+  if(typeof ThornhavenCloudSave?.save!=='function')throw Error('Android SAF Save bridge absent');
+  const button=document.getElementById('titleCloudSave');
+  if(!button)throw Error('Cloud Save menu entry absent');
+  button.click();
+  if(document.getElementById('cloudSavePanel').hidden)throw Error('Cloud Save panel failed to open');
+  document.getElementById('cloudSaveExport').click();
+  if(!document.getElementById('cloudSaveExport').disabled)throw Error('Save action did not start picker request');
+  return JSON.stringify({action:'save',pickerRequest:'started'});
+})()`;
+const pickerLoad=String.raw`(()=>{
+  if(typeof ThornhavenCloudSave?.load!=='function')throw Error('Android SAF Load bridge absent');
+  document.getElementById('cloudSaveImport').click();
+  if(!document.getElementById('cloudSaveImport').disabled)throw Error('Load action did not start picker request');
+  return JSON.stringify({action:'load',pickerRequest:'started'});
+})()`;
+const pickerCancel=String.raw`(()=>{
+  const status=document.getElementById('cloudSaveStatus')?.textContent||'';
+  if(!status.includes('Cancelled. Local progress is unchanged.'))
+    throw Error('Cancelled picker did not restore local UI state: '+status);
+  for(const id of ['cloudSaveExport','cloudSaveImport','cloudSaveClose'])
+    if(document.getElementById(id).disabled)throw Error('Picker cancellation left '+id+' disabled');
+  return JSON.stringify({cancelConfirmed:true,localSaveUnchanged:true});
+})()`;
+
 (async()=>{
   const page=await target();const {ws,evaluate}=await session(page.webSocketDebuggerUrl);
   try{
@@ -160,7 +186,8 @@ const verify=String.raw`(()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const result=JSON.parse(await evaluate(phase==='create'?create:verify));
+    const scripts={create,preupgrade:verify,verify,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel};
+    const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
     if(phase==='verify'){

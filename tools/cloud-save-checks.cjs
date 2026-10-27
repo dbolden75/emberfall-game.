@@ -44,6 +44,8 @@ const ui=fs.readFileSync('app/src/main/assets/cloud-save.js','utf8');
 assert.match(activity,/addJavascriptInterface\(cloudSave, "ThornhavenCloudSave"\)/);
 assert.match(activity,/cloudSave\.onActivityResult\(requestCode, resultCode, data\)/);
 for(const method of ['save','load','manage'])assert(bridge.includes('public void '+method+'('));
+assert.match(bridge, /public void load\(String requestId, String ignoredText\)/, 'Load must accept two JS bridge arguments');
+assert.match(bridge, /public void manage\(String requestId, String ignoredText\)/, 'Manage must accept two JS bridge arguments');
 for(const intent of ['Intent.ACTION_CREATE_DOCUMENT','Intent.ACTION_OPEN_DOCUMENT'])assert(bridge.includes(intent));
 assert(bridge.includes('MAX_BYTES = 8 * 1024 * 1024'));
 assert(bridge.includes('output.write(request.bytes)'));

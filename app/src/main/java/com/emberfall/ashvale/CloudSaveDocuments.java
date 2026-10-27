@@ -53,11 +53,11 @@ final class CloudSaveDocuments {
         activity.runOnUiThread(() -> beginSave(requestId, backupJson));
     }
 
-    @JavascriptInterface public void load(String requestId) {
+    @JavascriptInterface public void load(String requestId, String ignoredText) {
         activity.runOnUiThread(() -> beginLoad(requestId));
     }
 
-    @JavascriptInterface public void manage(String requestId) {
+    @JavascriptInterface public void manage(String requestId, String ignoredText) {
         activity.runOnUiThread(() ->
             result(requestId, "manage", false, false,
                 "Open Google Drive or Files to rename, move, or delete backup files.", null));
