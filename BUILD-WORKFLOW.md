@@ -1,6 +1,6 @@
 # Thornhaven build and test workflow
 
-Current source: 1.0.56-dev, Android versionCode 158. Earlier entries below are historical release notes. See BUILD-STATUS.txt and AUDIT-2026-10-26.md for verified current status.
+Current main development source: 1.0.63, Android versionCode 165. Earlier entries below are historical release notes. See BUILD-STATUS.txt for verified current status.
 Package: com.vaelbrink.ashvale.newjourney. Keep this identity and the maintained signing key.
 
 Run from this directory:
@@ -57,3 +57,6 @@ Map-detail follow-up: biome-colored local terrain, main east/west road aligned w
 1.0.53 (versionCode155): published Android privacy policy linked from Options. TheDanCode developer character can grant test-only premium items without checkout, no expiry, local to that character; normal characters cannot invoke this grant and retain Play checkout. Google Play reviewer instructions disclose this mode. Normal builder progression gates remain. Purchase and reviewer checks passed; device and real Play purchase tests still required.
 
 1.0.54 (versionCode156): removed obsolete asynchronous private scope around synchronous game initialization. All extension scripts now share the game bindings they require. Reproduced 1.0.53 ReferenceError activeMap in regionalSpawnSafe after a monster dies, which stops the frame loop and recurs on reload. Full-script mocked runtime regression now exercises Elderwood with a dead monster; no Android visual claim.
+
+2026-10-27 1.0.63 release asset parity gate:
+After rebuilding, tools/release-payload-checks.py asserts source/APK/AAB byte-for-byte parity for all game assets, unmodified historical localStorage save keys and WebView origin, versionCode greater than archived 1.0.62, and APK badging identity. This is not signing verification and does not establish Google Play acceptance or device save-preserving installation. CI runs this gate before offering unsigned release payloads. The maintained-key offline signing step and Play internal-test device upgrade remain separate requirements.
