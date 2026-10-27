@@ -14,3 +14,9 @@ The key and signing passwords remain private, not in the repo or artifacts.
 CONTENT: Six original class- and level-gated gear items integrated into Ashvale, Brackenford, Sunmere and Stonewatch forges, with shop labels and save-snapshot regression coverage. Four bestiary entries are data-only; no monster spawning was integrated. Audited 1.0.56 index.html remains byte-for-byte identical.
 
 NOT YET VERIFIED: Physical device installation/upgrade, compatibility with the currently installed Google Play app-signing certificate, Play Console upload-key and versionCode acceptance, store track delivery, town-entry freezes, real gameplay or purchases. Do NOT uninstall the current Play app. For Play updates, upload maintained-key AAB to internal testing and verify a Play-delivered upgrade with preserved saves before public release.
+
+2026-10-27 maintained-key reproduction from Actions run 40492524466:
+Verified 1.0.57 APK SHA-256 4c0a391006ebc129779c9da3c945748e6caa27336f04ad2e96002012b0c079e8 (37,571,202 bytes, zipaligned, Android v2/v3 signing verified).
+Verified 1.0.57 AAB SHA-256 35b4431d52f13a16c9c3461340c8aae25e807068b37476f0cc0b7767a9376515 (37,155,539 bytes, JAR signing verified).
+Both retained as private backups at Google Drive > Thornhaven > APKs, with maintained cert SHA-256 38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22; archived 1.0.53 signed APK independently checked against same cert.
+Google Play App Signing certificate/track upload, save-preserving device upgrade and browser gameplay still unverified; browser navigation blocked by host restrictions.
