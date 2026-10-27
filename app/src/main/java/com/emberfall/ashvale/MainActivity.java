@@ -17,6 +17,7 @@ public class MainActivity extends Activity {
     private WebView game;
     private PlayBillingPreparation billing;
     private PlaytestConnection playtest;
+    private CloudSaveDocuments cloudSave;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +41,10 @@ public class MainActivity extends Activity {
         game.addJavascriptInterface(new DevicePreferences(), "ThornhavenDevice");
         playtest = new PlaytestConnection(this, game);
         game.addJavascriptInterface(playtest, "ThornhavenPlaytest");
+        // Android Storage Access Framework: a user-selected Drive/Files document,
+        // never automatic cloud upload or a change to historical save storage.
+        cloudSave = new CloudSaveDocuments(this, game);
+        game.addJavascriptInterface(cloudSave, "ThornhavenCloudSave");
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowFileAccessFromFileURLs(false);
@@ -134,6 +139,12 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        if (cloudSave != null && cloudSave.onActivityResult(requestCode, resultCode, data)) return;
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
     protected void onPause() {
         if (game != null) game.evaluateJavascript("window.dispatchEvent(new Event('pagehide'))", null);
         if (game != null) { game.onPause(); game.pauseTimers(); }
@@ -150,6 +161,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         if (playtest != null) playtest.close();
+        if (cloudSave != null) cloudSave.close();
         if (billing != null) billing.close();
         if (game != null) { game.destroy(); game = null; }
         super.onDestroy();
