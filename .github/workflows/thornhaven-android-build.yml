@@ -45,7 +45,7 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee apk-badging.txt
-          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='158' versionName='1.0.56-dev'" apk-badging.txt
+          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='159' versionName='1.0.57-dev'" apk-badging.txt
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
           sha256sum "$APK"
       - uses: actions/upload-artifact@v4
