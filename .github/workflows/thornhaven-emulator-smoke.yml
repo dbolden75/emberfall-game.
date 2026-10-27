@@ -6,19 +6,25 @@ on:
     branches:
       - qa/163-android-emulator-smoke
       - qa/163-interactive-emulator-smoke
+      - qa/163-native-upgrade-probe
     paths:
       - '.github/workflows/thornhaven-emulator-smoke.yml'
       - 'tools/emulator-smoke.sh'
+      - 'tools/emulator-save-upgrade.sh'
+      - 'tools/emulator-webview-probe.cjs'
 jobs:
   emulator-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Restore audited game HTML
         run: python3 tools/restore-game-source.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,8 +37,28 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Build isolated emulator debug APK
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Build isolated QA debug APKs for synthetic in-place upgrade
+        run: |
+          set -euo pipefail
+          # This edit exists ONLY in the throwaway CI workspace. NEVER edit
+          # the production MainActivity or publish these debug-test binaries.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/emberfall/ashvale/MainActivity.java')
+          old='WebView.setWebContentsDebuggingEnabled(false);'
+          data=p.read_text()
+          assert data.count(old)==1, 'Inspector toggle source changed'
+          p.write_text(data.replace(old,'WebView.setWebContentsDebuggingEnabled(true);'))
+          PY
+          cp app/build.gradle "$RUNNER_TEMP/thornhaven-original.gradle"
+          sed -i 's/versionCode 165/versionCode 164/' app/build.gradle
+          grep -q 'versionCode 164' app/build.gradle
+          gradle --no-daemon :app:assembleDebug
+          mkdir -p app/build/qa
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/qa/thornhaven-synthetic-164-debug.apk
+          cp "$RUNNER_TEMP/thornhaven-original.gradle" app/build.gradle
+          grep -q 'versionCode 165' app/build.gradle
+          gradle --no-daemon :app:assembleDebug
       - name: Enable emulator hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -45,7 +71,7 @@ jobs:
           arch: x86_64
           profile: pixel_5
           disable-animations: true
-          script: bash tools/emulator-smoke.sh
+          script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh
       - name: Preserve smoke-test screenshot and logs
         if: always()
         uses: actions/upload-artifact@v4
