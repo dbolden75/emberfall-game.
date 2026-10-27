@@ -56,6 +56,15 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      - name: Verify release payload asset and save-origin compatibility
+        run: |
+          python3 tools/release-payload-checks.py \
+            --apk app/build/outputs/apk/release/app-release-unsigned.apk \
+            --aab app/build/outputs/bundle/release/app-release.aab \
+            --assets app/src/main/assets \
+            --gradle app/build.gradle \
+            --activity app/src/main/java/com/emberfall/ashvale/MainActivity.java \
+            --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
       - name: Stage unsigned release outputs and Android signing utilities
         run: |
           set -eu
