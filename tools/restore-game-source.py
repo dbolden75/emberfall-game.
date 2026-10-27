@@ -38,4 +38,4 @@ if target.exists():
     assert target.read_bytes() == content, 'Refusing to overwrite a different game source'
 else:
     target.write_bytes(content)
-print('Thornhaven 1.0.63 HTML reconstructed, SHA-256 verified:', 'ddaf5af6e4e4310d774b9231d823bce5c4eafd5063ed105e379bfb3e3363fcf4')
+print('Thornhaven 1.0.63 HTML reconstructed, SHA-256 verified:', hashlib.sha256(content).hexdigest())
