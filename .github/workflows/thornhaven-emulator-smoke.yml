@@ -1,0 +1,55 @@
+name: Thornhaven Android emulator smoke
+on:
+  workflow_dispatch:
+  # Exercise the new workflow once on its QA branch; main keeps manual dispatch.
+  push:
+    branches:
+      - qa/163-android-emulator-smoke
+    paths:
+      - '.github/workflows/thornhaven-emulator-smoke.yml'
+      - 'tools/emulator-smoke.sh'
+jobs:
+  emulator-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore audited game HTML
+        run: python3 tools/restore-game-source.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+      - name: Install Android SDK compile platform
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build isolated emulator debug APK
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Enable emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+      - name: Install, start and restart APK in disposable Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          script: bash tools/emulator-smoke.sh
+      - name: Preserve smoke-test screenshot and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: thornhaven-163-android-emulator-smoke-evidence
+          path: reports/emulator/
+          if-no-files-found: ignore
+          retention-days: 7
