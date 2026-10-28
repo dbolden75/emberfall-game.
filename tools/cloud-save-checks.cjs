@@ -271,3 +271,40 @@ for(const optional of ['hp','maxHp','respawnAt','spawnX','spawnY','alive','lootC
  assert.equal(core.readLocal(JSON.stringify({slot1:historical})).unreadable,false);
 }
 console.log('PASS: impossible saved enemy fields rejected; optional historical fields remain supported.');
+
+
+// Null inventory rows are accepted by Array.isArray alone, but the actual
+// game's bagUnits/renderInventory accesses row.id without a null check.
+// Before this fix, restoring such a backup could prevent game loading or
+// crash bag/shop screens. Preserve 1.0.57-era {id,count} and empty bags.
+for(const [label,invalid] of [
+ ['null',null],['missing record',undefined],['array',[]],
+ ['primitive','iron'],['missing id',{count:1}],
+ ['empty id',{id:'',count:1}],['numeric id',{id:9,count:1}],
+ ['zero count',{id:'iron',count:0}],
+ ['negative count',{id:'iron',count:-1}],
+ ['string count',{id:'iron',count:'2'}],
+ ['fractional count',{id:'iron',count:1.5}],
+ ['infinite count',{id:'iron',count:1e99}]
+]){
+ const damaged=row('Invalid inventory');
+ damaged.state.player.inventory=[invalid];
+ const localRaw=JSON.stringify({slot1:damaged});
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:damaged}});
+ assert.throws(()=>core.parse(backup),/Invalid character inventory/,label);
+ assert.equal(core.readLocal(localRaw).unreadable,true,
+  'Unusable local inventory must require additional replacement approval: '+label);
+ const store=new Storage({[core.SLOT_KEY]:localRaw});
+ assert.throws(()=>core.restore(store,text,{confirmed:true,expectedCurrent:localRaw}),
+  /unreadable/,'Damaged local inventory must not be silently overwritten: '+label);
+ assert.equal(store.getItem(core.SLOT_KEY),localRaw);
+}
+for(const inventory of [[],[{id:'iron',count:1}],[{id:'iron',count:12},{id:'quest_relic',count:1}]]){
+ const historical=row('Historical inventory');historical.state.player.inventory=inventory;
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:historical}});
+ assert(core.parse(backup),'Historic and empty inventories must stay importable');
+ assert.equal(core.readLocal(JSON.stringify({slot1:historical})).unreadable,false);
+}
+console.log('PASS: malformed inventory entries rejected before game load; historical bag format preserved.');
