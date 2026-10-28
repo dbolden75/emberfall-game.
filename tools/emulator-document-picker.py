@@ -87,7 +87,7 @@ def main():
         assert re.fullmatch(r"Thornhaven-[\d-]+\.json", title), (
             "Default backup filename missing: " + repr(ui_summary(nodes)))
         # AOSP Android 14 opens ACTION_CREATE_DOCUMENT in Downloads by default.
-        assert find(nodes, text="Downloads"), "Save picker not in Downloads"
+        assert find(nodes, text="Downloads") is not None, "Save picker not in Downloads"
         tap(find(nodes, text="SAVE"))
         NAME_FILE.write_text(title)
         print("PASS: selected Android DocumentsUI SAVE button for " + title)
