@@ -46,6 +46,19 @@ for old, new in [
     assert content.count(old) == 1, 'Expected exactly one enemy restore expression'
     content = content.replace(old, new, 1)
 assert hashlib.sha256(content).hexdigest() == 'caab1a338d37e86dd4a25e509a6dc8c52901835a435fcc4e51a9e2e5b9bef225', 'Enemy coordinate compatibility patch hash mismatch'
+
+# Restored older characters may refer to equipment removed or renamed in a
+# later catalog. Showing their inventory must never dereference an unknown
+# item id and crash; keep the underlying saved item id for future recovery.
+for old, new in [
+    (b"(player.weapon?itemDefs[player.weapon].name:'none')", b"(itemDefs[player.weapon]?.name||'none')"),
+    (b"(player.armor?itemDefs[player.armor].name:'none')", b"(itemDefs[player.armor]?.name||'none')"),
+    (b"(player.shield?itemDefs[player.shield].name:'none')", b"(itemDefs[player.shield]?.name||'none')"),
+]:
+    assert content.count(old) == 1, 'Expected exactly one equipped gear label'
+    content = content.replace(old, new, 1)
+assert hashlib.sha256(content).hexdigest() == '02fa2a23977ac87cc38301483c1fa2cea82832cb556113828b629fc9e96ef729', 'Equipment-label compatibility patch hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
