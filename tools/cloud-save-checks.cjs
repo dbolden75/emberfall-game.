@@ -346,4 +346,42 @@ for(const historical of [
  assert(core.parse(backup),'Historical house storage must remain compatible');
  assert.equal(core.readLocal(JSON.stringify({slot1:old})).unreadable,false);
 }
+
+// Regression: normalizeHouseStorage() discards a defined chest if its value
+// isn't an array. Cloud restore previously reported success and lost items.
+// Guard all four towns and historical root-level chest keys on import; keep
+// omitted/null/empty chests and unrelated legacy metadata compatible.
+for(const [label,houseStorage] of [
+ ['structured chest object',{ashvale:{front_chest:{items:[{id:'iron',count:2}]}}}],
+ ['serialized chest string',{sunmere:{side_chest:'[{"id":"iron","count":2}]'}}],
+ ['nonarray chest',{stonewatch:{front_chest:{0:{id:'iron',count:2},length:1}}}],
+ ['legacy root object',{side_chest:{items:[{id:'iron',count:2}]}}],
+ ['legacy root string',{front_chest:'[{"id":"iron","count":2}]'}]
+]){
+ const damaged=row('Mis-shaped chest');
+ damaged.state.houseStorage=houseStorage;
+ const raw=JSON.stringify({slot1:damaged});
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:damaged}});
+ assert.throws(()=>core.parse(backup),/Invalid house chest contents/,label);
+ assert.equal(core.readLocal(raw).unreadable,true,label);
+ const store=new Storage({[core.SLOT_KEY]:raw});
+ assert.throws(()=>core.restore(store,text,{confirmed:true,expectedCurrent:raw}),/unreadable/,label);
+ assert.equal(store.getItem(core.SLOT_KEY),raw,'No unapproved chest overwrite: '+label);
+}
+for(const historical of [
+ {ashvale:{front_chest:null}}, {brackenford:{side_chest:null}},
+ {stonewatch:{front_chest:[]}}, {sunmere:{side_chest:[]}},
+ {front_chest:null}, {side_chest:[{id:'iron',count:2}]},
+ {ashvale:{wood:10}}
+]){
+ const old=row('Historical chest');
+ old.state.houseStorage=historical;
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:old}});
+ assert(core.parse(backup),'Historical chest variants must remain accepted');
+ assert.equal(core.readLocal(JSON.stringify({slot1:old})).unreadable,false);
+}
+console.log('PASS: declared malformed chest containers rejected before import; historical chests preserved.');
+
 console.log('PASS: invalid house chest rows rejected; historical/legacy chests retained.');
