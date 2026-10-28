@@ -42,7 +42,13 @@ function safeEnemySnapshots(mapStates){
   return Array.isArray(saved.enemies)&&saved.enemies.every(e=>
    e&&typeof e==='object'&&!Array.isArray(e)&&
    (e.x===undefined||(typeof e.x==='number'&&Number.isFinite(e.x)))&&
-   (e.y===undefined||(typeof e.y==='number'&&Number.isFinite(e.y))));
+   (e.y===undefined||(typeof e.y==='number'&&Number.isFinite(e.y)))&&
+   // Reject invalid attributes before applySavedGame copies them to live
+   // enemies. A nonnumeric respawnAt silently prevents future respawns.
+   ['hp','maxHp','respawnAt','spawnX','spawnY'].every(key=>
+    e[key]==null||(typeof e[key]==='number'&&Number.isFinite(e[key])&&
+    (key==='hp'||key==='maxHp'||key==='respawnAt'?e[key]>=0:true)))&&
+   ['alive','lootClaimed'].every(key=>e[key]==null||typeof e[key]==='boolean'));
  });
 }
 function parse(text){if(typeof text!=='string'||new TextEncoder().encode(text).length>MAX_BYTES)throw Error('Backup exceeds 8 MB.');return validate(JSON.parse(text));}
