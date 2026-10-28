@@ -10,7 +10,7 @@ function fog(){const all=townQuestState._localExploration||(townQuestState._loca
 window.localTerrainRevealed=(x,y)=>revealed(x,y);
 function revealed(x,y){return !!fog()[Math.floor(x/64)+','+Math.floor(y/64)];}
 window.revealLocalTerrain=()=>reveal();
-function reveal(){if(!hasStarted||titleMenuActive)return;const f=fog(),cx=Math.floor(player.x/64),cy=Math.floor(player.y/64);let changed=false;for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++)if(x*x+y*y<=9){const k=(cx+x)+','+(cy+y);if(!f[k]){f[k]=1;changed=true;}}if(changed&&Date.now()-lastSave>5000){lastSave=Date.now();saveGame();}}
+function reveal(){if(!hasStarted||titleMenuActive)return;const f=fog(),cx=Math.floor(player.x/64),cy=Math.floor(player.y/64);let changed=false;for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++)if(x*x+y*y<=9){const k=(cx+x)+','+(cy+y);if(!f[k]){f[k]=1;changed=true;}}if(changed)window.localExplorationRevision=(window.localExplorationRevision||0)+1;if(changed&&Date.now()-lastSave>5000){lastSave=Date.now();saveGame();}}
 function paint(){if(panel.hidden)return;const b=worldBounds(),w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;canvas.width=w;canvas.height=h;const scale=Math.min(w/(b.maxX-b.minX),h/(b.maxY-b.minY))*zoom;g.fillStyle='#101e1b';g.fillRect(0,0,w,h);g.save();g.translate(w/2+panX,h/2+panY);g.scale(scale,scale);g.translate(-(b.minX+b.maxX)/2,-(b.minY+b.maxY)/2);g.fillStyle=({grass:'#839167',snow:'#c2d2d1',marsh:'#627b6d',stone:'#99998a',dungeon:'#66666b',wood:'#a38b69'})[regionSurface()]||'#839167';g.fillRect(b.minX,b.minY,b.maxX-b.minX,b.maxY-b.minY);
  // Use the same building and road coordinates as the playable region.
  g.fillStyle='#c9b48a';
@@ -23,7 +23,7 @@ function paint(){if(panel.hidden)return;const b=worldBounds(),w=canvas.clientWid
  for(const t of activeMap.trees||[]){const x=Array.isArray(t)?t[0]:t.x,y=Array.isArray(t)?t[1]:t.y;g.fillStyle='#253d3544';g.beginPath();g.ellipse(x+5,y+5,17,10,0,0,Math.PI*2);g.fill();g.fillStyle=regionSurface()==='snow'?'#71928a':'#355f43';g.beginPath();g.moveTo(x,y-20);g.lineTo(x-15,y+9);g.lineTo(x+15,y+9);g.closePath();g.fill();g.fillStyle='#b3bc8844';g.beginPath();g.moveTo(x,y-17);g.lineTo(x-10,y+5);g.lineTo(x,y+5);g.closePath();g.fill();}
  for(const t of activeMap.stones||[]){const x=Array.isArray(t)?t[0]:t.x,y=Array.isArray(t)?t[1]:t.y;g.fillStyle='#555e59';g.beginPath();g.moveTo(x-11,y+6);g.lineTo(x-8,y-7);g.lineTo(x+4,y-12);g.lineTo(x+12,y);g.lineTo(x+8,y+8);g.closePath();g.fill();g.strokeStyle='#c7cbbb';g.lineWidth=1;g.stroke();}
  for(const n of [...(activeMap.npcs||[]),...(activeMap.worldObjects||[])])if(revealed(n.x,n.y)){dot(n.x,n.y,'#9e6039',4);g.fillStyle='#263124';g.font=(11/scale)+'px sans-serif';g.fillText(n.name||n.label||'',n.x+8/scale,n.y);}
- for(let y=Math.floor(b.minY/64);y<=Math.floor(b.maxY/64);y++)for(let x=Math.floor(b.minX/64);x<=Math.floor(b.maxX/64);x++)if(!fog()[x+','+y]){g.fillStyle='#10191ff2';g.fillRect(x*64,y*64,65,65);}
+ if(window.drawSoftExplorationFog)window.drawSoftExplorationFog(g,b);
  for(const e of enemies)if(e.alive&&revealed(e.x,e.y)&&Math.hypot(e.x-player.x,e.y-player.y)<210)dot(e.x,e.y,'#d64c62',4);
  for(const e of mapConnections[mapId]?.exits||[]){let x=e.x,y=e.y;if(e.trigger==='edge'){x=e.side==='west'?b.minX+12:e.side==='east'?b.maxX-12:Math.max(b.minX+70,Math.min(b.maxX-70,480));y=e.side==='north'?b.minY+12:e.side==='south'?b.maxY-12:Math.max(b.minY+70,Math.min(b.maxY-70,315));}if(Number.isFinite(x)&&Number.isFinite(y)&&revealed(x,y)){dot(x,y,'#fff0ce',5);g.fillStyle='#fff0ce';g.font=(10/scale)+'px sans-serif';g.fillText('To '+(maps[e.to]?.name||'exit'),x+8/scale,y-8/scale);}}
  const quest=questCatalog().find(q=>q.id===trackedQuestId()&&!q.done);if(quest){const guide=questGuide(quest);if(guide.destination===mapId){for(const obj of activeMap.worldObjects||[])if((obj.id===quest.id||obj.questId===quest.id)&&revealed(obj.x,obj.y)){dot(obj.x,obj.y,'#ffd05c',7);}}}
@@ -129,3 +129,40 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
   };
 })();
 /* THORNHAVEN_157_GEAR_END */
+
+/* Compact party portraits: keep secondary controls outside the vitality card. */
+(function(){
+ const stats=document.querySelector('.hud .stats');
+ const row=document.createElement('div');row.id='partyPortraits';
+ const hero=document.getElementById('heroMenuButton');row.appendChild(hero);
+ const human=document.createElement('button');human.type='button';human.id='companionPortraitButton';
+ human.innerHTML='<canvas width="100" height="120"></canvas><span>COMPANION</span>';
+ human.onclick=()=>openHumanRoster();row.appendChild(human);
+ const pet=document.getElementById('petStatusButton');row.appendChild(pet);
+ const actions=document.createElement('div');actions.id='explorationActions';
+ for(const button of [...stats.querySelectorAll('button')])actions.appendChild(button);
+ stats.before(row);stats.after(actions);
+ const css=document.createElement('style');css.textContent=`
+ body:has(#gameView:not([hidden])) .shell .hudSide{width:204px}
+ body:has(#gameView:not([hidden])) .shell .hudSide .stats{box-sizing:border-box;padding:6px 8px;min-height:0;width:100%;font:10px/1.4 system-ui}
+ #partyPortraits{display:flex;gap:5px;margin-bottom:5px;pointer-events:auto}
+ body .shell #partyPortraits button{position:static;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:72px;min-width:0;min-height:0;margin:0;padding:0;overflow:hidden;border:1px solid #b99d62;border-radius:5px;background:linear-gradient(#39463a,#17241e);color:#f0dca8;font:700 8px/12px system-ui}
+ body .shell #partyPortraits canvas,body .shell #partyPortraits img{position:static;width:46px!important;height:54px!important;object-fit:contain;border:0}
+ body .shell #partyPortraits span{height:auto;letter-spacing:0;font:700 8px/12px system-ui}
+ #explorationActions{display:flex;gap:5px;margin-top:5px;pointer-events:auto}
+ body .shell #explorationActions button{flex:1;min-width:0;min-height:44px;padding:4px;border:1px solid #8c794f;border-radius:5px;background:#202c23ed;color:#f0dca8;font:10px system-ui}
+ @media(orientation:landscape) and (max-height:500px){body:has(#gameView:not([hidden])) .shell .hudSide{width:186px}body .shell #partyPortraits button{height:58px}body .shell #partyPortraits canvas,body .shell #partyPortraits img{height:42px!important;width:34px!important}}
+ `;document.head.appendChild(css);
+ const previous=ui;let portraitKey='';
+ ui=function(){previous();
+  const c=humanCompanion(),a=c?classAppearance(c):null;
+  human.setAttribute('aria-label',c?'Companion: '+c.name+' · '+c.hp+' / '+c.max+' vitality':'Choose a companion');
+  const key=c?c.id+':'+c.class+':'+c.gender:'none';
+  if(key!==portraitKey){const canvas=human.querySelector('canvas'),g=canvas.getContext('2d');g.clearRect(0,0,100,120);
+   if(a&&a.atlas.complete&&a.atlas.naturalWidth){const [x,y,w,h]=a.frames[0],scale=Math.min(92/w,112/h);g.drawImage(a.atlas,x,y,w,h,(100-w*scale)/2,(120-h*scale)/2,w*scale,h*scale);portraitKey=key;}
+   else if(!c){g.fillStyle='#c6b784';g.font='36px serif';g.textAlign='center';g.fillText('+',50,72);portraitKey=key;}
+  }
+  const p=companions.find(p=>p.active&&p.hp>0);pet.setAttribute('aria-label',p?'Pet: '+p.name+' · '+p.hp+' / '+p.max+' vitality':'Choose a pet');
+  const petKey=p?p.id:'none';if(pet.dataset.portraitKey!==petKey||!pet.querySelector('span')){pet.dataset.portraitKey=petKey;pet.innerHTML=p?'<img src="assets/pets/'+petArtwork[p.id]+'-v2.webp" alt=""><span>PET</span>':'<span style="font-size:28px;line-height:42px">+</span><span>PET</span>';}
+ };ui();
+})();

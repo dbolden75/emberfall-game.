@@ -108,3 +108,19 @@ for(const townId of expectedTowns){
 }
 if(runtimeErrors.length)throw Error('Town runtime error: '+runtimeErrors.join('\n'));
 console.log('PASS: four town-entry mock runtime regressions (not Android/Play testing).');
+
+// The real reveal function must invalidate the fog cache as the player walks.
+vm.runInContext(`
+ hasStarted=true;titleMenuActive=false;
+ townQuestState._localExploration={};window.localExplorationRevision=0;
+ player.x=64;player.y=64;window.revealLocalTerrain();
+ const firstRevision=window.localExplorationRevision;
+ if(firstRevision!==1||!window.localTerrainRevealed(player.x,player.y))throw Error('Initial position not revealed');
+ window.revealLocalTerrain();
+ if(window.localExplorationRevision!==firstRevision)throw Error('Stationary reveal invalidates cache unnecessarily');
+ player.x=1024;player.y=640;window.revealLocalTerrain();
+ if(window.localExplorationRevision<=firstRevision)throw Error('Walking leaves stale opaque fog');
+ if(!window.localTerrainRevealed(64,64)||!window.localTerrainRevealed(player.x,player.y))throw Error('Exploration does not persist');
+ if(window.localTerrainRevealed(4096,4096))throw Error('Unvisited terrain revealed');
+`,root);
+console.log('PASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.');
