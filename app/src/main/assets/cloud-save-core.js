@@ -129,25 +129,49 @@ function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}
  const recovery=JSON.stringify({format:'thornhaven-recovery',schema:1,createdAt:Date.now(),slots:raw,activeSlot:previousActive});
  // A failed restore must not erase an earlier, still-valuable recovery copy.
  const previousRecovery=storage.getItem(RECOVERY_KEY);
- let wroteRecovery=false,attemptedActive=false;
+ const importedSlots=JSON.stringify(incoming.slots);
+ let attemptedRecovery=false,attemptedActive=false,attemptedSlots=false;
  try{
+  attemptedRecovery=true;
   storage.setItem(RECOVERY_KEY,recovery);
-  wroteRecovery=true;
   if(storage.getItem(RECOVERY_KEY)!==recovery)throw Error('Could not verify the recovery copy.');
-  // Set the imported selection before the single-key slots commit. If that
-  // commit fails, the existing slots must remain untouched.
+  // Commit the selected character before the slots. Verify both writes: an
+  // interrupted/silent storage write must not be reported as a restore.
   attemptedActive=true;
   storage.setItem(ACTIVE_SLOT_KEY,chosenActive);
-  storage.setItem(SLOT_KEY,JSON.stringify(incoming.slots));
+  if(storage.getItem(ACTIVE_SLOT_KEY)!==chosenActive)throw Error('Could not verify the selected character.');
+  attemptedSlots=true;
+  storage.setItem(SLOT_KEY,importedSlots);
+  if(storage.getItem(SLOT_KEY)!==importedSlots)throw Error('Could not verify the restored characters.');
  }catch(error){
-  if(attemptedActive){
-   try{if(previousActive===null)storage.removeItem(ACTIVE_SLOT_KEY);
-       else storage.setItem(ACTIVE_SLOT_KEY,previousActive);}catch(_){}
+  // A faulty storage backend may write before throwing. Roll back the raw
+  // bytes, not a parsed/reserialized approximation of the original save.
+  let slotsRestored=true,activeRestored=true;
+  if(attemptedSlots){
+   try{
+    if(storage.getItem(SLOT_KEY)!==raw){
+     if(raw===null)storage.removeItem(SLOT_KEY);
+     else storage.setItem(SLOT_KEY,raw);
+    }
+   }catch(_){}
+   try{slotsRestored=storage.getItem(SLOT_KEY)===raw;}catch(_){slotsRestored=false;}
   }
-  if(wroteRecovery){
+  if(attemptedActive){
+   try{
+    if(storage.getItem(ACTIVE_SLOT_KEY)!==previousActive){
+     if(previousActive===null)storage.removeItem(ACTIVE_SLOT_KEY);
+     else storage.setItem(ACTIVE_SLOT_KEY,previousActive);
+    }
+   }catch(_){}
+   try{activeRestored=storage.getItem(ACTIVE_SLOT_KEY)===previousActive;}catch(_){activeRestored=false;}
+  }
+  // If either rollback failed, retain the verified recovery snapshot rather
+  // than replacing it with an older one. Never discard the pre-import save.
+  if(attemptedRecovery&&slotsRestored&&activeRestored){
    try{if(previousRecovery===null)storage.removeItem(RECOVERY_KEY);
        else storage.setItem(RECOVERY_KEY,previousRecovery);}catch(_){}
   }
+  if(!slotsRestored||!activeRestored)throw Error('Restore interrupted; use the preserved recovery copy before continuing.',{cause:error});
   throw error;
  }
  return incoming;
