@@ -10,6 +10,7 @@ on:
       - fix/163-native-save-backups
       - qa/163-cloud-document-picker
       - qa/163-cloud-save-roundtrip
+      - qa/163-cloud-save-confirmed-restore
       - qa/163-android-emulator-smoke
       - qa/163-interactive-emulator-smoke
       - qa/163-native-upgrade-probe
