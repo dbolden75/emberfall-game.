@@ -208,3 +208,34 @@ for(const [label,damage] of [
 assert.equal(core.readLocal(JSON.stringify(slots)).unreadable,false,
  'Valid historic array inventory and object-based map/quest state must remain compatible');
 console.log('PASS: malformed container types rejected before backup import; historical save shape preserved.');
+
+
+// Regression: applySavedGame iterates mapStates[id].enemies and directly reads
+// e.maxHp/e.hp. A JSON backup with a null enemy is accepted by the earlier
+// top-level object check, then throws on startup and leaves the hero unloaded.
+// Missing historical coordinates remain supported; explicit invalid values do not.
+for(const [label,enemy] of [
+ ['null enemy',null],
+ ['array enemy',[]],
+ ['string enemy','not an enemy'],
+ ['invalid x',{x:'west',y:20}],
+ ['invalid y',{x:20,y:'north'}]
+]){
+ const damaged=row('Damaged map');
+ damaged.state.mapStates.elderwood.enemies=[enemy];
+ const raw=JSON.stringify({slot1:damaged});
+ const blob=JSON.stringify({format:'thornhaven-save',schema:1,createdAt:300,
+  activeSlot:'slot1',slots:{slot1:damaged}});
+ assert.throws(()=>core.parse(blob),/Invalid saved enemy positions/,label);
+ assert.equal(core.readLocal(raw).unreadable,true,label);
+ const store=new Storage({[core.SLOT_KEY]:raw});
+ assert.throws(()=>core.restore(store,text,{confirmed:true,expectedCurrent:raw}),/unreadable/,label);
+ assert.equal(store.getItem(core.SLOT_KEY),raw,'No unapproved save overwrite');
+}
+const oldEnemy=row('Historic map');
+oldEnemy.state.mapStates.elderwood.enemies=[{alive:false,lootClaimed:true}];
+const oldBlob=JSON.stringify({format:'thornhaven-save',schema:1,createdAt:300,
+ activeSlot:'slot1',slots:{slot1:oldEnemy}});
+assert(core.parse(oldBlob),'Previous save shape without optional enemy coordinates remains supported');
+assert.equal(core.readLocal(JSON.stringify({slot1:oldEnemy})).unreadable,false);
+console.log('PASS: null/malformed saved enemies rejected before game startup; historical snapshot accepted.');
