@@ -146,12 +146,12 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
  body:has(#gameView:not([hidden])) .shell .hudSide{width:204px}
  body:has(#gameView:not([hidden])) .shell .hudSide .stats{box-sizing:border-box;padding:6px 8px;min-height:0;width:100%;font:10px/1.4 system-ui}
  #partyPortraits{display:flex;gap:5px;margin-bottom:5px;pointer-events:auto}
- body .shell #partyPortraits button{position:static;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:72px;min-width:0;min-height:0;margin:0;padding:0;overflow:hidden;border:1px solid #b99d62;border-radius:5px;background:linear-gradient(#39463a,#17241e);color:#f0dca8;font:700 8px/12px system-ui}
+ body:has(#gameView:not([hidden])) .shell #partyPortraits button{position:static;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:72px;min-width:0;min-height:0;margin:0;padding:0;overflow:hidden;border:1px solid #b99d62;border-radius:5px;background:linear-gradient(#39463a,#17241e);color:#f0dca8;font:700 8px/12px system-ui}
  body .shell #partyPortraits canvas,body .shell #partyPortraits img{position:static;width:46px!important;height:54px!important;object-fit:contain;border:0}
  body .shell #partyPortraits span{height:auto;letter-spacing:0;font:700 8px/12px system-ui}
  #explorationActions{display:flex;gap:5px;margin-top:5px;pointer-events:auto}
  body .shell #explorationActions button{flex:1;min-width:0;min-height:44px;padding:4px;border:1px solid #8c794f;border-radius:5px;background:#202c23ed;color:#f0dca8;font:10px system-ui}
- @media(orientation:landscape) and (max-height:500px){body:has(#gameView:not([hidden])) .shell .hudSide{width:186px}body .shell #partyPortraits button{height:58px}body .shell #partyPortraits canvas,body .shell #partyPortraits img{height:42px!important;width:34px!important}}
+ @media(orientation:landscape) and (max-height:500px){body:has(#gameView:not([hidden])) .shell .hudSide{width:186px}body:has(#gameView:not([hidden])) .shell #partyPortraits button{height:58px}body .shell #partyPortraits canvas,body .shell #partyPortraits img{height:42px!important;width:34px!important}}
  `;document.head.appendChild(css);
  const previous=ui;let portraitKey='';
  ui=function(){previous();
