@@ -86,3 +86,25 @@ assert(bridge.includes("thornhavenCloudResult"));
 assert(ui.includes('core.restore(localStorage,pending,{confirmed:true'));
 assert(!manifest.includes('android.permission.WRITE_EXTERNAL_STORAGE'));
 console.log('PASS: Android backup bridge uses user-selected documents, capped I/O, and explicit restore review without broad storage permissions.');
+
+
+// A damaged/truncated pre-existing local slot store must not make Cloud Save
+// restoration impossible. Warn and require explicit consent; preserve the
+// exact original bytes in the recovery record before changing any slots.
+for(const raw of ['{truncated', 'null', '[1,2]', '{"slot1":null}', '{"slot1":{"updated":"bad"}}']){
+ const local=new Storage({[core.SLOT_KEY]:raw,[core.ACTIVE_SLOT_KEY]:'slot3'});
+ assert.equal(core.readLocal(raw).unreadable,true);
+ assert.throws(()=>core.restore(local,text,{confirmed:true,expectedCurrent:raw}),/unreadable/);
+ assert.equal(local.getItem(core.SLOT_KEY),raw,'Unsafe replacement without consent');
+ assert.equal(local.getItem(core.RECOVERY_KEY),null,'Warning must not write recovery');
+ core.restore(local,text,{confirmed:true,allowOlder:true,expectedCurrent:raw});
+ assert.deepEqual(JSON.parse(local.getItem(core.SLOT_KEY)),slots);
+ assert.equal(JSON.parse(local.getItem(core.RECOVERY_KEY)).slots,raw,
+  'Recovery copy must retain original malformed local slot bytes');
+ assert.equal(local.getItem(core.ACTIVE_SLOT_KEY),'slot3');
+}
+assert.equal(core.readLocal(null).unreadable,false);
+assert.deepEqual(core.readLocal('{}').slots,{});
+assert.match(fs.readFileSync('app/src/main/assets/cloud-save.js','utf8'),/core\.readLocal\(expected\)/,
+ 'Backup review must also warn on damaged local slots before requesting consent');
+console.log('PASS: unreadable historical local slots can be explicitly recovered without silently overwriting local bytes.');
