@@ -34,6 +34,18 @@ content = content.replace(stale, correct, 1)
 assert hashlib.sha256(content).hexdigest() == 'c9085391c1ad9c76e42502682d16c717fc73b39a4e906759a3463845cf2f14a0', 'Migrated HTML hash mismatch'
 content = content.replace(b'1.0.63', b'1.0.64')
 assert hashlib.sha256(content).hexdigest() == 'bc14b9f38375c9dca31b14cf28a5dae467108001c7523f9aaa4bd6ebb4791c57', 'Patch version hash mismatch'
+# A 1.0.57-era saved enemy can omit x/y. Never overwrite its live,
+# valid spawn coordinates with undefined when restoring either save format.
+# Keep this narrowly scoped after the authenticated 1.0.64 migration.
+for old, new in [
+    (b'Object.assign(enemy,{x:e.x,y:e.y,spawnX:Number.isFinite(e.spawnX)?e.spawnX:enemy.spawnX',
+     b'Object.assign(enemy,{x:Number.isFinite(e.x)?e.x:enemy.x,y:Number.isFinite(e.y)?e.y:enemy.y,spawnX:Number.isFinite(e.spawnX)?e.spawnX:enemy.spawnX'),
+    (b'Object.assign(enemy,{x:e.x,y:e.y,hp:savedHp>0?',
+     b'Object.assign(enemy,{x:Number.isFinite(e.x)?e.x:enemy.x,y:Number.isFinite(e.y)?e.y:enemy.y,hp:savedHp>0?'),
+]:
+    assert content.count(old) == 1, 'Expected exactly one enemy restore expression'
+    content = content.replace(old, new, 1)
+assert hashlib.sha256(content).hexdigest() == 'caab1a338d37e86dd4a25e509a6dc8c52901835a435fcc4e51a9e2e5b9bef225', 'Enemy coordinate compatibility patch hash mismatch'
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
