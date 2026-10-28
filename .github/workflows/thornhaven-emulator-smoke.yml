@@ -16,6 +16,7 @@ on:
       - qa/163-native-upgrade-probe
       - qa/163-render-stress
       - qa/163-historical-157-upgrade
+      - fix/fog-refresh-party-portraits-20261028
     paths:
       - 'app/**'
       - 'source-payload/**'
