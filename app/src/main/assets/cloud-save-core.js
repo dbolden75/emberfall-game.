@@ -27,6 +27,7 @@ function validate(value){
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
+  if(!safeHouseStorage(row.state.houseStorage))throw Error('Invalid house chest contents.');
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
@@ -60,6 +61,25 @@ function safeInventory(items){
   typeof row.id==='string'&&!!row.id&&
   Number.isSafeInteger(row.count)&&row.count>0);
 }
+// Older saves may omit houseStorage, use legacy top-level chest arrays, or
+// include ignored home metadata. Validate every chest array the game copies.
+// A null row otherwise crashes storageRows while rendering its row.id.
+function safeHouseStorage(saved){
+ if(saved==null)return true;
+ if(typeof saved!=='object'||Array.isArray(saved))return false;
+ for(const id of ['ashvale','brackenford','stonewatch','sunmere']){
+  const home=saved[id];
+  if(!home||typeof home!=='object'||Array.isArray(home))continue;
+  for(const chest of ['front_chest','side_chest']){
+   if(Array.isArray(home[chest])&&!safeInventory(home[chest]))return false;
+  }
+ }
+ // Historical saves sometimes stored the Brackenford chests at root level.
+ for(const chest of ['front_chest','side_chest']){
+  if(Array.isArray(saved[chest])&&!safeInventory(saved[chest]))return false;
+ }
+ return true;
+}
 function parse(text){if(typeof text!=='string'||new TextEncoder().encode(text).length>MAX_BYTES)throw Error('Backup exceeds 8 MB.');return validate(JSON.parse(text));}
 function encode(slots,active,now=Date.now()){
  const data={format:'thornhaven-save',schema:1,createdAt:now,activeSlot:IDS.includes(active)?active:'slot1',slots:clone(slots)};
@@ -79,7 +99,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeInventory(p.inventory)&&safeEnemySnapshots(state.mapStates);
+  safeInventory(p.inventory)&&safeEnemySnapshots(state.mapStates)&&safeHouseStorage(state.houseStorage);
 }
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};
