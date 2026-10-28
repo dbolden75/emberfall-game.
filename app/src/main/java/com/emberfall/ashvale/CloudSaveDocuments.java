@@ -150,7 +150,15 @@ final class CloudSaveDocuments {
                         ByteArrayOutputStream output = new ByteArrayOutputStream();
                         byte[] buffer = new byte[8192];
                         int read;
+                        int emptyReads = 0;
                         while ((read = input.read(buffer)) != -1) {
+                            // A defective document provider returning zero on
+                            // every read must fail, not hang future backups.
+                            if (read == 0) {
+                                if (++emptyReads >= 16) throw new IOException("Document provider repeatedly returned no bytes");
+                                continue;
+                            }
+                            emptyReads = 0;
                             if (output.size() + read > MAX_BYTES)
                                 throw new IOException("Backup exceeds 8 MB");
                             output.write(buffer, 0, read);

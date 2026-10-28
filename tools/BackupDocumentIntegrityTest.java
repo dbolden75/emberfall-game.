@@ -42,6 +42,20 @@ public final class BackupDocumentIntegrityTest {
         fail(new InputStream() {
             @Override public int read() throws IOException { throw new IOException("Provider read failed"); }
         }, backup);
-        System.out.println("PASS: " + passed + " document round-trip checks, including truncation, changed bytes, extra bytes, read failure, and chunked reads.");
+        // A transient zero-byte provider read may recover and is acceptable.
+        pass(new ByteArrayInputStream(backup) {
+            private int zerosRemaining = 3;
+            @Override public synchronized int read(byte[] b, int off, int len) {
+                if (zerosRemaining-- > 0) return 0;
+                return super.read(b, off, len);
+            }
+        }, backup);
+        // A defective provider returning zero forever must terminate with an
+        // error rather than spinning and blocking all later backup operations.
+        fail(new InputStream() {
+            @Override public int read() { return 0; }
+            @Override public int read(byte[] b, int off, int len) { return 0; }
+        }, backup);
+        System.out.println("PASS: " + passed + " document round-trip checks, including truncation, changed bytes, extra bytes, read failure, chunked reads, and zero-byte provider reads.");
     }
 }
