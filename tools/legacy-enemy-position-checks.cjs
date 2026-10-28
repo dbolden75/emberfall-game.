@@ -8,7 +8,7 @@ for(const [scenario,suffix] of [
  ['per-map enemy snapshot','spawnX:'],
  ['older top-level enemy list','hp:']
 ]){
- const expression=new RegExp('Object\\\\.assign\\\\(enemy,\\\\{x:([^,]+),y:([^,]+),'+suffix);
+ const expression=new RegExp('Object\\.assign\\(enemy,\\{x:([^,]+),y:([^,]+),'+suffix);
  const match=html.match(expression);
  assert(match,'Missing coordinate restoration expression for '+scenario);
  const coordinate=new Function('e','enemy','return {x:('+match[1]+'),y:('+match[2]+')};');
