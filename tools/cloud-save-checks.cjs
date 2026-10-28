@@ -239,3 +239,35 @@ const oldBlob=JSON.stringify({format:'thornhaven-save',schema:1,createdAt:300,
 assert(core.parse(oldBlob),'Previous save shape without optional enemy coordinates remains supported');
 assert.equal(core.readLocal(JSON.stringify({slot1:oldEnemy})).unreadable,false);
 console.log('PASS: null/malformed saved enemies rejected before game startup; historical snapshot accepted.');
+
+
+// Enemy fields are assigned directly during applySavedGame. For example,
+// respawnAt: 'never' becomes a truthy timestamp that never compares >= Date.now(),
+// permanently suppressing respawn; alive: 'false' is a truthy nonboolean flag.
+// Reject nonsensical present types, but preserve older snapshots omitting them.
+for(const [field,bad] of [
+ ['respawnAt','never'],['respawnAt',-1],['hp','broken'],
+ ['maxHp',{}],['spawnX','left'],['spawnY',[]],
+ ['alive','false'],['lootClaimed','false']
+]){
+ const damaged=row('Bad enemy field');
+ damaged.state.mapStates.elderwood.enemies=[{x:1,y:2,alive:false,respawnAt:500,hp:0,maxHp:12}];
+ damaged.state.mapStates.elderwood.enemies[0][field]=bad;
+ const raw=JSON.stringify({slot1:damaged});
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:damaged}});
+ assert.throws(()=>core.parse(backup),/Invalid saved enemy positions/,field);
+ assert.equal(core.readLocal(raw).unreadable,true,'Invalid '+field+' requires extra local replacement approval');
+}
+for(const optional of ['hp','maxHp','respawnAt','spawnX','spawnY','alive','lootClaimed']){
+ const historical=row('Older enemy field');
+ const enemy={x:1,y:2,alive:false,respawnAt:500,hp:0,maxHp:12,
+  spawnX:1,spawnY:2,lootClaimed:false};
+ delete enemy[optional];
+ historical.state.mapStates.elderwood.enemies=[enemy];
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:historical}});
+ assert(core.parse(backup),'Historical snapshot may omit '+optional);
+ assert.equal(core.readLocal(JSON.stringify({slot1:historical})).unreadable,false);
+}
+console.log('PASS: impossible saved enemy fields rejected; optional historical fields remain supported.');
