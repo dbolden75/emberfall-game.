@@ -75,6 +75,15 @@ for old,new in [
     content=content.replace(before,after,1)
 assert hashlib.sha256(content).hexdigest() == '96ba1263fb044e7d2a84bb0b11c281318c7423470915fab806969384d6179134', 'Legacy inventory compatibility patch hash mismatch'
 
+# Archived character inventories may contain IDs absent from the current
+# item catalog. The merchant Sell tab must skip unavailable items instead
+# of raising TypeError, while keeping the underlying saved IDs untouched.
+old=b'const rows=player.inventory.filter(row=>itemDefs[row.id].sell);'
+new=b'const rows=player.inventory.filter(row=>row&&itemDefs[row.id]?.sell);'
+assert content.count(old)==1, 'Expected exactly one shop sell inventory expression'
+content=content.replace(old,new,1)
+assert hashlib.sha256(content).hexdigest() == '406e7f4e4d3bab9cfd55bb85ec369b0f4cc7fc725b168a9dfa2874bb1cb3034e', 'Merchant legacy inventory safety patch hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():

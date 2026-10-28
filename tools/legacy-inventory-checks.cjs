@@ -49,3 +49,31 @@ context.player.inventory=[{id:'health_tonic',count:3}];context.inventoryFilter='
 assert.equal(context.bagUnits(),3,'Ordinary recognized bags are unaffected');
 assert.doesNotMatch(element('inventoryList').innerHTML,/Unavailable legacy item/);
 console.log('PASS: legacy catalog item IDs stay saved and visible without silently filling the bag; normal and quest items unchanged.');
+
+
+// Historical unavailable inventory entries also reached the merchant Sell
+// tab, where renderShop dereferenced itemDefs[row.id].sell without checking
+// whether the catalog still contains that item. Test the real game function.
+const shopSource=html.match(/function renderShop\(\)\{[^\n]+\}/);
+assert(shopSource,'Could not find real merchant renderShop function');
+const shopNodes=new Map();
+const shopElement=id=>{if(!shopNodes.has(id))shopNodes.set(id,{textContent:'',innerHTML:'',hidden:false});return shopNodes.get(id)};
+const shopPlayer={coins:123,inventory:JSON.parse(JSON.stringify(oldRows))};
+const shopContext={
+ document:{getElementById:shopElement,querySelectorAll:()=>[]},
+ shopScreen:{querySelector:()=>({hidden:false})},
+ shopDefs:{ashvale_store:{stock:[],forgeClass:null,workshopOnly:false}},
+ activeShopId:'ashvale_store',player:shopPlayer,
+ itemDefs:{health_tonic:{sell:2},ancient_quest:{sell:0}},shopMode:'sell',
+ shopTown:()=>null,townStock:()=>({remaining:0}),renderBulkSell:()=>{},
+ itemRowHTML:(id,count)=>id+' x'+count,renderSetForge:()=>{},renderForge:()=>{}
+};
+vm.createContext(shopContext);
+vm.runInContext(shopSource[0],shopContext);
+assert.doesNotThrow(()=>shopContext.renderShop(),
+ 'Historical unavailable items must not crash the merchant Sell tab');
+assert.equal(shopElement('shopList').innerHTML,'health_tonic x2',
+ 'Known salable inventory must remain usable');
+assert.deepEqual(shopPlayer.inventory,oldRows,
+ 'The Sell tab must not alter saved historical items');
+console.log('PASS: merchant Sell tab ignores unavailable historical IDs without losing saved items.');
