@@ -33,12 +33,23 @@ function encode(slots,active,now=Date.now()){
  const data={format:'thornhaven-save',schema:1,createdAt:now,activeSlot:IDS.includes(active)?active:'slot1',slots:clone(slots)};
  const text=JSON.stringify(data);parse(text);return text;
 }
+// Preserve unreadable pre-existing slots instead of blocking a user-directed recovery.
+// Never interpret damaged local data as an empty save without explicit approval.
+function readLocal(raw){
+ if(raw===null)return {slots:{},unreadable:false};
+ try{
+  const slots=JSON.parse(raw);
+  if(!slots||typeof slots!=='object'||Array.isArray(slots)||Object.entries(slots).some(([id,row])=>
+   !IDS.includes(id)||!row||typeof row!=='object'||Array.isArray(row)||!Number.isFinite(Number(row.updated))))throw Error('Invalid local slots');
+  return {slots,unreadable:false};
+ }catch(_){return {slots:{},unreadable:true};}
+}
 function conflicts(incoming,current){return Object.keys(current).filter(id=>!incoming.slots[id]||Number(incoming.slots[id].updated)<Number(current[id].updated));}
 function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}={}){
  if(!confirmed)throw Error('Confirm before replacing saved characters.');
- const incoming=parse(text),raw=storage.getItem(SLOT_KEY),current=JSON.parse(raw||'{}');
+ const incoming=parse(text),raw=storage.getItem(SLOT_KEY),local=readLocal(raw),current=local.slots;
  if(expectedCurrent!==undefined&&raw!==expectedCurrent)throw Error('Local progress changed. Review the backup again.');
- if(conflicts(incoming,current).length&&!allowOlder)throw Error('This backup is older or omits local characters. Explicit approval is required.');
+ if((local.unreadable||conflicts(incoming,current).length)&&!allowOlder)throw Error('This backup is older, omits local characters, or replaces unreadable local saves. Explicit approval is required.');
  // Persist recovery first. If space is unavailable, do not alter the save slots.
  const previousActive=storage.getItem(ACTIVE_SLOT_KEY);
  const chosenActive=IDS.includes(incoming.activeSlot)&&incoming.slots[incoming.activeSlot]
@@ -58,6 +69,6 @@ function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}
  return incoming;
 }
 function recoveryText(storage){const r=JSON.parse(storage.getItem(RECOVERY_KEY)||'null');if(!r||r.format!=='thornhaven-recovery'||r.schema!==1||typeof r.slots!=='string')throw Error('No recovery copy with saved characters is available.');return encode(JSON.parse(r.slots),r.activeSlot||'slot1',r.createdAt);}
-const api={SLOT_KEY,ACTIVE_SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,conflicts,restore,recoveryText};
+const api={SLOT_KEY,ACTIVE_SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,readLocal,conflicts,restore,recoveryText};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ThornhavenCloudSaveCore=api;
 })(typeof window!=='undefined'?window:this);
