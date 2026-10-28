@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - fix/fog-refresh-party-portraits-20261028
+      - fix/164-legacy-enemy-coordinates-20261028
       - qa/163-multislot-upgrade
       - fix/163-native-save-backups
       - qa/163-cloud-document-picker
