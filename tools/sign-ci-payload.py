@@ -97,6 +97,8 @@ def main() -> None:
         aligned = private / 'aligned.apk'
         apk = private / 'signed.apk'
         aab = private / 'app-release.aab'
+        unsigned_aab = private / 'pre-sign-original.aab'
+        shutil.copy2(aab, unsigned_aab)
         check_run([zipalign, '-f', '-p', '4', private / 'app-release-unsigned.apk', aligned], env)
         check_run([signer, 'sign', '--ks', key, '--ks-key-alias', props['keyAlias'],
                    '--ks-pass', 'env:THORNHAVEN_STORE_PASS', '--key-pass', 'env:THORNHAVEN_KEY_PASS',
@@ -117,6 +119,10 @@ def main() -> None:
         verification = check_run(['jarsigner', '-verify', aab], env, capture=True)
         if 'jar verified' not in verification:
             raise RuntimeError('AAB JAR signature verification failed')
+        check_run(['python3', Path(__file__).with_name('release-native-parity.py'),
+                   '--signed-apk', apk, '--unsigned-apk', private / 'app-release-unsigned.apk',
+                   '--signed-aab', aab, '--unsigned-aab', unsigned_aab], env)
+        print('PASS: signed APK/AAB native code and all archive contents match original CI payloads')
         with zipfile.ZipFile(apk) as apk_zip, zipfile.ZipFile(aab) as aab_zip:
             if apk_zip.testzip() is not None or aab_zip.testzip() is not None:
                 raise RuntimeError('APK or AAB ZIP integrity failed')
