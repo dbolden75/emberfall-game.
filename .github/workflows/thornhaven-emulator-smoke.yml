@@ -89,6 +89,10 @@ jobs:
           (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug)
           gradle --no-daemon :app:assembleDebug
           echo 'Built separately from audited 1.0.57 and 1.0.64 sources; signatures are DEBUG, not Play or maintained release keys.'
+      - name: Release build daemons before booting memory-heavy emulator
+        run: |
+          gradle --stop || true
+          free -m
       - name: Enable emulator hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -102,8 +106,8 @@ jobs:
           profile: pixel_5
           # Pixel profile defaults can exceed runner RAM; keep the disposable
           # AVD within the hosted Linux job's memory budget (exit 137 in QA).
-          ram-size: 2048M
-          heap-size: 512M
+          ram-size: 1536M
+          heap-size: 256M
           cores: 2
           disable-animations: true
           script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh
