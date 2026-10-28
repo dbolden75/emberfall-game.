@@ -84,10 +84,39 @@ for action in save load; do
   node tools/emulator-webview-probe.cjs verify | tee "reports/emulator/qa-picker-$action-saves.txt"
   adb forward --remove tcp:9222
 done
+# Complete a real Android Storage Access Framework export and import preview.
+# Previous picker tests only cancelled; they never proved that a provider
+# accepted and returned the actual JSON bytes. All files here are ephemeral
+# and the imported backup is REVIEWED ONLY, never committed over test saves.
+activepid="$(adb shell pidof "$PKG" | tr -d '\r')"
+test -n "$activepid"
+adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
+node tools/emulator-webview-probe.cjs picker-save | tee reports/emulator/qa-native-cloud-save-start.txt
+adb forward --remove tcp:9222
+sleep 4
+python3 tools/emulator-document-picker.py save | tee reports/emulator/qa-native-cloud-save-ui.txt
+sleep 6
+python3 tools/emulator-document-picker.py verify | tee reports/emulator/qa-native-cloud-export-integrity.txt
+activepid="$(adb shell pidof "$PKG" | tr -d '\r')"
+test -n "$activepid"
+adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
+node tools/emulator-webview-probe.cjs picker-saved | tee reports/emulator/qa-native-cloud-export-callback.txt
+node tools/emulator-webview-probe.cjs picker-load | tee reports/emulator/qa-native-cloud-load-start.txt
+adb forward --remove tcp:9222
+sleep 4
+python3 tools/emulator-document-picker.py load | tee reports/emulator/qa-native-cloud-load-ui.txt
+sleep 6
+activepid="$(adb shell pidof "$PKG" | tr -d '\r')"
+test -n "$activepid"
+adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
+node tools/emulator-webview-probe.cjs picker-reviewed | tee reports/emulator/qa-native-cloud-import-review.txt
+node tools/emulator-webview-probe.cjs verify | tee reports/emulator/qa-native-cloud-original-saves.txt
+adb forward --remove tcp:9222
 adb logcat -d -v time > reports/emulator/qa-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-logcat.txt; then
   echo 'FAIL: Android Runtime recorded Thornhaven process crash during synthetic update'
   exit 1
 fi
 echo 'PASS: native emulator WebView enters four historical 1.0.57 towns and saves survive actual game-source 1.0.57 (159)->1.0.63 (165) same-DEBUG-key upgrade.'
-echo 'NOT VERIFIED: maintained-key/Play-signed in-place upgrade, Play App Signing, actual Play delivery, real user saves or physical hardware.'
+echo 'PASS: Android DocumentsUI exported valid JSON containing both heroes, reopened it through ACTION_OPEN_DOCUMENT, and displayed review without replacing local saves.'
+echo 'NOT VERIFIED: Google Drive cloud sync, maintained-key/Play-signed in-place upgrade, Play App Signing, actual Play delivery, real user saves or physical hardware.'
