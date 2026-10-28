@@ -54,7 +54,7 @@ console.log('PASS: legacy catalog item IDs stay saved and visible without silent
 // Historical unavailable inventory entries also reached the merchant Sell
 // tab, where renderShop dereferenced itemDefs[row.id].sell without checking
 // whether the catalog still contains that item. Test the real game function.
-const shopSource=html.match(/function renderShop\\(\\)\\{[^\\n]+\\}/);
+const shopSource=html.match(/function renderShop\(\)\{[^\n]+\}/);
 assert(shopSource,'Could not find real merchant renderShop function');
 const shopNodes=new Map();
 const shopElement=id=>{if(!shopNodes.has(id))shopNodes.set(id,{textContent:'',innerHTML:'',hidden:false});return shopNodes.get(id)};
