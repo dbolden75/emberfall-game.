@@ -151,6 +151,24 @@ const verify=String.raw`(()=>{
 })()`;
 
 
+// Probe real Android WebView inventory rendering after historical saves upgrade.
+// Never persist the deliberately unknown fixture; restore live memory even on failure.
+const legacyInventory=String.raw`(()=>{
+ if(typeof bagUnits!=='function'||typeof renderInventory!=='function')throw Error('Inventory runtime unavailable');
+ const originalBag=player.inventory,originalWeapon=player.weapon,originalFilter=inventoryFilter;
+ try{
+  player.inventory=[{id:'__legacy_qa_removed_item__',count:99},{id:'health_tonic',count:2}];
+  player.weapon='__legacy_qa_removed_weapon__';inventoryFilter='all';renderInventory();
+  const space=bagUnits(),tiles=document.getElementById('inventoryList')?.textContent||'';
+  const gear=document.getElementById('inventoryGearSlots')?.textContent||'';
+  if(space!==2)throw Error('Unusable legacy item prevents bag pickups: '+space+' items');
+  if(!tiles.includes('Unavailable legacy item (preserved)'))throw Error('Unknown legacy item was silently hidden');
+  if(!tiles.includes('Health Tonic')&&!tiles.toLowerCase().includes('health tonic'))throw Error('Known item no longer visible');
+  if(!gear.includes('Unavailable legacy gear'))throw Error('Unknown equipped gear misrepresented as empty');
+  if(player.inventory[0].count!==99||player.weapon!=='__legacy_qa_removed_weapon__')throw Error('Legacy save state mutated');
+  return JSON.stringify({bagCapacity:space,unknownItemVisible:true,oldEquipmentVisible:true,preserved:true});
+ }finally{player.inventory=originalBag;player.weapon=originalWeapon;inventoryFilter=originalFilter;renderInventory();}
+})()`;
 const pickerSave=String.raw`(()=>{
   if(typeof ThornhavenCloudSave?.save!=='function')throw Error('Android SAF Save bridge absent');
   const button=document.getElementById('titleCloudSave');
@@ -272,6 +290,7 @@ const pickerRestored=String.raw`(()=>{
     if(phase==='verify'){
       const check=await evaluate("typeof window.ThornhavenCloudSave==='object' && typeof window.ThornhavenCloudSave.save==='function' && typeof window.ThornhavenCloudSave.load==='function' && typeof window.ThornhavenCloudSave.manage==='function' && !!document.getElementById('titleCloudSave') && document.getElementById('cloudSaveHelp').textContent.includes('Google Drive')");
       assert(check,'Android WebView save backup bridge/menu is unavailable');
+      console.log('PASS native Android WebView legacy inventory: '+await evaluate(legacyInventory));
     }
     console.log('PASS native Android WebView '+phase+': '+JSON.stringify(result));
   }finally{ws.close()}
