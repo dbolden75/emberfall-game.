@@ -385,3 +385,39 @@ for(const historical of [
 console.log('PASS: declared malformed chest containers rejected before import; historical chests preserved.');
 
 console.log('PASS: invalid house chest rows rejected; historical/legacy chests retained.');
+
+
+// Regression: normalizeHouseStorage() silently resets an explicitly present
+// town home when the home container itself is a JSON string or array. This is
+// distinct from the chest-value type cases above; it must fail BEFORE import.
+for(const [label,houseStorage] of [
+ ['serialized town home',{ashvale:JSON.stringify({front_chest:[{id:'iron',count:2}]})}],
+ ['array town home',{brackenford:[{front_chest:[{id:'iron',count:2}]}]}],
+ ['boolean town home',{stonewatch:true}],
+ ['number town home',{sunmere:5}]
+]){
+ const damaged=row('Mis-shaped home container');
+ damaged.state.houseStorage=houseStorage;
+ const raw=JSON.stringify({slot1:damaged});
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:damaged}});
+ assert.throws(()=>core.parse(backup),/Invalid house chest contents/,label);
+ assert.equal(core.readLocal(raw).unreadable,true,label);
+ const store=new Storage({[core.SLOT_KEY]:raw});
+ assert.throws(()=>core.restore(store,text,{confirmed:true,expectedCurrent:raw}),/unreadable/,label);
+ assert.equal(store.getItem(core.SLOT_KEY),raw,'No unapproved home-data overwrite: '+label);
+}
+for(const historical of [
+ {ashvale:null},{brackenford:undefined},{stonewatch:{}},
+ {sunmere:{front_chest:[],side_chest:[]}},
+ {ashvale:{front_chest:[{id:'iron',count:2}]}},
+ {front_chest:[{id:'iron',count:1}]}
+]){
+ const old=row('Historical home container');
+ old.state.houseStorage=historical;
+ const backup=JSON.stringify({format:'thornhaven-save',schema:1,
+  createdAt:300,activeSlot:'slot1',slots:{slot1:old}});
+ assert(core.parse(backup),'Historical null/missing/valid home containers remain accepted');
+ assert.equal(core.readLocal(JSON.stringify({slot1:old})).unreadable,false);
+}
+console.log('PASS: malformed town home containers rejected before lossy import; historical homes preserved.');

@@ -71,7 +71,11 @@ function safeHouseStorage(saved){
  if(typeof saved!=='object'||Array.isArray(saved))return false;
  for(const id of ['ashvale','brackenford','stonewatch','sunmere']){
   const home=saved[id];
-  if(!home||typeof home!=='object'||Array.isArray(home))continue;
+  // An explicitly supplied town chest must be a keyed container. The game
+  // silently resets string/array town storage to an empty chest on import.
+  // Keep missing/null legacy houses compatible, but refuse lossy shapes.
+  if(home==null)continue;
+  if(typeof home!=='object'||Array.isArray(home))return false;
   for(const chest of ['front_chest','side_chest']){
    if(home[chest]!=null&&!safeInventory(home[chest]))return false;
   }
