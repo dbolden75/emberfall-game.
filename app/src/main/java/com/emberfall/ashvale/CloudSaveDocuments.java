@@ -137,6 +137,11 @@ final class CloudSaveDocuments {
                         output.write(request.bytes);
                         output.flush();
                     }
+                    // A provider can acknowledge a write while retaining incomplete data.
+                    // Read the document back before telling the player it is backed up.
+                    try (InputStream verification = activity.getContentResolver().openInputStream(uri)) {
+                        BackupDocumentIntegrity.verify(verification, request.bytes);
+                    }
                     result(request.id, "save", true, false, null, null);
                 } else {
                     String text;
@@ -156,7 +161,9 @@ final class CloudSaveDocuments {
                 }
             } catch (Exception e) {
                 result(request.id, request.action, false, false,
-                    "The document operation failed. Your local characters have not been replaced.", null);
+                    "save".equals(request.action)
+                        ? "Backup export could not be verified. Local characters are unchanged; check the selected document before relying on it."
+                        : "The document operation failed. Your local characters have not been replaced.", null);
             }
         });
         return true;

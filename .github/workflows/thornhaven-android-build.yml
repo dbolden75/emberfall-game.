@@ -30,6 +30,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Verify native Cloud Save document round-trip handling
+        run: |
+          set -eu
+          TEST_CLASSES="$(mktemp -d)"
+          trap 'rm -rf "$TEST_CLASSES"' EXIT
+          javac -d "$TEST_CLASSES" \
+            app/src/main/java/com/emberfall/ashvale/BackupDocumentIntegrity.java \
+            tools/BackupDocumentIntegrityTest.java
+          java -cp "$TEST_CLASSES" com.emberfall.ashvale.BackupDocumentIntegrityTest
       - uses: android-actions/setup-android@v3
         with:
           packages: ''
