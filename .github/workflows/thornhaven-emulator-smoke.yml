@@ -9,6 +9,7 @@ on:
       - fix/fog-refresh-party-portraits-20261028
       - fix/164-legacy-enemy-coordinates-20261028
       - fix/164-legacy-equipment-summary-20261028
+      - fix/164-legacy-bag-capacity-20261028
       - qa/163-multislot-upgrade
       - fix/163-native-save-backups
       - qa/163-cloud-document-picker
@@ -71,7 +72,7 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' '02fa2a23977ac87cc38301483c1fa2cea82832cb556113828b629fc9e96ef729' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '96ba1263fb044e7d2a84bb0b11c281318c7423470915fab806969384d6179134' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 166' app/build.gradle
           grep -q "versionName '1.0.64'" app/build.gradle
           # Debug inspection exists only on the disposable emulator runner.
@@ -88,6 +89,10 @@ jobs:
           (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug)
           gradle --no-daemon :app:assembleDebug
           echo 'Built separately from audited 1.0.57 and 1.0.64 sources; signatures are DEBUG, not Play or maintained release keys.'
+      - name: Release build daemons before booting memory-heavy emulator
+        run: |
+          gradle --stop || true
+          free -m
       - name: Enable emulator hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -101,8 +106,8 @@ jobs:
           profile: pixel_5
           # Pixel profile defaults can exceed runner RAM; keep the disposable
           # AVD within the hosted Linux job's memory budget (exit 137 in QA).
-          ram-size: 2048M
-          heap-size: 512M
+          ram-size: 1536M
+          heap-size: 256M
           cores: 2
           disable-animations: true
           script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh
