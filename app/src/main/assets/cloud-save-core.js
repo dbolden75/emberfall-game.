@@ -26,7 +26,7 @@ function validate(value){
   if(!row.state.mapId||typeof row.state.mapId!=='string'||!Array.isArray(row.state.companions)||
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
-  if(!Array.isArray(p.inventory))throw Error('Invalid character inventory.');
+  if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
@@ -51,6 +51,15 @@ function safeEnemySnapshots(mapStates){
    ['alive','lootClaimed'].every(key=>e[key]==null||typeof e[key]==='boolean'));
  });
 }
+// Inventory is used as row.id/row.count without null checks by the game.
+// Reject malformed imported rows before they can crash bag and shop rendering.
+// Historical empty bags and ordinary {id,count} rows remain accepted.
+function safeInventory(items){
+ return Array.isArray(items)&&items.every(row=>
+  row&&typeof row==='object'&&!Array.isArray(row)&&
+  typeof row.id==='string'&&!!row.id&&
+  Number.isSafeInteger(row.count)&&row.count>0);
+}
 function parse(text){if(typeof text!=='string'||new TextEncoder().encode(text).length>MAX_BYTES)throw Error('Backup exceeds 8 MB.');return validate(JSON.parse(text));}
 function encode(slots,active,now=Date.now()){
  const data={format:'thornhaven-save',schema:1,createdAt:now,activeSlot:IDS.includes(active)?active:'slot1',slots:clone(slots)};
@@ -70,7 +79,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  Array.isArray(p.inventory)&&safeEnemySnapshots(state.mapStates);
+  safeInventory(p.inventory)&&safeEnemySnapshots(state.mapStates);
 }
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};
