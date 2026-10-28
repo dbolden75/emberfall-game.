@@ -108,3 +108,29 @@ assert.deepEqual(core.readLocal('{}').slots,{});
 assert.match(fs.readFileSync('app/src/main/assets/cloud-save.js','utf8'),/core\.readLocal\(expected\)/,
  'Backup review must also warn on damaged local slots before requesting consent');
 console.log('PASS: unreadable historical local slots can be explicitly recovered without silently overwriting local bytes.');
+
+
+// Regression: a valid JSON object with a numeric timestamp can still contain
+// an unusable save row. Do not silently overwrite it without the separate
+// damaged-local-data consent, and preserve the exact original JSON bytes.
+for(const raw of [
+ '{"slot1":{"id":"slot1","updated":100}}',
+ '{"slot1":{"id":"slot1","updated":100,"state":null}}',
+ JSON.stringify({slot1:{...row(),updated:null}}),
+ JSON.stringify({slot1:{...row(),id:'slot2'}}),
+ JSON.stringify({slot1:{...row(),state:{...row().state,player:null}}}),
+ JSON.stringify({slot1:{...row(),state:{...row().state,mapStates:null}}})
+]){
+ const local=new Storage({[core.SLOT_KEY]:raw,[core.ACTIVE_SLOT_KEY]:'slot1'});
+ assert.equal(core.readLocal(raw).unreadable,true,'Malformed valid-JSON save must be flagged');
+ assert.throws(()=>core.restore(local,text,{confirmed:true,expectedCurrent:raw}),/unreadable/);
+ assert.equal(local.getItem(core.SLOT_KEY),raw,'Refusal must retain the malformed local data');
+ assert.equal(local.getItem(core.RECOVERY_KEY),null,'Refusal must not mutate recovery');
+ core.restore(local,text,{confirmed:true,allowOlder:true,expectedCurrent:raw});
+ assert.deepEqual(JSON.parse(local.getItem(core.SLOT_KEY)),slots);
+ assert.equal(JSON.parse(local.getItem(core.RECOVERY_KEY)).slots,raw,
+  'Explicitly-approved restore must preserve the original malformed bytes');
+}
+assert.equal(core.readLocal(JSON.stringify(slots)).unreadable,false,
+ 'Historical 1.0.57-shaped character rows must continue to be readable');
+console.log('PASS: malformed valid-JSON local rows need additional consent; history preserved byte-for-byte.');
