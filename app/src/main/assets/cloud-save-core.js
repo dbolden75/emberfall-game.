@@ -27,8 +27,23 @@ function validate(value){
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
   if(!Array.isArray(p.inventory))throw Error('Invalid character inventory.');
+  if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
+}
+// Enemy snapshots are read directly on game startup. A null/array enemy
+// entry throws inside applySavedGame and prevents the character from loading.
+// Older regions without enemy snapshots remain compatible.
+function safeEnemySnapshots(mapStates){
+ return Object.values(mapStates).every(saved=>{
+  if(saved==null)return true;
+  if(typeof saved!=='object'||Array.isArray(saved))return false;
+  if(saved.enemies===undefined)return true;
+  return Array.isArray(saved.enemies)&&saved.enemies.every(e=>
+   e&&typeof e==='object'&&!Array.isArray(e)&&
+   typeof e.x==='number'&&Number.isFinite(e.x)&&
+   typeof e.y==='number'&&Number.isFinite(e.y));
+ });
 }
 function parse(text){if(typeof text!=='string'||new TextEncoder().encode(text).length>MAX_BYTES)throw Error('Backup exceeds 8 MB.');return validate(JSON.parse(text));}
 function encode(slots,active,now=Date.now()){
@@ -49,7 +64,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  Array.isArray(p.inventory);
+  Array.isArray(p.inventory)&&safeEnemySnapshots(state.mapStates);
 }
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};
