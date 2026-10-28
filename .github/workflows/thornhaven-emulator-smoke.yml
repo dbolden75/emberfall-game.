@@ -69,7 +69,7 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' 'bc14b9f38375c9dca31b14cf28a5dae467108001c7523f9aaa4bd6ebb4791c57' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' 'caab1a338d37e86dd4a25e509a6dc8c52901835a435fcc4e51a9e2e5b9bef225' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 166' app/build.gradle
           grep -q "versionName '1.0.64'" app/build.gradle
           # Debug inspection exists only on the disposable emulator runner.
