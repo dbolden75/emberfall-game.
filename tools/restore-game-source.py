@@ -59,6 +59,22 @@ for old, new in [
     content = content.replace(old, new, 1)
 assert hashlib.sha256(content).hexdigest() == '02fa2a23977ac87cc38301483c1fa2cea82832cb556113828b629fc9e96ef729', 'Equipment-label compatibility patch hash mismatch'
 
+
+# Some historical save bags contain IDs no longer in the item catalog.
+# Keep their bytes intact and visibly mark unavailable legacy rows; do not
+# let invisible, unusable items permanently fill the pack or mislabel gear.
+for old,new in [
+    ("function bagUnits(){return (player.inventory||[]).reduce((n,row)=>n+(itemDefs[row.id]?.category==='quest'?0:row.count),0)}", "function bagUnits(){return (player.inventory||[]).reduce((n,row)=>n+(row&&itemDefs[row.id]&&itemDefs[row.id].category!=='quest'&&Number.isSafeInteger(row.count)&&row.count>0?row.count:0),0)}"),
+    ("const rows=player.inventory.filter(row=>itemDefs[row.id]&&(inventoryFilter==='all'||(inventoryFilter==='quest'?itemDefs[row.id].category==='quest':inventoryFilter==='gathering'?['tool','material'].includes(itemDefs[row.id].category):itemDefs[row.id].category===inventoryFilter)));let out=rows.map(row=>inventoryTileHTML(row.id,row.count,GEAR_SLOTS.some(slot=>player[slot]===row.id))).join('');", "const rows=player.inventory.filter(row=>row&&itemDefs[row.id]&&(inventoryFilter==='all'||(inventoryFilter==='quest'?itemDefs[row.id].category==='quest':inventoryFilter==='gathering'?['tool','material'].includes(itemDefs[row.id].category):itemDefs[row.id].category===inventoryFilter)));const legacyRows=inventoryFilter==='all'?player.inventory.filter(row=>row&&!itemDefs[row.id]):[];let out=rows.map(row=>inventoryTileHTML(row.id,row.count,GEAR_SLOTS.some(slot=>player[slot]===row.id))).join('');out+=legacyRows.map(row=>'<div class=\"itemTile\" aria-label=\"Unavailable legacy item preserved\"><span class=\"itemTileIcon\">&#9671;</span><span class=\"itemTileName\">Unavailable legacy item (preserved)</span><span class=\"itemTileCount\">× '+(Number.isSafeInteger(row.count)&&row.count>0?row.count:0)+'</span></div>').join('');"),
+    ("const occupied=rows.length+(hasSigil&&(inventoryFilter==='all'||inventoryFilter==='quest')?1:0);", "const occupied=rows.length+legacyRows.length+(hasSigil&&(inventoryFilter==='all'||inventoryFilter==='quest')?1:0);"),
+    ("document.getElementById('inventoryNotice').textContent=rows.length?'Select an item for details and actions.':(inventoryFilter==='all'?'Your pack is empty. Visit Tilda in Ashvale for supplies.':'No items in this category.')", "document.getElementById('inventoryNotice').textContent=legacyRows.length?'Legacy items are preserved but cannot be used in this release; they do not take bag space.':rows.length?'Select an item for details and actions.':(inventoryFilter==='all'?'Your pack is empty. Visit Tilda in Ashvale for supplies.':'No items in this category.')"),
+    ("(item?'<span>'+item.name+'</span>':'<span>Empty slot</span>')", "(item?'<span>'+item.name+'</span>':(id?'<span>Unavailable legacy gear</span>':'<span>Empty slot</span>'))"),
+]:
+    before,after=old.encode('utf-8'),new.encode('utf-8')
+    assert content.count(before)==1, 'Expected exactly one legacy inventory expression'
+    content=content.replace(before,after,1)
+assert hashlib.sha256(content).hexdigest() == '96ba1263fb044e7d2a84bb0b11c281318c7423470915fab806969384d6179134', 'Legacy inventory compatibility patch hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
