@@ -1,6 +1,6 @@
 # Thornhaven build and test workflow
 
-Current main development source: 1.0.63, Android versionCode 165. Earlier entries below are historical release notes. See BUILD-STATUS.txt for verified current status.
+Current main development source: 1.0.64, Android versionCode 166. Multiple development candidates share versionCode 166; do not submit another to Google Play until confirming the highest already uploaded code and choosing a fresh one if needed. Earlier entries below are historical release notes. See BUILD-STATUS.txt for verified current status.
 Package: com.vaelbrink.ashvale.newjourney. Keep this identity and the maintained signing key.
 
 Run from this directory:
