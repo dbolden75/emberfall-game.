@@ -183,3 +183,28 @@ assert.equal(successfulRestore.getItem(core.ACTIVE_SLOT_KEY),'slot3');
 assert.deepEqual(core.parse(core.recoveryText(successfulRestore)).slots,
  JSON.parse(before),'Successful restore still backs up immediately prior saves');
 console.log('PASS: failed restore rolls back prior recovery record; successful restore keeps expected undo copy.');
+
+
+// A JSON backup that appears to have a valid player can still contain the
+// wrong container types. The game snapshots inventories as arrays, while
+// region maps and town quest progress are keyed objects; reject mismatches
+// before restoring and treat malformed local rows as requiring extra consent.
+for(const [label,damage] of [
+ ['array mapStates', r=>{r.state.mapStates=[];}],
+ ['array townQuestState', r=>{r.state.townQuestState=[];}],
+ ['object inventory', r=>{r.state.player.inventory={};}],
+ ['missing inventory', r=>{r.state.player.inventory=null;}],
+]){
+ const badRow=row('Malformed shape');
+ damage(badRow);
+ const badSlots={slot1:badRow};
+ const badBackup={format:'thornhaven-save',schema:1,createdAt:300,activeSlot:'slot1',slots:badSlots};
+ assert.throws(()=>core.parse(JSON.stringify(badBackup)),/Incomplete character progress|Invalid character inventory/,label);
+ assert.equal(core.readLocal(JSON.stringify(badSlots)).unreadable,true,label);
+ const store=new Storage({[core.SLOT_KEY]:JSON.stringify(badSlots)});
+ assert.throws(()=>core.restore(store,text,{confirmed:true,expectedCurrent:JSON.stringify(badSlots)}),/unreadable/,label);
+ assert.equal(store.getItem(core.SLOT_KEY),JSON.stringify(badSlots),'Unsafe local data must not be silently replaced');
+}
+assert.equal(core.readLocal(JSON.stringify(slots)).unreadable,false,
+ 'Valid historic array inventory and object-based map/quest state must remain compatible');
+console.log('PASS: malformed container types rejected before backup import; historical save shape preserved.');
