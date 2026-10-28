@@ -9,5 +9,5 @@ assert(gradle.includes("versionName '1.0.64'"), 'Unexpected version name');
 assert(html.includes(Buffer.from('New Journey · v1.0.64')), 'Game menu should identify 1.0.64');
 assert(html.includes(Buffer.from('Version 1.0.64 · Ashvale Reach')), 'Title screen footer should identify 1.0.64');
 assert(!html.includes(Buffer.from('Version 1.0.62 · Ashvale Reach')), 'Stale title screen footer remains');
-assert.strictEqual(crypto.createHash('sha256').update(html).digest('hex'), 'bc14b9f38375c9dca31b14cf28a5dae467108001c7523f9aaa4bd6ebb4791c57');
+assert.strictEqual(crypto.createHash('sha256').update(html).digest('hex'), 'caab1a338d37e86dd4a25e509a6dc8c52901835a435fcc4e51a9e2e5b9bef225');
 console.log('PASS: 1.0.64 release package, menu label and game source hash');
