@@ -169,6 +169,28 @@ const legacyInventory=String.raw`(()=>{
   return JSON.stringify({bagCapacity:space,unknownItemVisible:true,oldEquipmentVisible:true,preserved:true});
  }finally{player.inventory=originalBag;player.weapon=originalWeapon;inventoryFilter=originalFilter;renderInventory();}
 })()`;
+// Live Android WebView merchant regression: preserve unknown historical IDs.
+const legacyShop=String.raw`(()=>{
+ if(typeof renderShop!=='function'||typeof shopSellAvailable!=='function')throw Error('Merchant runtime missing');
+ const inventory=player.inventory,weapon=player.weapon,mode=shopMode,shop=activeShopId;
+ const stock=townQuestState._townStock;
+ try{
+  player.inventory=[{id:'__legacy_qa_removed_item__',count:11},{id:'potion_25',count:3},{id:'short_sword',count:1}];
+  player.weapon='short_sword';shopMode='sell';activeShopId='ashvale_market';
+  renderShop();
+  const html=document.getElementById('shopList')?.innerHTML||'';
+  if(!html.includes('Small Healing Potion')||!html.includes('Short Sword'))throw Error('Known items missing in Sell tab');
+  if(html.includes('__legacy_qa_removed_item__'))throw Error('Unknown legacy item incorrectly offered for sale');
+  if(shopSellAvailable('short_sword')!==0||shopSellAvailable('potion_25')!==3)throw Error('Equipped-copy or quantity regression');
+  if(!html.includes('Equipped copy protected'))throw Error('Equipped-copy label absent');
+  if(player.inventory[0].id!=='__legacy_qa_removed_item__'||player.inventory[0].count!==11)throw Error('Legacy item modified');
+  return JSON.stringify({rendered:true,legacyItemPreserved:true,equippedCopyProtected:true,knownStockVisible:true});
+ }finally{
+  player.inventory=inventory;player.weapon=weapon;shopMode=mode;activeShopId=shop;
+  renderShop();
+  if(stock===undefined)delete townQuestState._townStock;else townQuestState._townStock=stock;
+ }
+})()`;
 const pickerSave=String.raw`(()=>{
   if(typeof ThornhavenCloudSave?.save!=='function')throw Error('Android SAF Save bridge absent');
   const button=document.getElementById('titleCloudSave');
@@ -291,6 +313,7 @@ const pickerRestored=String.raw`(()=>{
       const check=await evaluate("typeof window.ThornhavenCloudSave==='object' && typeof window.ThornhavenCloudSave.save==='function' && typeof window.ThornhavenCloudSave.load==='function' && typeof window.ThornhavenCloudSave.manage==='function' && !!document.getElementById('titleCloudSave') && document.getElementById('cloudSaveHelp').textContent.includes('Google Drive')");
       assert(check,'Android WebView save backup bridge/menu is unavailable');
       console.log('PASS native Android WebView legacy inventory: '+await evaluate(legacyInventory));
+      console.log('PASS native Android WebView merchant Sell tab: '+await evaluate(legacyShop));
     }
     console.log('PASS native Android WebView '+phase+': '+JSON.stringify(result));
   }finally{ws.close()}
