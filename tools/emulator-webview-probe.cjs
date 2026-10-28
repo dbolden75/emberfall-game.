@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -195,6 +195,66 @@ const pickerCancel=String.raw`(()=>{
   return JSON.stringify({cancelConfirmed:true,localSaveUnchanged:true});
 })()`;
 
+
+const pickerPrepareRestore=String.raw`(()=>{
+  // Deliberately make newer LOCAL progress after exporting the real document.
+  // The imported backup is now older and requires a second explicit approval.
+  const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+  if(!slots?.slot1||!slots?.slot2)throw Error('Historical slots missing before restore rehearsal');
+  if(slots.slot1.state?.player?.coins!==173)throw Error('Original slot1 coins already changed');
+  slots.slot1.state.player.coins=999;
+  slots.slot1.updated=Math.max(Date.now()+86400000,Number(slots.slot1.updated)+10000);
+  // Prevent game lifecycle autosave from overwriting this deliberate QA fixture.
+  switchingCharacter=true;
+  localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(slots));
+  if(JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)).slot1.state.player.coins!==999)
+    throw Error('Newer local progress did not persist');
+  return JSON.stringify({newerLocalCoins:999,backupCoins:173,restoreNeedsOlderApproval:true});
+})()`;
+const pickerCommit=String.raw`(()=>{
+  const review=document.getElementById('cloudSaveReview');
+  const warning=document.getElementById('cloudSaveOlderLabel');
+  if(!review||review.hidden||!warning||warning.hidden)
+    throw Error('Older native backup was not reviewed with overwrite warning');
+  const summary=document.getElementById('cloudSaveSummary')?.textContent||'';
+  if(!summary.includes('EmulatorUpgradeQA')||!summary.includes('BackupUpgradeQA'))
+    throw Error('Imported native document did not contain both characters');
+  const current=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');
+  if(current.slot1?.state?.player?.coins!==999)
+    throw Error('Newer local progress disappeared before consent');
+  document.getElementById('cloudSaveOlder').checked=true;
+  // Disposable emulator only: accept the normal second confirmation dialog.
+  window.confirm=()=>true;
+  // Schedule click AFTER DevTools has returned; the application immediately
+  // reloads the WebView when restore is committed.
+  setTimeout(()=>document.getElementById('cloudSaveConfirm').click(),300);
+  return JSON.stringify({reviewed:true,explicitOlderApproval:true,confirmationScheduled:true});
+})()`;
+const pickerRestored=String.raw`(()=>{
+  const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+  const recovery=JSON.parse(localStorage.getItem('thornhaven.restore-recovery.v1')||'null');
+  if(!slots?.slot1||!slots?.slot2)throw Error('Restored two-slot save absent');
+  const primary=slots.slot1.state,secondary=slots.slot2.state;
+  if(primary.player?.name!=='EmulatorUpgradeQA'||primary.player.coins!==173||
+     primary.gatheringSkills?.mining?.xp!==150||
+     !primary.player.inventory.some(i=>i.id==='health_tonic'&&i.count>=2))
+    throw Error('Primary character failed native document restore');
+  if(secondary.player?.name!=='BackupUpgradeQA'||secondary.player.coins!==441||
+     secondary.gatheringSkills?.fishing?.xp!==120||
+     !secondary.player.inventory.some(i=>i.id==='health_tonic'&&i.count>=3))
+    throw Error('Secondary character failed native document restore');
+  if(recovery?.format!=='thornhaven-recovery'||typeof recovery.slots!=='string')
+    throw Error('Recovery copy missing after native document restore');
+  const previous=JSON.parse(recovery.slots);
+  if(previous.slot1?.state?.player?.coins!==999)
+    throw Error('Recovery copy did not retain newer local progress');
+  if(localStorage.getItem(ACTIVE_SLOT_KEY)!=='slot1'||player.coins!==173)
+    throw Error('Game did not reload restored active character');
+  return JSON.stringify({restoredCoins:primary.player.coins,secondCoins:secondary.player.coins,
+    newerCoinsInRecovery:previous.slot1.state.player.coins,activeSlot:'slot1',
+    restoredAfterReload:true});
+})()`;
+
 (async()=>{
   const page=await target();const {ws,evaluate}=await session(page.webSocketDebuggerUrl);
   try{
@@ -205,7 +265,7 @@ const pickerCancel=String.raw`(()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed};
+    const scripts={create,preupgrade:verify,verify,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.

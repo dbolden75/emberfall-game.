@@ -112,11 +112,35 @@ adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
 node tools/emulator-webview-probe.cjs picker-reviewed | tee reports/emulator/qa-native-cloud-import-review.txt
 node tools/emulator-webview-probe.cjs verify | tee reports/emulator/qa-native-cloud-original-saves.txt
 adb forward --remove tcp:9222
+# After the safe review-and-cancel roundtrip, test a real user-approved
+# restore. Deliberately create newer local progress, re-import the previously
+# exported Android document, approve the older backup, and assert that the
+# new recovery copy retains the overwritten local state.
+activepid="$(adb shell pidof "$PKG" | tr -d '\r')"
+test -n "$activepid"
+adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
+node tools/emulator-webview-probe.cjs picker-prepare-restore | tee reports/emulator/qa-cloud-restore-newer-progress.txt
+node tools/emulator-webview-probe.cjs picker-load | tee reports/emulator/qa-cloud-restore-load-start.txt
+adb forward --remove tcp:9222
+sleep 4
+python3 tools/emulator-document-picker.py load | tee reports/emulator/qa-cloud-restore-provider-read.txt
+sleep 6
+activepid="$(adb shell pidof "$PKG" | tr -d '\r')"
+test -n "$activepid"
+adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
+node tools/emulator-webview-probe.cjs picker-commit | tee reports/emulator/qa-cloud-restore-confirm.txt
+adb forward --remove tcp:9222
+sleep 12
+activepid="$(adb shell pidof "$PKG" | tr -d '\r')"
+test -n "$activepid"
+adb forward tcp:9222 "localabstract:webview_devtools_remote_$activepid"
+node tools/emulator-webview-probe.cjs picker-restored | tee reports/emulator/qa-cloud-restore-persisted.txt
+adb forward --remove tcp:9222
 adb logcat -d -v time > reports/emulator/qa-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-logcat.txt; then
   echo 'FAIL: Android Runtime recorded Thornhaven process crash during synthetic update'
   exit 1
 fi
 echo 'PASS: native emulator WebView enters four historical 1.0.57 towns and saves survive actual game-source 1.0.57 (159)->1.0.63 (165) same-DEBUG-key upgrade.'
-echo 'PASS: Android DocumentsUI exported valid JSON containing both heroes, reopened it through ACTION_OPEN_DOCUMENT, and displayed review without replacing local saves.'
+echo 'PASS: Android DocumentsUI exported valid JSON, reviewed it without replacing progress, then restored both heroes with explicit approval and preserved overwritten local progress in recovery.'
 echo 'NOT VERIFIED: Google Drive cloud sync, maintained-key/Play-signed in-place upgrade, Play App Signing, actual Play delivery, real user saves or physical hardware.'
