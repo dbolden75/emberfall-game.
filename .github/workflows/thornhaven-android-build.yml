@@ -24,6 +24,7 @@ jobs:
       - name: Verify source and regression tests
         run: |
           python3 tools/verify.py
+          python3 tools/test-release-native-parity.py
           for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-java@v4
         with:
