@@ -1,3 +1,18 @@
+THORNHAVEN RELEASE WORK — October 27, 2026 ET / October 28 UTC — corrupt-local-backup rescue
+Source PR: https://github.com/dbolden75/emberfall-game./pull/28 (merged as 12eb906bec739ffd5135a9f6ddb14f4c9d4f798a)
+- Verified bug: importing a known-good Cloud Save backup was impossible if prior emberfall_character_slots_v1 stored malformed JSON or invalid rows; preview and restore threw during JSON.parse.
+- Fixed: backup review warns of unreadable local slot data; restoring demands explicit approval, stores byte-exact original raw slots in recovery before overwriting, and preserves the established active slot and Android package.
+- Node regression covers malformed/truncated/array/null/invalid updated local slots, explicit consent, exact-original recovery, normal saves. Main post-merge Android build CI #40625955371: SUCCESS. Android 14 emulator CI #40625955372: SUCCESS (debug-signed historical upgrade and document backup/restore, not Google Play or a physical phone).
+- Fresh maintained-key signed Android release candidates from main CI unsigned release payload #12789491423:
+  APK Thornhaven-1.0.63-corruptbackupfix-maintained-key.apk, 37,587,928 bytes, SHA-256 211258f8c64e846aa9291b8757366a907c781446b900580f25ddd97341b95846.
+  AAB Thornhaven-1.0.63-corruptbackupfix-maintained-key.aab, 37,172,201 bytes, SHA-256 bb6220f7901dea1ab5530a8eb7e211773e1349f5b8b42b3c105baeedf9168e0d.
+  Verified original signing certificate SHA-256 38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22; APK v2/v3, AAB JAR signature, zipalign, CRC, signed-to-unsigned native parity, package com.vaelbrink.ashvale.newjourney / version code 165 / name 1.0.63; all 24 assets matched.
+  Independent pre-fix candidate archive diff: ONLY two Cloud Save JS assets, expected signing metadata and git revision metadata changed; no unexpected native or other game assets.
+  Google Drive: Thornhaven/APKs/Thornhaven-1.0.63-corruptbackupfix-maintained-key.apk and .aab, plus verification TXT uploaded and retrieved; re-download SHA-256 exactly matched local release files.
+- Still UNVERIFIED: Google Play highest already uploaded version code (165 may be rejected if reused); Play upload-key/app-signing acceptance; Play-delivered upgrade preserving historical installed saves; physical-device gameplay; real Google Drive account provider sync. Do NOT uninstall the existing Play Store app.
+- Signing key remained in original private backup; temporary working signing material was removed after building.
+END 2026-10-28 CORRUPT-BACKUP RESCUE UPDATE
+
 Thornhaven 1.0.57 Android (versionCode 159, versionName 1.0.57).
 Updated 2026-10-27.
 
