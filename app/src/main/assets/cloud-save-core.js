@@ -1,7 +1,7 @@
 /* Thornhaven portable save format. No credentials or device-wide storage. */
 (function(root){
 'use strict';
-const SLOT_KEY='emberfall_character_slots_v1',RECOVERY_KEY='thornhaven.restore-recovery.v1';
+const SLOT_KEY='emberfall_character_slots_v1',ACTIVE_SLOT_KEY='emberfall_active_character_slot_v1',RECOVERY_KEY='thornhaven.restore-recovery.v1';
 const IDS=['slot1','slot2','slot3','slot4'],MAX_BYTES=8*1024*1024;
 const clone=v=>JSON.parse(JSON.stringify(v));
 function validate(value){
@@ -40,14 +40,24 @@ function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}
  if(expectedCurrent!==undefined&&raw!==expectedCurrent)throw Error('Local progress changed. Review the backup again.');
  if(conflicts(incoming,current).length&&!allowOlder)throw Error('This backup is older or omits local characters. Explicit approval is required.');
  // Persist recovery first. If space is unavailable, do not alter the save slots.
- const recovery=JSON.stringify({format:'thornhaven-recovery',schema:1,createdAt:Date.now(),slots:raw});
+ const previousActive=storage.getItem(ACTIVE_SLOT_KEY);
+ const chosenActive=IDS.includes(incoming.activeSlot)&&incoming.slots[incoming.activeSlot]
+  ?incoming.activeSlot:IDS.find(id=>incoming.slots[id]);
+ const recovery=JSON.stringify({format:'thornhaven-recovery',schema:1,createdAt:Date.now(),slots:raw,activeSlot:previousActive});
  storage.setItem(RECOVERY_KEY,recovery);
  if(storage.getItem(RECOVERY_KEY)!==recovery)throw Error('Could not verify the recovery copy.');
- // A single atomic localStorage write is the commit point. Legacy cache is not authoritative.
- storage.setItem(SLOT_KEY,JSON.stringify(incoming.slots));
+ // Set the imported selection before the single-key slots commit. If that commit
+ // fails, restore the previous preference; the existing slots remain untouched.
+ storage.setItem(ACTIVE_SLOT_KEY,chosenActive);
+ try{storage.setItem(SLOT_KEY,JSON.stringify(incoming.slots));}
+ catch(error){
+  try{if(previousActive===null)storage.removeItem(ACTIVE_SLOT_KEY);
+      else storage.setItem(ACTIVE_SLOT_KEY,previousActive);}catch(_){}
+  throw error;
+ }
  return incoming;
 }
-function recoveryText(storage){const r=JSON.parse(storage.getItem(RECOVERY_KEY)||'null');if(!r||r.format!=='thornhaven-recovery'||r.schema!==1||typeof r.slots!=='string')throw Error('No recovery copy with saved characters is available.');return encode(JSON.parse(r.slots),'slot1',r.createdAt);}
-const api={SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,conflicts,restore,recoveryText};
+function recoveryText(storage){const r=JSON.parse(storage.getItem(RECOVERY_KEY)||'null');if(!r||r.format!=='thornhaven-recovery'||r.schema!==1||typeof r.slots!=='string')throw Error('No recovery copy with saved characters is available.');return encode(JSON.parse(r.slots),r.activeSlot||'slot1',r.createdAt);}
+const api={SLOT_KEY,ACTIVE_SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,conflicts,restore,recoveryText};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ThornhavenCloudSaveCore=api;
 })(typeof window!=='undefined'?window:this);

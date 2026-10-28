@@ -4,6 +4,7 @@ class Storage {
  constructor(values={}){this.data=new Map(Object.entries(values));this.fail=null;}
  getItem(k){return this.data.has(k)?this.data.get(k):null;}
  setItem(k,v){if(k===this.fail)throw Error('QuotaExceededError');this.data.set(k,String(v));}
+ removeItem(k){this.data.delete(k);}
 }
 function row(name='Cloud hero',updated=100){return {id:'slot1',name,class:'warrior',level:9,updated,state:{player:{name,class:'warrior',level:9,coins:543,inventory:[{id:'iron',count:12}],weapon:'iron_sword',armor:'leather',xp:27},mapId:'elderwood',companions:[{id:'dalen',hp:20,active:true}],mapStates:{elderwood:{enemies:[{alive:false,lootClaimed:true}],gatherNodes:[123]}},townQuestState:{questA:true,_localExploration:{elderwood:{'1,2':true}},_playReceipts:{receipt:'paid-item'}},houseStorage:{ashvale:{wood:10}},gatheringSkills:{mining:3},ownedHomes:{ashvale:true}}};}
 const slots={slot1:row(),slot3:{...row('Second hero',200),id:'slot3'}};
@@ -34,6 +35,37 @@ assert.throws(()=>core.parse(' '.repeat(core.MAX_BYTES+1)),/8 MB/);
 assert.equal({}.polluted,undefined);
 assert.throws(()=>core.encode({},'slot1'),/no saved characters/);
 console.log('PASS: corrupt, future-format, unsafe, oversized and incomplete backups rejected.');
+
+
+const selectionBefore=new Storage({
+ [core.SLOT_KEY]:JSON.stringify(slots),[core.ACTIVE_SLOT_KEY]:'slot3'
+});
+const fallbackBackup=core.encode({slot1:row('Only first',300)},'slot3',500);
+core.restore(selectionBefore,fallbackBackup,{confirmed:true,allowOlder:true});
+assert.equal(selectionBefore.getItem(core.ACTIVE_SLOT_KEY),'slot1',
+ 'Missing backup active slot must safely choose an available imported character');
+assert.equal(core.parse(core.recoveryText(selectionBefore)).activeSlot,'slot3',
+ 'Recovery must remember the previously selected character');
+const selectedBackup=core.encode(slots,'slot3',500);
+core.restore(selectionBefore,selectedBackup,{confirmed:true,allowOlder:true});
+assert.equal(selectionBefore.getItem(core.ACTIVE_SLOT_KEY),'slot3',
+ 'Import must select the backup character rather than a stale local slot');
+for(const failedKey of [core.RECOVERY_KEY,core.ACTIVE_SLOT_KEY,core.SLOT_KEY]){
+ const beforeSlots=JSON.stringify({slot1:row('Current',200)});
+ const safeStore=new Storage({[core.SLOT_KEY]:beforeSlots,[core.ACTIVE_SLOT_KEY]:'slot1'});
+ safeStore.fail=failedKey;
+ assert.throws(()=>core.restore(safeStore,selectedBackup,{confirmed:true,allowOlder:true}),/Quota/);
+ assert.equal(safeStore.getItem(core.SLOT_KEY),beforeSlots,
+  'Failed import must never overwrite current character slots');
+ assert.equal(safeStore.getItem(core.ACTIVE_SLOT_KEY),'slot1',
+  'Failed import must preserve original character selection');
+}
+const noPriorActive=new Storage({[core.SLOT_KEY]:JSON.stringify({slot1:row('Current',200)})});
+noPriorActive.fail=core.SLOT_KEY;
+assert.throws(()=>core.restore(noPriorActive,selectedBackup,{confirmed:true,allowOlder:true}),/Quota/);
+assert.equal(noPriorActive.getItem(core.ACTIVE_SLOT_KEY),null,
+ 'Rollback must remove a newly written active preference when none existed');
+console.log('PASS: selected character restored, backed up, and preserved across failed backup imports.');
 
 
 const fs=require('node:fs');
