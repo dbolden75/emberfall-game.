@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -167,6 +167,25 @@ const pickerLoad=String.raw`(()=>{
   if(!document.getElementById('cloudSaveImport').disabled)throw Error('Load action did not start picker request');
   return JSON.stringify({action:'load',pickerRequest:'started'});
 })()`;
+const pickerSaved=String.raw`(()=>{
+  const status=document.getElementById('cloudSaveStatus')?.textContent||'';
+  if(!status.includes('Backup written to the selected provider.'))
+    throw Error('Android document export completion callback missing: '+status);
+  if(document.getElementById('cloudSaveExport').disabled)
+    throw Error('Export button remained disabled');
+  return JSON.stringify({exportCompleted:true,localProgressIntact:true});
+})()`;
+const pickerReviewed=String.raw`(()=>{
+  const review=document.getElementById('cloudSaveReview');
+  const summary=document.getElementById('cloudSaveSummary')?.textContent||'';
+  if(!review||review.hidden||
+      !summary.includes('EmulatorUpgradeQA')||!summary.includes('BackupUpgradeQA'))
+    throw Error('Android document import did not reach two-character backup review: '+summary);
+  // Review only: never automatically replace progress, even in this disposable QA.
+  document.getElementById('cloudSaveCancel').click();
+  if(!review.hidden)throw Error('Cancel did not close backup review');
+  return JSON.stringify({importRead:true,twoCharactersReviewed:true,restoreCancelled:true});
+})()`;
 const pickerCancel=String.raw`(()=>{
   const status=document.getElementById('cloudSaveStatus')?.textContent||'';
   if(!status.includes('Cancelled. Local progress is unchanged.'))
@@ -186,7 +205,7 @@ const pickerCancel=String.raw`(()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel};
+    const scripts={create,preupgrade:verify,verify,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed};
     const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
