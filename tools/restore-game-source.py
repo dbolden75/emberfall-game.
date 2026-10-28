@@ -32,10 +32,12 @@ correct = 'Version 1.0.63 · Ashvale Reach'.encode('utf-8')
 assert content.count(stale) == 1, 'Expected exactly one stale title version label'
 content = content.replace(stale, correct, 1)
 assert hashlib.sha256(content).hexdigest() == 'c9085391c1ad9c76e42502682d16c717fc73b39a4e906759a3463845cf2f14a0', 'Migrated HTML hash mismatch'
+content = content.replace(b'1.0.63', b'1.0.64')
+assert hashlib.sha256(content).hexdigest() == 'bc14b9f38375c9dca31b14cf28a5dae467108001c7523f9aaa4bd6ebb4791c57', 'Patch version hash mismatch'
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
     assert target.read_bytes() == content, 'Refusing to overwrite a different game source'
 else:
     target.write_bytes(content)
-print('Thornhaven 1.0.63 HTML reconstructed, SHA-256 verified:', hashlib.sha256(content).hexdigest())
+print('Thornhaven 1.0.64 HTML reconstructed, SHA-256 verified:', hashlib.sha256(content).hexdigest())

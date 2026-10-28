@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - fix/fog-refresh-party-portraits-20261028
       - qa/163-multislot-upgrade
       - fix/163-native-save-backups
       - qa/163-cloud-document-picker
@@ -16,7 +17,6 @@ on:
       - qa/163-native-upgrade-probe
       - qa/163-render-stress
       - qa/163-historical-157-upgrade
-      - fix/fog-refresh-party-portraits-20261028
     paths:
       - 'app/**'
       - 'source-payload/**'
@@ -60,7 +60,7 @@ jobs:
           ref: ec7236466c7efa494826c584f95fa61f236ec8ca
           path: qa-historical-157
           persist-credentials: false
-      - name: Build historical 1.0.57 and current 1.0.63 debug APKs
+      - name: Build historical 1.0.57 and current 1.0.64 debug APKs
         run: |
           set -euo pipefail
           # Prove that the older HTML is the independently archived 1.0.57
@@ -69,9 +69,9 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' 'c9085391c1ad9c76e42502682d16c717fc73b39a4e906759a3463845cf2f14a0' 'app/src/main/assets/index.html' | sha256sum -c -
-          grep -q 'versionCode 165' app/build.gradle
-          grep -q "versionName '1.0.63'" app/build.gradle
+          printf '%s  %s\n' 'bc14b9f38375c9dca31b14cf28a5dae467108001c7523f9aaa4bd6ebb4791c57' 'app/src/main/assets/index.html' | sha256sum -c -
+          grep -q 'versionCode 166' app/build.gradle
+          grep -q "versionName '1.0.64'" app/build.gradle
           # Debug inspection exists only on the disposable emulator runner.
           # Neither production MainActivity is edited in Git or published.
           python3 - <<'PY'
@@ -85,7 +85,7 @@ jobs:
           PY
           (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug)
           gradle --no-daemon :app:assembleDebug
-          echo 'Built separately from audited 1.0.57 and 1.0.63 sources; signatures are DEBUG, not Play or maintained release keys.'
+          echo 'Built separately from audited 1.0.57 and 1.0.64 sources; signatures are DEBUG, not Play or maintained release keys.'
       - name: Enable emulator hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

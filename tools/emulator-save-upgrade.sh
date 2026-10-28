@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Native WebView save/town QA on disposable emulator. Upgrade the authentic
-# archived 1.0.57 *game source* (versionCode 159) to 1.0.63 (165), packaging
+# archived 1.0.57 *game source* (versionCode 159) to 1.0.64 (166), packaging
 # both with the same temporary DEBUG key. Neither APK is Play-signed and this
 # never touches the user's installed app or their saved progress.
 set -euo pipefail
@@ -19,7 +19,7 @@ new_cert="$("$APKSIGNER" verify --print-certs "$NEW" | sed -n 's/^Signer #1 cert
 test -n "$old_cert" && test "$old_cert" = "$new_cert" || { echo 'FAIL: historical and current debug APK signing certificates differ'; exit 1; }
 echo "PASS: historical/current APK DEBUG signing certificate matches: $old_cert"
 "$AAPT" dump badging "$OLD" | grep -q "package: name='$PKG' versionCode='159'"
-"$AAPT" dump badging "$NEW" | grep -q "package: name='$PKG' versionCode='165'"
+"$AAPT" dump badging "$NEW" | grep -q "package: name='$PKG' versionCode='166'"
 # Remove only the transient DEBUG app in the disposable GitHub emulator.
 adb uninstall "$PKG" | tee reports/emulator/qa-reset.txt
 adb install "$OLD" | tee reports/emulator/qa-install-157.txt
@@ -48,10 +48,10 @@ adb forward --remove tcp:9222
 adb shell input keyevent KEYCODE_HOME
 sleep 5
 adb shell am force-stop "$PKG"
-adb install -r "$NEW" | tee reports/emulator/qa-upgrade-165.txt
-adb shell dumpsys package "$PKG" > reports/emulator/qa-package-165.txt
-grep -q 'versionCode=165' reports/emulator/qa-package-165.txt
-adb shell am start -W -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-165.txt
+adb install -r "$NEW" | tee reports/emulator/qa-upgrade-166.txt
+adb shell dumpsys package "$PKG" > reports/emulator/qa-package-166.txt
+grep -q 'versionCode=166' reports/emulator/qa-package-166.txt
+adb shell am start -W -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-166.txt
 sleep 12
 newpid="$(adb shell pidof "$PKG" | tr -d '\r')"
 test -n "$newpid"
@@ -141,6 +141,6 @@ if grep -q "Process: $PKG," reports/emulator/qa-logcat.txt; then
   echo 'FAIL: Android Runtime recorded Thornhaven process crash during synthetic update'
   exit 1
 fi
-echo 'PASS: native emulator WebView enters four historical 1.0.57 towns and saves survive actual game-source 1.0.57 (159)->1.0.63 (165) same-DEBUG-key upgrade.'
+echo 'PASS: native emulator WebView enters four historical 1.0.57 towns and saves survive actual game-source 1.0.57 (159)->1.0.64 (166) same-DEBUG-key upgrade.'
 echo 'PASS: Android DocumentsUI exported valid JSON, reviewed it without replacing progress, then restored both heroes with explicit approval and preserved overwritten local progress in recovery.'
 echo 'NOT VERIFIED: Google Drive cloud sync, maintained-key/Play-signed in-place upgrade, Play App Signing, actual Play delivery, real user saves or physical hardware.'
