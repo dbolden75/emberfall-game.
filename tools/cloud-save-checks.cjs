@@ -134,3 +134,52 @@ for(const raw of [
 assert.equal(core.readLocal(JSON.stringify(slots)).unreadable,false,
  'Historical 1.0.57-shaped character rows must continue to be readable');
 console.log('PASS: malformed valid-JSON local rows need additional consent; history preserved byte-for-byte.');
+
+
+// A later restore can fail at the selected-slot or final-save write (for
+// example due to storage quota). It must not destroy a prior known-good
+// recovery copy while leaving the current character untouched.
+const priorRecovery=JSON.stringify({
+ format:'thornhaven-recovery',schema:1,createdAt:123,
+ slots:before,activeSlot:'slot1'
+});
+for(const failedKey of [core.RECOVERY_KEY,core.ACTIVE_SLOT_KEY,core.SLOT_KEY]){
+ const safeStore=new Storage({
+  [core.SLOT_KEY]:before,[core.ACTIVE_SLOT_KEY]:'slot1',
+  [core.RECOVERY_KEY]:priorRecovery
+ });
+ safeStore.fail=failedKey;
+ assert.throws(()=>core.restore(safeStore,selectedBackup,{
+  confirmed:true,allowOlder:true,expectedCurrent:before
+ }),/Quota/);
+ assert.equal(safeStore.getItem(core.SLOT_KEY),before,
+  'Failed restore must retain original character slots');
+ assert.equal(safeStore.getItem(core.ACTIVE_SLOT_KEY),'slot1',
+  'Failed restore must retain selected character');
+ assert.equal(safeStore.getItem(core.RECOVERY_KEY),priorRecovery,
+  'Failed restore must not replace a previously usable recovery copy');
+ assert.deepEqual(core.parse(core.recoveryText(safeStore)).slots,
+  JSON.parse(before),'Pre-existing recovery must remain usable');
+}
+for(const failedKey of [core.ACTIVE_SLOT_KEY,core.SLOT_KEY]){
+ const safeStore=new Storage({
+  [core.SLOT_KEY]:before,[core.ACTIVE_SLOT_KEY]:'slot1'
+ });
+ safeStore.fail=failedKey;
+ assert.throws(()=>core.restore(safeStore,selectedBackup,{
+  confirmed:true,allowOlder:true,expectedCurrent:before
+ }),/Quota/);
+ assert.equal(safeStore.getItem(core.RECOVERY_KEY),null,
+  'Failed restore must not leave a newly created recovery record');
+}
+const successfulRestore=new Storage({
+ [core.SLOT_KEY]:before,[core.ACTIVE_SLOT_KEY]:'slot1',
+ [core.RECOVERY_KEY]:priorRecovery
+});
+core.restore(successfulRestore,selectedBackup,{
+ confirmed:true,allowOlder:true,expectedCurrent:before
+});
+assert.equal(successfulRestore.getItem(core.ACTIVE_SLOT_KEY),'slot3');
+assert.deepEqual(core.parse(core.recoveryText(successfulRestore)).slots,
+ JSON.parse(before),'Successful restore still backs up immediately prior saves');
+console.log('PASS: failed restore rolls back prior recovery record; successful restore keeps expected undo copy.');
