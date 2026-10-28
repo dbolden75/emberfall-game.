@@ -421,3 +421,58 @@ for(const historical of [
  assert.equal(core.readLocal(JSON.stringify({slot1:old})).unreadable,false);
 }
 console.log('PASS: malformed town home containers rejected before lossy import; historical homes preserved.');
+
+
+// Interrupted storage restores must not silently replace saved characters.
+// Simulate a backend that writes then throws, or that silently ignores writes;
+// normal localStorage is expected to be atomic, but WebView/storage failures
+// should never be reported as a successful character recovery.
+class UnreliableRestoreStorage extends Storage{
+ constructor(values){super(values);this.afterWriteKey=null;this.silentKey=null;this.failRollbackRaw=null;}
+ setItem(key,value){
+  if(key===core.SLOT_KEY&&String(value)===this.failRollbackRaw)throw Error('Rollback also failed');
+  if(key===this.silentKey)return;
+  this.data.set(key,String(value));
+  if(key===this.afterWriteKey)throw Error('Interrupted storage commit');
+ }
+}
+const preservedRaw=JSON.stringify({slot1:row('Preserve me',150)});
+const preservedRecovery=JSON.stringify({format:'thornhaven-recovery',schema:1,
+ createdAt:5,slots:preservedRaw,activeSlot:'slot1'});
+for(const badWrite of [core.RECOVERY_KEY,core.ACTIVE_SLOT_KEY,core.SLOT_KEY]){
+ for(const mode of ['afterWriteKey','silentKey']){
+  const store=new UnreliableRestoreStorage({
+   [core.SLOT_KEY]:preservedRaw,[core.ACTIVE_SLOT_KEY]:'slot1',
+   [core.RECOVERY_KEY]:preservedRecovery
+  });
+  store[mode]=badWrite;
+  assert.throws(()=>core.restore(store,selectedBackup,{
+   confirmed:true,allowOlder:true,expectedCurrent:preservedRaw
+  }),/Interrupted|verify|interrupted/,mode+' '+badWrite);
+  assert.equal(store.getItem(core.SLOT_KEY),preservedRaw,
+   'Interrupted write must restore original slot bytes');
+  assert.equal(store.getItem(core.ACTIVE_SLOT_KEY),'slot1',
+   'Interrupted write must restore previously selected character');
+  assert.equal(store.getItem(core.RECOVERY_KEY),preservedRecovery,
+   'Interrupted write must not erase existing recovery');
+ }
+}
+// If even rollback fails, the just-verified recovery must be retained for
+// emergency use rather than restored to an older snapshot.
+const failedRollback=new UnreliableRestoreStorage({
+ [core.SLOT_KEY]:preservedRaw,[core.ACTIVE_SLOT_KEY]:'slot1',
+ [core.RECOVERY_KEY]:preservedRecovery
+});
+failedRollback.afterWriteKey=core.SLOT_KEY;
+failedRollback.failRollbackRaw=preservedRaw;
+assert.throws(()=>core.restore(failedRollback,selectedBackup,{
+ confirmed:true,allowOlder:true,expectedCurrent:preservedRaw
+}),/Restore interrupted/);
+assert.equal(JSON.parse(failedRollback.getItem(core.RECOVERY_KEY)).slots,preservedRaw);
+const goodCommit=new UnreliableRestoreStorage({
+ [core.SLOT_KEY]:preservedRaw,[core.ACTIVE_SLOT_KEY]:'slot1'
+});
+core.restore(goodCommit,selectedBackup,{confirmed:true,allowOlder:true});
+assert.equal(goodCommit.getItem(core.ACTIVE_SLOT_KEY),'slot3');
+assert.deepEqual(JSON.parse(goodCommit.getItem(core.SLOT_KEY)),slots);
+console.log('PASS: interrupted and silent Cloud Save writes roll back exact local slots, selection and recovery; emergency recovery retained if rollback fails.');
