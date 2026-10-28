@@ -35,12 +35,26 @@ function encode(slots,active,now=Date.now()){
 }
 // Preserve unreadable pre-existing slots instead of blocking a user-directed recovery.
 // Never interpret damaged local data as an empty save without explicit approval.
+// Syntactically valid local JSON can still contain unusable character rows.
+// Require explicit approval before replacing them and preserve their original bytes.
+function readableLocalRow(id,row){
+ const state=row?.state,p=state?.player;
+ return IDS.includes(id)&&row.id===id&&Number.isSafeInteger(row.updated)&&row.updated>=0&&
+  state&&typeof state==='object'&&!Array.isArray(state)&&
+  p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.name==='string'&&!!p.name.trim()&&
+  ['warrior','rogue','mage','cleric'].includes(p.class)&&
+  Number.isSafeInteger(p.level)&&p.level>=1&&Number.isFinite(p.coins)&&p.coins>=0&&
+  typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
+  state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
+  state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
+  p.inventory&&typeof p.inventory==='object';
+}
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};
  try{
   const slots=JSON.parse(raw);
-  if(!slots||typeof slots!=='object'||Array.isArray(slots)||Object.entries(slots).some(([id,row])=>
-   !IDS.includes(id)||!row||typeof row!=='object'||Array.isArray(row)||!Number.isFinite(Number(row.updated))))throw Error('Invalid local slots');
+  if(!slots||typeof slots!=='object'||Array.isArray(slots)||
+   Object.entries(slots).some(([id,row])=>!readableLocalRow(id,row)))throw Error('Invalid local slots');
   return {slots,unreadable:false};
  }catch(_){return {slots:{},unreadable:true};}
 }
