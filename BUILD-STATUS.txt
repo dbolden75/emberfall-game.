@@ -7,7 +7,7 @@ THORNHAVEN RELEASE WORK — October 28, 2026 — preserve existing Cloud Save re
 - Signed AAB: Thornhaven-1.0.63-recovery-rollback-maintained-key.aab, 37,172,515 bytes, SHA-256 afc0589cdb589ddd910499ec71b66d13e1ffc7d2b03601df8a02340ce0368ac4.
 - Compared with localrowfix signed candidate: APK gameplay differences ONLY assets/cloud-save-core.js; no native code changes. AAB gameplay differences ONLY base/assets/cloud-save-core.js, plus version-control metadata; no native code changes.
 - Google Drive /Thornhaven/APKs backup: new APK, AAB and verification JSON successfully uploaded and retrieved; all three are byte-identical to signed originals.
-- Main Android 14 emulator #40638752823 was IN PROGRESS at this entry; success must be checked separately.
+- Main Android 14 emulator #40638752823: SUCCESS. Actual Android DocumentsUI exported 168,703 bytes of valid backup JSON for two saved characters, reviewed and restored with explicit older-backup consent, and retained newer coins (999) in recovery. Historical 1.0.57 debug-signature 159 -> 1.0.63 debug-signature 165 in-place emulator update and four town entries passed. Does NOT test maintained-key/Play upgrade, real Google Drive provider, or physical devices.
 - STILL OPEN: highest versionCode already uploaded on Play, upload key and Play App Signing acceptance, internal-track upload, real Play-delivered in-place upgrade and save survival, physical device play/performance, live Drive provider round-trip. Do NOT uninstall the existing Play version.
 END 2026-10-28 RECOVERY-ROLLBACK WORK
 
