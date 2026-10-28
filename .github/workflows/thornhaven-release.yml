@@ -20,6 +20,7 @@ jobs:
       - name: Verify source, gameplay and save regression suites
         run: |
           python3 tools/verify.py
+          python3 tools/test-release-native-parity.py
           for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-java@v4
         with:
@@ -76,8 +77,13 @@ jobs:
           grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='165' versionName='1.0.63'" release-output/apk-badging.txt
           unzip -t "$apk" >/dev/null
           unzip -p "$apk" assets/playtest-update.js | grep THORNHAVEN_157_GEAR_BEGIN >/dev/null
+          cp "$aab" release-output/pre-sign-unsigned.aab
           jarsigner -keystore "$RUNNER_TEMP/thornhaven-signing/maintained.jks" -storepass:env STORE_PASSWORD -keypass:env KEY_PASSWORD "$aab" "$KEY_ALIAS"
           jarsigner -verify "$aab" | grep -q 'jar verified'
+          python3 tools/release-native-parity.py \
+            --signed-apk "$apk" --unsigned-apk "$unsigned" \
+            --signed-aab "$aab" --unsigned-aab release-output/pre-sign-unsigned.aab
+          rm release-output/pre-sign-unsigned.aab
           python3 tools/release-payload-checks.py --apk "$apk" --aab "$aab" --assets app/src/main/assets --gradle app/build.gradle --activity app/src/main/java/com/emberfall/ashvale/MainActivity.java --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           unzip -t "$aab" >/dev/null
           unzip -p "$aab" base/assets/playtest-update.js | grep THORNHAVEN_157_GEAR_BEGIN >/dev/null
