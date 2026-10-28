@@ -23,6 +23,7 @@ on:
       - 'tools/emulator-smoke.sh'
       - 'tools/emulator-save-upgrade.sh'
       - 'tools/emulator-webview-probe.cjs'
+      - 'tools/emulator-document-picker.py'
 jobs:
   emulator-smoke:
     runs-on: ubuntu-latest
