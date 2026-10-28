@@ -69,15 +69,27 @@ function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}
  const chosenActive=IDS.includes(incoming.activeSlot)&&incoming.slots[incoming.activeSlot]
   ?incoming.activeSlot:IDS.find(id=>incoming.slots[id]);
  const recovery=JSON.stringify({format:'thornhaven-recovery',schema:1,createdAt:Date.now(),slots:raw,activeSlot:previousActive});
- storage.setItem(RECOVERY_KEY,recovery);
- if(storage.getItem(RECOVERY_KEY)!==recovery)throw Error('Could not verify the recovery copy.');
- // Set the imported selection before the single-key slots commit. If that commit
- // fails, restore the previous preference; the existing slots remain untouched.
- storage.setItem(ACTIVE_SLOT_KEY,chosenActive);
- try{storage.setItem(SLOT_KEY,JSON.stringify(incoming.slots));}
- catch(error){
-  try{if(previousActive===null)storage.removeItem(ACTIVE_SLOT_KEY);
-      else storage.setItem(ACTIVE_SLOT_KEY,previousActive);}catch(_){}
+ // A failed restore must not erase an earlier, still-valuable recovery copy.
+ const previousRecovery=storage.getItem(RECOVERY_KEY);
+ let wroteRecovery=false,attemptedActive=false;
+ try{
+  storage.setItem(RECOVERY_KEY,recovery);
+  wroteRecovery=true;
+  if(storage.getItem(RECOVERY_KEY)!==recovery)throw Error('Could not verify the recovery copy.');
+  // Set the imported selection before the single-key slots commit. If that
+  // commit fails, the existing slots must remain untouched.
+  attemptedActive=true;
+  storage.setItem(ACTIVE_SLOT_KEY,chosenActive);
+  storage.setItem(SLOT_KEY,JSON.stringify(incoming.slots));
+ }catch(error){
+  if(attemptedActive){
+   try{if(previousActive===null)storage.removeItem(ACTIVE_SLOT_KEY);
+       else storage.setItem(ACTIVE_SLOT_KEY,previousActive);}catch(_){}
+  }
+  if(wroteRecovery){
+   try{if(previousRecovery===null)storage.removeItem(RECOVERY_KEY);
+       else storage.setItem(RECOVERY_KEY,previousRecovery);}catch(_){}
+  }
   throw error;
  }
  return incoming;
