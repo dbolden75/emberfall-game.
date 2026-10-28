@@ -23,8 +23,10 @@ function validate(value){
   const p=row?.state?.player;
   if(!IDS.includes(id)||row.id!==id||!p||typeof p.name!=='string'||!p.name.trim()||p.name.length>80||!['warrior','rogue','mage','cleric'].includes(p.class))throw Error('Invalid character in backup.');
   if(!Number.isSafeInteger(row.updated)||row.updated<0||!Number.isSafeInteger(p.level)||p.level<1||!Number.isFinite(p.coins)||p.coins<0)throw Error('Invalid character progress.');
-  if(!row.state.mapId||typeof row.state.mapId!=='string'||!Array.isArray(row.state.companions)||!row.state.mapStates||!row.state.townQuestState)throw Error('Incomplete character progress.');
-  if(!p.inventory||typeof p.inventory!=='object')throw Error('Missing inventory.');
+  if(!row.state.mapId||typeof row.state.mapId!=='string'||!Array.isArray(row.state.companions)||
+   !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
+   !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
+  if(!Array.isArray(p.inventory))throw Error('Invalid character inventory.');
  }
  return value;
 }
@@ -47,7 +49,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  p.inventory&&typeof p.inventory==='object';
+  Array.isArray(p.inventory);
 }
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};
