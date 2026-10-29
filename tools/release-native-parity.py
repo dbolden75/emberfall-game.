@@ -47,9 +47,14 @@ def compare(signed_path: Path, unsigned_path: Path, prefix: str, allow_revision_
         additions = signed_entries - unsigned_entries
         require(all(SIGNATURE.fullmatch(entry) for entry in additions),
                 f'{prefix}: unexpected new signed entries: {sorted(additions)[:8]}')
-        require(any(entry.upper().endswith(('.RSA', '.DSA', '.EC')) for entry in additions)
-                and any(entry.upper().endswith('.SF') for entry in additions),
-                f'{prefix}: expected JAR signing entries absent')
+        # APK Signature Scheme v2/v3 signatures live outside ZIP entries, so
+        # a correctly signed APK can add zero META-INF files. An AAB instead
+        # uses JAR signing and must contain both signature-file types.
+        # When an APK *does* add v1/JAR entries, require a complete pair.
+        if prefix == 'AAB' or additions:
+            require(any(entry.upper().endswith(('.RSA', '.DSA', '.EC')) for entry in additions)
+                    and any(entry.upper().endswith('.SF') for entry in additions),
+                    f'{prefix}: expected JAR signing entries absent')
         changed = []
         revision_differences = []
         for name in sorted(unsigned_entries):
