@@ -27,6 +27,7 @@ function validate(value){
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
+  if(!safeCompanions(row.state.companions))throw Error('Invalid saved companion data.');
   if(!safeHouseStorage(row.state.houseStorage))throw Error('Invalid house chest contents.');
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
@@ -55,6 +56,15 @@ function safeEnemySnapshots(mapStates){
 // Inventory is used as row.id/row.count without null checks by the game.
 // Reject malformed imported rows before they can crash bag and shop rendering.
 // Historical empty bags and ordinary {id,count} rows remain accepted.
+// Malformed or duplicate pet records are silently discarded during game load.
+// Reject lossy backups. Historical pet snapshots only need their stable id;
+// other progress fields remain optional for older versions.
+function safeCompanions(pets){
+ if(!Array.isArray(pets))return false;
+ const seen=new Set();
+ return pets.every(p=>p&&typeof p==='object'&&!Array.isArray(p)&&
+  typeof p.id==='string'&&!!p.id&&!seen.has(p.id)&&!!seen.add(p.id));
+}
 function safeInventory(items){
  return Array.isArray(items)&&items.every(row=>
   row&&typeof row==='object'&&!Array.isArray(row)&&
@@ -111,7 +121,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeInventory(p.inventory)&&safeEnemySnapshots(state.mapStates)&&safeHouseStorage(state.houseStorage);
+  safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&safeHouseStorage(state.houseStorage);
 }
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};

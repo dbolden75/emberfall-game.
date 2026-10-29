@@ -21,6 +21,11 @@ panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();clo
 function review(text){
  const incoming=core.parse(text);
  for(const row of Object.values(incoming.slots))if(!Object.prototype.hasOwnProperty.call(maps,row.state.mapId))throw Error('This backup uses a map unavailable in this version.');
+ // The game drops pets with unrecognized ids when loading. Do not silently
+ // erase a pet from a backup made by a newer version.
+ for(const row of Object.values(incoming.slots))for(const companion of row.state.companions)
+  if(!Object.prototype.hasOwnProperty.call(petDefs,companion.id))
+   throw Error('This backup contains a pet unavailable in this version. Update Thornhaven before restoring.');
  expected=localStorage.getItem(core.SLOT_KEY);const local=core.readLocal(expected),older=core.conflicts(incoming,local.slots),risk=local.unreadable||older.length>0;
  pending=text;get('cloudSaveSummary').textContent='Created '+new Date(incoming.createdAt).toLocaleString()+'\n'+Object.values(incoming.slots).map(r=>r.state.player.name+' · '+r.state.player.class+' · Level '+r.state.player.level).join('\n')+'\n\nThis replaces all four local character slots. A recovery copy will be kept on this device.';
  get('cloudSaveOlderLabel').hidden=!risk;get('cloudSaveOlder').checked=false;get('cloudSaveReview').hidden=false;status(local.unreadable?'Warning: local save data is unreadable. Restoring will replace it; the original data will be kept in a recovery copy.':older.length?'Warning: this backup is older or omits local characters.':'Review the characters before replacing local progress.');get('cloudSaveCancel').focus();
