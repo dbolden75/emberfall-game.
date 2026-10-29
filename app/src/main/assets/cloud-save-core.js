@@ -67,7 +67,10 @@ function safeCompanions(pets){
   // normalizePets() converts invalid health to zero and deactivates the pet.
   // Reject lossy health snapshots before replacing a player's existing save.
   ['hp','max'].every(field=>p[field]==null||
-   (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0)));
+   (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0))&&
+  // A string like 'false' is truthy in normalizePets(), activating pets
+  // that were inactive in the backup. Keep missing historical flags valid.
+  (p.active==null||typeof p.active==='boolean'));
 }
 function safeInventory(items){
  return Array.isArray(items)&&items.every(row=>
