@@ -30,6 +30,7 @@ function validate(value){
   if(!safeCompanions(row.state.companions))throw Error('Invalid saved companion data.');
   if(!safeHouseStorage(row.state.houseStorage))throw Error('Invalid house chest contents.');
   if(!safeProgressFlags(row.state))throw Error('Invalid saved quest or home progress.');
+  if(!safeTownQuestFlags(row.state.townQuestState))throw Error('Invalid saved town quest progress.');
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
@@ -52,6 +53,23 @@ function safeProgressFlags(state){
   }
  }
  return true;
+}
+// Quest handlers test accepted/claimed/rescued as truthy values. Strings such
+// as 'false' skip conversations and permanently withhold one-time rewards.
+// The record is nested (e.g. slayer contracts); validate explicitly supplied
+// fields without rejecting numerical completion counts or absent legacy fields.
+function safeTownQuestFlags(quests){
+ if(!quests||typeof quests!=='object'||Array.isArray(quests))return false;
+ function check(value,depth){
+  if(value===null||typeof value!=='object')return true;
+  if(depth>40)return false;
+  for(const [key,row] of Object.entries(value)){
+   if(['accepted','claimed','rescued'].includes(key)&&row!=null&&typeof row!=='boolean')return false;
+   if(!check(row,depth+1))return false;
+  }
+  return true;
+ }
+ return check(quests,0);
 }
 // Enemy snapshots are read directly on game startup. A null/invalid enemy
 // entry throws inside applySavedGame and prevents the character from loading.
@@ -166,7 +184,8 @@ function readableLocalRow(id,row){
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
   safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
-  safeHouseStorage(state.houseStorage)&&safeProgressFlags(state);
+  safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
+  safeTownQuestFlags(state.townQuestState);
 }
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};
