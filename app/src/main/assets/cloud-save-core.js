@@ -89,6 +89,29 @@ function safeSlayerLedger(ledger){
  }
  return true;
 }
+// The Night Visitor reads quest flags as truthy values and increments hunts
+// with `(s.hunts||0)+1`. A restored string hunts:'4' jumps to 6 kills
+// after only one kill; text turned:'false' grants vampire combat effects.
+// Invalid clue arrays also skip or block dialogue and the daylight cure.
+// Validate supplied progress while retaining missing/null historical fields.
+function safeVampireStory(story){
+ if(story==null)return true;
+ if(typeof story!=='object'||Array.isArray(story))return false;
+ for(const key of ['accepted','complete','turned','cured','sanctuary']){
+  if(story[key]!=null&&typeof story[key]!=='boolean')return false;
+ }
+ if(story.choice!=null&&!['hunt','ally'].includes(story.choice))return false;
+ if(story.hunts!=null&&(!Number.isSafeInteger(story.hunts)||story.hunts<0||story.hunts>6))return false;
+ if(story.clock!=null&&(typeof story.clock!=='number'||!Number.isFinite(story.clock)||story.clock<0||story.clock>600))return false;
+ if(story.hunger!=null&&(typeof story.hunger!=='number'||!Number.isFinite(story.hunger)||story.hunger<0||story.hunger>100))return false;
+ for(const [key,allowed] of [['clues',['whisperwood','redfen','mosslight']],
+  ['cureClues',['mosslight','sunmere']]]){
+  const list=story[key];
+  if(list!=null&&(!Array.isArray(list)||list.length>allowed.length||
+   !list.every((id,index)=>allowed.includes(id)&&list.indexOf(id)===index)))return false;
+ }
+ return true;
+}
 // Quest handlers test accepted/claimed/rescued as truthy values. Strings such
 // as 'false' skip conversations and permanently withhold one-time rewards.
 // The record is nested (e.g. slayer contracts); validate explicitly supplied
@@ -127,6 +150,7 @@ function safeTownQuestFlags(quests){
  // Older backups may omit either field. Keep only the two plans the game writes
  // and the three unique clue ids its objects can actually produce.
  if(!safeSlayerLedger(quests._slayers))return false;
+ if(!safeVampireStory(quests._vampire))return false;
  const briar=quests.briar_hollow;
  if(briar!=null){
   if(typeof briar!=='object'||Array.isArray(briar))return false;
