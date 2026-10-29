@@ -8,6 +8,7 @@ const baseState=()=>({
   ashvale_patrol:{accepted:false,kills:0,claimed:false},
   _slayers:{joined:false,completed:2,hunts:{redfen:{accepted:true,completed:1,kills:0}}},
   briar_hollow:{accepted:false,claimed:false,rescued:false},
+  _settlement:{claimed:{hearth:true,lumber:false},gathers:{stone:2}},
  }});
 const row=(s)=>({id:'slot1',updated:42,state:s});
 const backup=(s)=>JSON.stringify({format:'thornhaven-save',schema:1,createdAt:42,activeSlot:'slot1',slots:{slot1:row(s)}});
