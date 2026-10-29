@@ -26,6 +26,7 @@ function validate(value){
   if(!row.state.mapId||typeof row.state.mapId!=='string'||!Array.isArray(row.state.companions)||
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
+  if(!safeExperience(p.xp))throw Error('Invalid character experience.');
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
   if(!safeCompanions(row.state.companions))throw Error('Invalid saved companion data.');
   if(!safeHouseStorage(row.state.houseStorage))throw Error('Invalid house chest contents.');
@@ -34,6 +35,12 @@ function validate(value){
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
+}
+// The live grantXp() uses player.xp += amount, so a restored string such
+// as '4' turns a 7-XP reward into '47' instead of 11. Historical missing
+// or null XP is still accepted; reject nonnumeric or negative supplied XP.
+function safeExperience(xp){
+ return xp==null||(typeof xp==='number'&&Number.isFinite(xp)&&xp>=0);
 }
 // The game applies !!value to quest milestones and home ownership when
 // loading a character. Nonempty strings such as "false" therefore become true,
@@ -184,7 +191,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
+  safeExperience(p.xp)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
   safeTownQuestFlags(state.townQuestState);
 }
