@@ -80,6 +80,17 @@ function safeTownQuestFlags(quests){
   }
   return true;
  }
+ // The Hearthstead chapter reads these flags directly as truthy values.
+ // A restored string "false" silently skips rescuing Edda, welcoming
+ // residents or unlocking the Bellkeeper recipe through legitimate play.
+ // Sera's repair flag similarly controls the settlement food penalty.
+ // Validate only the explicitly supplied fields, keeping old saves intact.
+ for(const [key,fields] of [['_frontier',['home','complete','mystery','blueprint']],['npc_sera',['repaired']]]){
+  const record=quests[key];
+  if(record==null)continue;
+  if(typeof record!=='object'||Array.isArray(record))return false;
+  if(!fields.every(flag=>record[flag]==null||typeof record[flag]==='boolean'))return false;
+ }
  return check(quests,0);
 }
 // Enemy snapshots are read directly on game startup. A null/invalid enemy
