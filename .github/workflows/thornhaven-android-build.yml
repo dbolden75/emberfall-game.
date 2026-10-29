@@ -1,6 +1,7 @@
 name: Thornhaven Android APK
 on:
   workflow_dispatch:
+  workflow_call:
   push:
     paths:
       - 'app/**'
