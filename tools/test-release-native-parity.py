@@ -75,6 +75,15 @@ class SignedPayloadTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'signing entries absent'):
             parity.compare(*self.pair(prefix='AAB', signatures=False), 'AAB', False)
 
+    def test_both_signing_flows_enforce_16k_alignment(self):
+        base = Path(__file__).resolve().parents[1]
+        offline = (base / 'tools/sign-ci-payload.py').read_text()
+        workflow = (base / '.github/workflows/thornhaven-release.yml').read_text()
+        self.assertIn("check_run([zipalign, '-P', '16', '-f', '4',", offline)
+        self.assertIn("check_run([zipalign, '-c', '-P', '16', '4',", offline)
+        self.assertIn('zipalign" -P 16 -f 4', workflow)
+        self.assertIn('zipalign" -c -P 16 4', workflow)
+
     def test_vcs_revision_only_diff_requires_explicit_opt_in(self):
         pair = self.pair(vcs=VCS_B)
         with self.assertRaisesRegex(ValueError, 'version-control-info'):
