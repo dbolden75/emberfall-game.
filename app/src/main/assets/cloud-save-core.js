@@ -91,6 +91,21 @@ function safeTownQuestFlags(quests){
   if(typeof record!=='object'||Array.isArray(record))return false;
   if(!fields.every(flag=>record[flag]==null||typeof record[flag]==='boolean'))return false;
  }
+ // Briar Hollow's clue dialogue uses clues.includes()/push(), and Ada's
+ // rescue uses a truthy plan. Restoring a non-array clues field can crash
+ // exploration; an arbitrary truthy plan can skip preparing her escape.
+ // Older backups may omit either field. Keep only the two plans the game writes
+ // and the three unique clue ids its objects can actually produce.
+ const briar=quests.briar_hollow;
+ if(briar!=null){
+  if(typeof briar!=='object'||Array.isArray(briar))return false;
+  if(briar.plan!=null&&!['watch','ration'].includes(briar.plan))return false;
+  if(briar.clues!=null){
+   const known=new Set(['briar_bell','briar_clinic','briar_gate']);
+   if(!Array.isArray(briar.clues)||briar.clues.length>known.size||
+    !briar.clues.every((id,i)=>known.has(id)&&briar.clues.indexOf(id)===i))return false;
+  }
+ }
  return check(quests,0);
 }
 // Enemy snapshots are read directly on game startup. A null/invalid enemy
