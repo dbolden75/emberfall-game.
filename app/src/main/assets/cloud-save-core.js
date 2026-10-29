@@ -48,6 +48,15 @@ function safeEnemySnapshots(mapStates){
    if(row!=null&&(typeof row!=='object'||Array.isArray(row)||
     (row[flag]!=null&&typeof row[flag]!=='boolean')))return false;
   }
+  // The live dungeon loader restores rune and trap flags using !!value.
+  // String 'false' would become true, changing completed puzzle progress and
+  // silently rearming a disarmed trap. Reject malformed explicit snapshots
+  // rather than reporting successful import of different world state.
+  for(const field of ['runes','traps']){
+   const flags=saved[field];
+   if(flags!=null&&(!Array.isArray(flags)||
+    !flags.every(flag=>typeof flag==='boolean')))return false;
+  }
   if(saved.enemies===undefined)return true;
   return Array.isArray(saved.enemies)&&saved.enemies.every(e=>
    e&&typeof e==='object'&&!Array.isArray(e)&&
