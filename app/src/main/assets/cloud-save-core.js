@@ -64,7 +64,8 @@ function safeTownQuestFlags(quests){
   if(value===null||typeof value!=='object')return true;
   if(depth>40)return false;
   for(const [key,row] of Object.entries(value)){
-   if(['accepted','claimed','rescued'].includes(key)&&row!=null&&typeof row!=='boolean'){console.log('CI DEBUG QUEST FLAG',path+'.'+key,JSON.stringify(row));return false;}
+   const settlementClaimLedger=path==='._settlement'&&key==='claimed'&&row&&typeof row==='object'&&!Array.isArray(row);
+   if(['accepted','claimed','rescued'].includes(key)&&row!=null&&typeof row!=='boolean'&&!settlementClaimLedger)return false;
    if(!check(row,depth+1,path+'.'+key))return false;
   }
   return true;
