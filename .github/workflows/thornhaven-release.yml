@@ -1,6 +1,14 @@
 name: Thornhaven 1.0.64 maintained-key AAB
 on:
   workflow_dispatch:
+  # Sign only reviewed changes merged into main; never expose keys to PR jobs.
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'source-payload/**'
+      - 'tools/**'
+      - '.github/workflows/thornhaven-release.yml'
 jobs:
   release:
     runs-on: ubuntu-latest
