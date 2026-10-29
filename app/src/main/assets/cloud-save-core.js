@@ -40,6 +40,14 @@ function safeEnemySnapshots(mapStates){
  return Object.values(mapStates).every(saved=>{
   if(saved==null)return true;
   if(typeof saved!=='object'||Array.isArray(saved))return false;
+  // The game's loader applies Boolean(chest.open/treasure.opened). A corrupted
+  // string such as 'false' becomes true and permanently skips dungeon loot.
+  // Keep missing or null historical snapshots compatible.
+  for(const [field,flag] of [['chest','open'],['treasure','opened']]){
+   const row=saved[field];
+   if(row!=null&&(typeof row!=='object'||Array.isArray(row)||
+    (row[flag]!=null&&typeof row[flag]!=='boolean')))return false;
+  }
   if(saved.enemies===undefined)return true;
   return Array.isArray(saved.enemies)&&saved.enemies.every(e=>
    e&&typeof e==='object'&&!Array.isArray(e)&&
