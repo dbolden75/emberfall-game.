@@ -6,7 +6,9 @@ class Storage {
  setItem(k,v){if(k===this.fail)throw Error('QuotaExceededError');this.data.set(k,String(v));}
  removeItem(k){this.data.delete(k);}
 }
-function row(name='Cloud hero',updated=100){return {id:'slot1',name,class:'warrior',level:9,updated,state:{player:{name,class:'warrior',level:9,coins:543,inventory:[{id:'iron',count:12}],weapon:'iron_sword',armor:'leather',xp:27},mapId:'elderwood',companions:[{id:'dalen',hp:20,active:true}],mapStates:{elderwood:{enemies:[{alive:false,lootClaimed:true}],gatherNodes:[123]}},townQuestState:{questA:true,_localExploration:{elderwood:{'1,2':true}},_playReceipts:{receipt:'paid-item'}},houseStorage:{ashvale:{wood:10}},gatheringSkills:{mining:3},ownedHomes:{ashvale:true}}};}
+function row(name='Cloud hero',updated=100){return {id:'slot1',name,class:'warrior',level:9,updated,state:{player:{name,class:'warrior',level:9,coins:543,inventory:[{id:'iron',count:12}],weapon:'iron_sword',armor:'leather',xp:27},mapId:'elderwood',companions:[{id:'dalen',hp:20,active:true}],mapStates:{elderwood:{enemies:[{alive:false,lootClaimed:true}],gatherNodes:[123]}},townQuestState:{questA:true,_localExploration:{elderwood:{'1,2':true}},_playReceipts:{receipt:'paid-item'}},houseStorage:{ashvale:{wood:10}},gatheringSkills:{mining:{xp:100,level:3}},ownedHomes:{ashvale:true}}};}
+// Use the live game's {xp,level} skill record, not the old synthetic
+// mining:3 placeholder (which the loader would silently reset to zero XP).
 const slots={slot1:row(),slot3:{...row('Second hero',200),id:'slot3'}};
 const text=core.encode(slots,'slot3',300);
 const phoneA=new Storage({[core.SLOT_KEY]:JSON.stringify(slots)}),phoneB=new Storage();
