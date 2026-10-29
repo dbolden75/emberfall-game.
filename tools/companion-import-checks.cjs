@@ -17,6 +17,6 @@ for(const [label,pets] of [
  assert.throws(()=>core.parse(backup(r)),/Invalid saved companion data/,label);
  assert.equal(core.readLocal(JSON.stringify({slot1:r})).unreadable,true,label);
 }
-assert.match(ui,/Object\\.prototype\\.hasOwnProperty\\.call\\(petDefs,\\s*companion\\.id\\)/,
+assert(ui.includes('Object.prototype.hasOwnProperty.call(petDefs,companion.id)'),
  'Backup review must reject pets that are absent from the installed game');
 console.log('PASS: Cloud Save refuses malformed, duplicate and unrecognized pet imports; existing pet records still load.');
