@@ -63,7 +63,11 @@ function safeCompanions(pets){
  if(!Array.isArray(pets))return false;
  const seen=new Set();
  return pets.every(p=>p&&typeof p==='object'&&!Array.isArray(p)&&
-  typeof p.id==='string'&&!!p.id&&!seen.has(p.id)&&!!seen.add(p.id));
+  typeof p.id==='string'&&!!p.id&&!seen.has(p.id)&&!!seen.add(p.id)&&
+  // normalizePets() converts invalid health to zero and deactivates the pet.
+  // Reject lossy health snapshots before replacing a player's existing save.
+  ['hp','max'].every(field=>p[field]==null||
+   (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0)));
 }
 function safeInventory(items){
  return Array.isArray(items)&&items.every(row=>
