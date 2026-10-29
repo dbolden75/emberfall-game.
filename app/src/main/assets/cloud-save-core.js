@@ -3,6 +3,9 @@
 'use strict';
 const SLOT_KEY='emberfall_character_slots_v1',ACTIVE_SLOT_KEY='emberfall_active_character_slot_v1',RECOVERY_KEY='thornhaven.restore-recovery.v1';
 const IDS=['slot1','slot2','slot3','slot4'],MAX_BYTES=8*1024*1024;
+// Match installed petDefs ids. Unknown ids otherwise disappear in normalizePets().
+// Explicit membership also rejects inherited names such as '__proto__'.
+const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
 const clone=v=>JSON.parse(JSON.stringify(v));
 function validate(value){
  let nodes=0;
@@ -126,7 +129,7 @@ function safeCompanions(pets){
  if(!Array.isArray(pets))return false;
  const seen=new Set();
  return pets.every(p=>p&&typeof p==='object'&&!Array.isArray(p)&&
-  typeof p.id==='string'&&!!p.id&&!seen.has(p.id)&&!!seen.add(p.id)&&
+  typeof p.id==='string'&&KNOWN_PET_IDS.has(p.id)&&!seen.has(p.id)&&!!seen.add(p.id)&&
   // normalizePets() converts invalid health to zero and deactivates the pet.
   // Reject lossy health snapshots before replacing a player's existing save.
   ['hp','max'].every(field=>p[field]==null||
