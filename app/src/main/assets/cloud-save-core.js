@@ -91,6 +91,38 @@ function safeProgressFlags(state){
  }
  return true;
 }
+// Hearthstead normalizes restored settlement fields with Number(...) and !!.
+// A corrupt string such as stock.wood:"Infinity" grants a full storehouse;
+// founded:"false" founds the town, while claimed.hearth:"false" blocks a
+// one-time reward. Keep missing/null historical fields but reject malformed
+// explicitly supplied values before overwriting the player's current save.
+function safeSettlementProgress(settlement){
+ if(settlement==null)return true;
+ if(typeof settlement!=='object'||Array.isArray(settlement))return false;
+ if(settlement.founded!=null&&typeof settlement.founded!=='boolean')return false;
+ if(settlement.kills!=null&&(!Number.isSafeInteger(settlement.kills)||settlement.kills<0))return false;
+ if(settlement.lastTick!=null&&(!Number.isSafeInteger(settlement.lastTick)||settlement.lastTick<0))return false;
+ for(const group of ['stock','pending','levels','claimed','gathers']){
+  const values=settlement[group];
+  if(values==null)continue;
+  if(typeof values!=='object'||Array.isArray(values))return false;
+  for(const [id,value] of Object.entries(values)){
+   const supported=group==='levels'?['hall','mill','quarry','garden','forge','lodge']:
+    group==='claimed'?['hearth','lumber','stone','roads','promise','home']:
+    ['wood','stone','food'];
+   // Unknown fields from future game versions must survive an older restore.
+   if(!supported.includes(id)||value==null)continue;
+   if(group==='claimed'){
+    if(typeof value!=='boolean')return false;
+   }else if(group==='levels'){
+    if(!Number.isSafeInteger(value)||value<0||value>3)return false;
+   }else if(group==='gathers'){
+    if(!Number.isSafeInteger(value)||value<0)return false;
+   }else if(typeof value!=='number'||!Number.isFinite(value)||value<0)return false;
+  }
+ }
+ return true;
+}
 // Slayer Hall reads its saved ledger and hunt terms directly. Restored text
 // such as marks:'4' or coins:'30' concatenates during reward calculation;
 // a non-array rankRewards crashes .includes()/push() when claiming a rank.
@@ -176,6 +208,7 @@ function safeTownQuestFlags(quests){
  // exploration; an arbitrary truthy plan can skip preparing her escape.
  // Older backups may omit either field. Keep only the two plans the game writes
  // and the three unique clue ids its objects can actually produce.
+ if(!safeSettlementProgress(quests._settlement))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
  if(!safeVampireStory(quests._vampire))return false;
  const briar=quests.briar_hollow;
