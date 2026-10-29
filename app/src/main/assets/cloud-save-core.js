@@ -60,12 +60,12 @@ function safeProgressFlags(state){
 // fields without rejecting numerical completion counts or absent legacy fields.
 function safeTownQuestFlags(quests){
  if(!quests||typeof quests!=='object'||Array.isArray(quests))return false;
- function check(value,depth){
+ function check(value,depth,path=''){
   if(value===null||typeof value!=='object')return true;
   if(depth>40)return false;
   for(const [key,row] of Object.entries(value)){
-   if(['accepted','claimed','rescued'].includes(key)&&row!=null&&typeof row!=='boolean'){console.log('CI DEBUG QUEST FLAG',key,JSON.stringify(row));return false;}
-   if(!check(row,depth+1))return false;
+   if(['accepted','claimed','rescued'].includes(key)&&row!=null&&typeof row!=='boolean'){console.log('CI DEBUG QUEST FLAG',path+'.'+key,JSON.stringify(row));return false;}
+   if(!check(row,depth+1,path+'.'+key))return false;
   }
   return true;
  }
