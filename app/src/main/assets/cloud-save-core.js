@@ -89,6 +89,12 @@ function safeEnemySnapshots(mapStates){
  return Object.values(mapStates).every(saved=>{
   if(saved==null)return true;
   if(typeof saved!=='object'||Array.isArray(saved))return false;
+  // The gathering loader converts saved timers using Number(...). A string
+  // such as 'Infinity' becomes an infinite cooldown, making mining, chopping
+  // or fishing permanently unavailable. Historical absent/null timers remain
+  // valid, but supplied cooldowns must be finite nonnegative numbers.
+  if(saved.gatherNodes!=null&&(!Array.isArray(saved.gatherNodes)||
+   !saved.gatherNodes.every(time=>typeof time==='number'&&Number.isFinite(time)&&time>=0)))return false;
   // The game's loader applies Boolean(chest.open/treasure.opened). A corrupted
   // string such as 'false' becomes true and permanently skips dungeon loot.
   // Keep missing or null historical snapshots compatible.
