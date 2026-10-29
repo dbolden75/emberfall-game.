@@ -23,7 +23,10 @@ echo "PASS: historical/current APK DEBUG signing certificate matches: $old_cert"
 # Remove only the transient DEBUG app in the disposable GitHub emulator.
 adb uninstall "$PKG" | tee reports/emulator/qa-reset.txt
 adb install "$OLD" | tee reports/emulator/qa-install-157.txt
-adb shell am start -W -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-157.txt
+# Android's -W launch wait has stalled for >40 minutes in CI on an otherwise
+# booted emulator. The WebView probe below checks actual app readiness, so
+# start asynchronously and bound ADB itself to 90 seconds instead.
+timeout --signal=TERM --kill-after=10s 90s adb shell am start -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-157.txt
 sleep 12
 adb shell dumpsys package "$PKG" > reports/emulator/qa-package-157.txt
 grep -q 'versionCode=159' reports/emulator/qa-package-157.txt
@@ -38,7 +41,7 @@ adb shell input keyevent KEYCODE_HOME
 sleep 6
 adb shell am force-stop "$PKG"
 # Distinguish historical 1.0.57 cold-start retention from actual game-source migration.
-adb shell am start -W -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-restart-157.txt
+timeout --signal=TERM --kill-after=10s 90s adb shell am start -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-restart-157.txt
 sleep 10
 checkpid="$(adb shell pidof "$PKG" | tr -d '\r')"
 test -n "$checkpid"
@@ -51,7 +54,7 @@ adb shell am force-stop "$PKG"
 adb install -r "$NEW" | tee reports/emulator/qa-upgrade-166.txt
 adb shell dumpsys package "$PKG" > reports/emulator/qa-package-166.txt
 grep -q 'versionCode=166' reports/emulator/qa-package-166.txt
-adb shell am start -W -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-166.txt
+timeout --signal=TERM --kill-after=10s 90s adb shell am start -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-166.txt
 sleep 12
 newpid="$(adb shell pidof "$PKG" | tr -d '\r')"
 test -n "$newpid"
