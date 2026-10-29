@@ -1,42 +1,11 @@
-name: Legacy alternate-package APK (manual only)
+name: Thornhaven Android test APK (maintained package)
 on:
   workflow_dispatch:
+
+# Compatibility entry point for old Android APK workflow bookmarks.
+# Never run the historical Capacitor packaging path: it used a different
+# applicationId, com.thornhaven.game, and cannot update existing player saves.
+# Use the audited Gradle project, identity checks, and regression tests instead.
 jobs:
-  android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - name: Configure Android SDK
-        shell: bash
-        run: |
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(command -v sdkmanager)"
-          fi
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-      - name: Validate game scripts and world map
-        run: node scripts/test-world-map.cjs
-      - run: |
-          mkdir -p www
-          cp index.html www/index.html
-          npm init -y
-          npm install @capacitor/core@7 @capacitor/android@7
-          npm install -D @capacitor/cli@7
-          printf '{"appId":"com.thornhaven.game","appName":"Thornhaven","webDir":"www"}\n' > capacitor.config.json
-          npx cap add android
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
-        with:
-          name: thornhaven-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+  supported-android-build:
+    uses: ./.github/workflows/thornhaven-android-build.yml
