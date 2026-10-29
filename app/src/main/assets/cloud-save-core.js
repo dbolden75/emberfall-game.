@@ -30,6 +30,7 @@ function validate(value){
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
   if(!safeExperience(p.xp))throw Error('Invalid character experience.');
+  if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
   if(!safeCompanions(row.state.companions))throw Error('Invalid saved companion data.');
   if(!safeHouseStorage(row.state.houseStorage))throw Error('Invalid house chest contents.');
@@ -44,6 +45,32 @@ function validate(value){
 // or null XP is still accepted; reject nonnumeric or negative supplied XP.
 function safeExperience(xp){
  return xp==null||(typeof xp==='number'&&Number.isFinite(xp)&&xp>=0);
+}
+// The live gathering normalizer converts XP using Number(...), treating an
+// invalid string as 0 or Infinity as unlimited skill progress. Similarly the
+// forge loader silently clamps corrupted rank strings, potentially erasing
+// paid upgrades or granting upgrades never earned. Current saves store
+// nonnegative integer XP, levels 1-10 and item upgrade ranks 0-5. Older
+// saves may omit the fields entirely, and unknown item ids are preserved for
+// forward compatibility.
+function safeGatheringForgeProgress(state){
+ const skills=state.gatheringSkills;
+ if(skills!=null){
+  if(typeof skills!=='object'||Array.isArray(skills))return false;
+  for(const id of ['mining','woodcutting','fishing']){
+   const row=skills[id];
+   if(row==null)continue;
+   if(typeof row!=='object'||Array.isArray(row))return false;
+   if(row.xp!=null&&(!Number.isSafeInteger(row.xp)||row.xp<0))return false;
+   if(row.level!=null&&(!Number.isSafeInteger(row.level)||row.level<1||row.level>10))return false;
+  }
+ }
+ const upgrades=state.gearUpgradeLevels;
+ if(upgrades!=null){
+  if(typeof upgrades!=='object'||Array.isArray(upgrades))return false;
+  if(!Object.values(upgrades).every(rank=>Number.isSafeInteger(rank)&&rank>=0&&rank<=5))return false;
+ }
+ return true;
 }
 // The game applies !!value to quest milestones and home ownership when
 // loading a character. Nonempty strings such as "false" therefore become true,
@@ -281,7 +308,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeExperience(p.xp)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
+  safeExperience(p.xp)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
   safeTownQuestFlags(state.townQuestState);
 }
