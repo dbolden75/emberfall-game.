@@ -76,6 +76,11 @@ function safeTownQuestFlags(quests){
   for(const [key,row] of Object.entries(value)){
    const settlementClaimLedger=path==='._settlement'&&key==='claimed'&&row&&typeof row==='object'&&!Array.isArray(row);
    if(['accepted','claimed','rescued'].includes(key)&&row!=null&&typeof row!=='boolean'&&!settlementClaimLedger)return false;
+   // The live quest and slayer handlers increment kills with `kills + 1`.
+   // Restored text such as '4' concatenates into '41' before Math.min(),
+   // instantly completing quests that should still require combat.
+   // Historical missing/null counters are initialized by the game.
+   if(key==='kills'&&row!=null&&(!Number.isSafeInteger(row)||row<0))return false;
    if(!check(row,depth+1,path+'.'+key))return false;
   }
   return true;
