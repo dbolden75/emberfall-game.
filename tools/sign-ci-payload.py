@@ -99,12 +99,12 @@ def main() -> None:
         aab = private / 'app-release.aab'
         unsigned_aab = private / 'pre-sign-original.aab'
         shutil.copy2(aab, unsigned_aab)
-        check_run([zipalign, '-f', '-p', '4', private / 'app-release-unsigned.apk', aligned], env)
+        check_run([zipalign, '-P', '16', '-f', '4', private / 'app-release-unsigned.apk', aligned], env)
         check_run([signer, 'sign', '--ks', key, '--ks-key-alias', props['keyAlias'],
                    '--ks-pass', 'env:THORNHAVEN_STORE_PASS', '--key-pass', 'env:THORNHAVEN_KEY_PASS',
                    '--v2-signing-enabled', 'true', '--v3-signing-enabled', 'true',
                    '--out', apk, aligned], env)
-        check_run([zipalign, '-c', '-p', '4', apk], env)
+        check_run([zipalign, '-c', '-P', '16', '4', apk], env)
         result = check_run([signer, 'verify', '--verbose', '--print-certs', apk], env, capture=True)
         for marker in (EXPECTED_CERT, 'Verified using v2 scheme (APK Signature Scheme v2): true',
                        'Verified using v3 scheme (APK Signature Scheme v3): true'):
