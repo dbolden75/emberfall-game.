@@ -1,6 +1,6 @@
 const fs=require('node:fs');const assert=require('node:assert/strict');const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(Boolean);
+const scripts=[...html.matchAll(new RegExp('<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>', 'gi'))].map(m=>m[1]).filter(Boolean);
 assert(scripts.length,'Game scripts must exist');
 for(const script of scripts)new vm.Script(script,{filename:'game-inline.js'});
 assert(html.includes('id="thornhavenAtlasFog"'),'Fog overlay is present');
