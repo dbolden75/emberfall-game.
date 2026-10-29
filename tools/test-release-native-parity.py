@@ -60,9 +60,20 @@ class SignedPayloadTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unexpected new'):
             parity.compare(*self.pair(extra='assets/secret.js'), 'APK', False)
 
-    def test_missing_signatures_rejected(self):
+    def test_v2_v3_apk_without_jar_signatures(self):
+        # Real maintained-key 1.0.64 APKs have v2/v3 signing blocks,
+        # which are outside the ZIP entry table.
+        signed, unsigned = self.pair(prefix='APK', signatures=False)
+        self.assertEqual(parity.compare(signed, unsigned, 'APK', False)[:2], (3, 0))
+
+    def test_partial_v1_apk_jar_signatures_rejected(self):
         with self.assertRaisesRegex(ValueError, 'signing entries absent'):
-            parity.compare(*self.pair(signatures=False), 'APK', False)
+            parity.compare(*self.pair(prefix='APK', signatures=False,
+                                      extra='META-INF/VAELBRIN.SF'), 'APK', False)
+
+    def test_missing_aab_jar_signatures_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'signing entries absent'):
+            parity.compare(*self.pair(prefix='AAB', signatures=False), 'AAB', False)
 
     def test_vcs_revision_only_diff_requires_explicit_opt_in(self):
         pair = self.pair(vcs=VCS_B)
