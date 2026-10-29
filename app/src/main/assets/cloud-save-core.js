@@ -81,8 +81,14 @@ function safeHouseStorage(saved){
   }
  }
  // Historical saves sometimes stored the Brackenford chests at root level.
+ // The game applies these legacy arrays *after* modern town storage, so a
+ // backup containing conflicting copies would silently overwrite modern gear.
+ // Do not choose one copy for the player: refuse the ambiguous import while
+ // allowing legacy-only, modern-only and byte-equivalent duplicate arrays.
  for(const chest of ['front_chest','side_chest']){
   if(saved[chest]!=null&&!safeInventory(saved[chest]))return false;
+  if(saved[chest]!=null&&saved.brackenford?.[chest]!=null&&
+   JSON.stringify(saved[chest])!==JSON.stringify(saved.brackenford[chest]))return false;
  }
  return true;
 }
