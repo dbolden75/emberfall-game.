@@ -64,6 +64,31 @@ function safeProgressFlags(state){
  }
  return true;
 }
+// Slayer Hall reads its saved ledger and hunt terms directly. Restored text
+// such as marks:'4' or coins:'30' concatenates during reward calculation;
+// a non-array rankRewards crashes .includes()/push() when claiming a rank.
+// Reject only malformed explicitly supplied values. Historical partial
+// snapshots may omit newly added fields and retain their existing defaults.
+function safeSlayerLedger(ledger){
+ if(ledger==null)return true;
+ if(typeof ledger!=='object'||Array.isArray(ledger))return false;
+ const count=value=>Number.isSafeInteger(value)&&value>=0;
+ if(['marks','completed'].some(key=>ledger[key]!=null&&!count(ledger[key])))return false;
+ if(ledger.joined!=null&&typeof ledger.joined!=='boolean')return false;
+ if(ledger.rankRewards!=null&&(!Array.isArray(ledger.rankRewards)||
+  !ledger.rankRewards.every(name=>typeof name==='string')))return false;
+ if(ledger.hunts!=null){
+  if(typeof ledger.hunts!=='object'||Array.isArray(ledger.hunts))return false;
+  for(const hunt of Object.values(ledger.hunts)){
+   if(!hunt||typeof hunt!=='object'||Array.isArray(hunt))return false;
+   if(['kills','completed','marks','coins','xp','acceptedAt'].some(key=>
+    hunt[key]!=null&&!count(hunt[key])))return false;
+   if(hunt.target!=null&&(!Number.isSafeInteger(hunt.target)||hunt.target<=0))return false;
+   if(hunt.accepted!=null&&typeof hunt.accepted!=='boolean')return false;
+  }
+ }
+ return true;
+}
 // Quest handlers test accepted/claimed/rescued as truthy values. Strings such
 // as 'false' skip conversations and permanently withhold one-time rewards.
 // The record is nested (e.g. slayer contracts); validate explicitly supplied
@@ -101,6 +126,7 @@ function safeTownQuestFlags(quests){
  // exploration; an arbitrary truthy plan can skip preparing her escape.
  // Older backups may omit either field. Keep only the two plans the game writes
  // and the three unique clue ids its objects can actually produce.
+ if(!safeSlayerLedger(quests._slayers))return false;
  const briar=quests.briar_hollow;
  if(briar!=null){
   if(typeof briar!=='object'||Array.isArray(briar))return false;
