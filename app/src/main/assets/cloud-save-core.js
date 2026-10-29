@@ -29,9 +29,29 @@ function validate(value){
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
   if(!safeCompanions(row.state.companions))throw Error('Invalid saved companion data.');
   if(!safeHouseStorage(row.state.houseStorage))throw Error('Invalid house chest contents.');
+  if(!safeProgressFlags(row.state))throw Error('Invalid saved quest or home progress.');
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
+}
+// The game applies !!value to quest milestones and home ownership when
+// loading a character. Nonempty strings such as "false" therefore become true,
+// incorrectly skipping quests or granting houses after a Cloud Save restore.
+// Only validate explicitly supplied flags; missing/null legacy fields still
+// receive the game's existing defaults without changing the save schema.
+function safeProgressFlags(state){
+ const flags=['done','hasSigil','hasFourfoldKey','huntRewarded','shrineRewarded',
+  'deepQuestDone','houseBought'];
+ if(!flags.every(key=>state[key]==null||typeof state[key]==='boolean'))return false;
+ for(const group of ['townRelicState','ownedHomes']){
+  const record=state[group];
+  if(record==null)continue;
+  if(typeof record!=='object'||Array.isArray(record))return false;
+  for(const town of ['ashvale','brackenford','stonewatch','sunmere']){
+   if(record[town]!=null&&typeof record[town]!=='boolean')return false;
+  }
+ }
+ return true;
 }
 // Enemy snapshots are read directly on game startup. A null/invalid enemy
 // entry throws inside applySavedGame and prevents the character from loading.
@@ -145,7 +165,8 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&safeHouseStorage(state.houseStorage);
+  safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
+  safeHouseStorage(state.houseStorage)&&safeProgressFlags(state);
 }
 function readLocal(raw){
  if(raw===null)return {slots:{},unreadable:false};
