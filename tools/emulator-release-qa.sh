@@ -104,6 +104,9 @@ webview_phase touch-controls background
 # Verify actual Android portrait->landscape orientation requests keep the
 # D-pad/action controls usable, in viewport and separate, without losing saves.
 webview_phase orientation-controls background
+# Exercise the actual in-game MENU to switch joystick/touch and left/right
+# controls in portrait and landscape, with save-state and geometry checks.
+webview_phase control-preferences background
 
 adb logcat -d -v time > reports/emulator/qa-release-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then

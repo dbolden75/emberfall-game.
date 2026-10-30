@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -484,6 +484,162 @@ const touchControls=String.raw`(async()=>{
 
 // Validate native rotation, save slots and controls in BOTH orientations on
 // disposable Android 14. This is automated geometry, not physical touch.
+
+// Verify the actual MENU preference choices (not only direct JS helpers) on
+// Android WebView, across BOTH physical orientations. A joystick option that
+// silently fails or overlaps the action buttons is a release regression.
+// These are synthetic DOM clicks/geometry checks, not human finger input.
+const controlPreferences=String.raw`(async()=>{
+  // Synthetic fixtures bypass Continue/New Game, so title-menu CSS can still
+  // hide the main menu despite titleMenuActive=false. Use the real transition
+  // rather than overriding CSS or clicking invisible settings controls.
+  if(typeof leaveTitleMenu!=='function')throw Error('Title exit API unavailable');
+  leaveTitleMenu();
+  if(document.body.classList.contains('title-menu'))
+    throw Error('QA fixture did not leave title presentation');
+  if(typeof setMovementMode!=='function'||typeof setControlSide!=='function'||
+     !window.ThornhavenDevice||
+     typeof ThornhavenDevice.setOrientationPreference!=='function')
+    throw Error('Android control preference APIs unavailable');
+  const menu=document.getElementById('optionsMenu');
+  const menuButton=document.getElementById('optionsToggle');
+  const pad=document.querySelector('.controls');
+  const actions=document.querySelector('.actions');
+  const game=document.getElementById('gameView');
+  const row=document.getElementById('controlRow');
+  if(!menu||!menuButton||!pad||!actions||!game||!row)
+    throw Error('Game settings or thumb controls missing');
+  const originalMode=document.body.dataset.movementMode;
+  const originalSide=document.body.dataset.controlSide;
+  const originalOrientation=ThornhavenDevice.getOrientationPreference();
+  const originalRowHidden=row.hidden;
+  const oldActive=localStorage.getItem(ACTIVE_SLOT_KEY);
+  const originalHero=JSON.stringify({
+    name:player.name,coins:player.coins,level:player.level,xp:player.xp
+  });
+  const originalSlots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');
+  const originalSecondary=JSON.stringify(['slot1','slot2'].map(id=>({
+    name:originalSlots[id]?.state?.player?.name,
+    coins:originalSlots[id]?.state?.player?.coins,
+    level:originalSlots[id]?.state?.player?.level
+  })));
+  const measurements=[];
+  hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
+  game.hidden=false;row.hidden=false;
+  document.getElementById('adventureScreen').hidden=true;
+  function choose(attribute,value){
+    if(menu.hidden)menuButton.click();
+    if(menu.hidden||menu.dataset.page!=='main')
+      throw Error('Game main MENU did not open');
+    // Test the actual visible Settings -> Movement & controls navigation.
+    // Calling .click() on a hidden option would be a meaningless false pass.
+    const category=[...document.querySelectorAll('#menuCategories button')].find(
+      button=>button.textContent.trim().startsWith('Settings'));
+    if(!category||!category.getClientRects().length){
+      const cats=document.getElementById('menuCategories');
+      throw Error('Settings category absent from opened MENU: '+JSON.stringify({
+        menuHidden:menu.hidden,menuPage:menu.dataset.page,
+        menuDisplay:getComputedStyle(menu).display,menuRects:menu.getClientRects().length,
+        catsPresent:!!cats,catsHidden:cats?.hidden,
+        catsDisplay:cats?getComputedStyle(cats).display:null,
+        catsRects:cats?.getClientRects().length,
+        buttons:[...(cats?.querySelectorAll('button')||[])].map(b=>({
+          text:b.textContent,hidden:b.hidden,rects:b.getClientRects().length,
+          display:getComputedStyle(b).display})),
+        active:document.activeElement?.id,titleMenuActive
+      }));
+    }
+    category.click();
+    if(menu.dataset.page!=='settings')
+      throw Error('Settings category did not open');
+    const controls=document.getElementById('controlSettings');
+    if(!controls||controls.hidden)throw Error('Movement & controls section hidden');
+    if(!controls.open)controls.querySelector('summary').click();
+    if(!controls.open)throw Error('Movement & controls section did not expand');
+    const button=controls.querySelector('['+attribute+'="'+value+'"]');
+    if(!button||!button.getClientRects().length)
+      throw Error('Visible settings option missing: '+attribute+'='+value);
+    button.click();
+    if(!menu.hidden)throw Error('MENU did not close after '+attribute+'='+value);
+    if(button.getAttribute('aria-pressed')!=='true')
+      throw Error('Selected option not reflected in aria-pressed');
+  }
+  function rectInView(rect,label){
+    if(rect.width<35||rect.height<35||rect.left<-.5||rect.top<-.5||
+       rect.right>innerWidth+.5||rect.bottom>innerHeight+.5)
+      throw Error(label+' clipped/offscreen at '+innerWidth+'x'+innerHeight+
+        ': '+JSON.stringify([rect.left,rect.top,rect.right,rect.bottom]));
+  }
+  try{
+    for(const orientation of ['portrait','landscape']){
+      ThornhavenDevice.setOrientationPreference(orientation);
+      let ready=false;
+      for(let i=0;i<24;i++){
+        await new Promise(resolve=>setTimeout(resolve,400));
+        if(ThornhavenDevice.getOrientationPreference()===orientation &&
+           (orientation==='portrait'?innerHeight>innerWidth:innerWidth>innerHeight)){
+          ready=true;break;
+        }
+      }
+      if(!ready)throw Error('Native Android '+orientation+' orientation never applied');
+      for(const side of ['right','left']){
+        choose('data-side-choice',side);
+        if(document.body.dataset.controlSide!==side||
+           localStorage.getItem(CONTROL_PREF)!==side)
+          throw Error('MENU side preference did not persist: '+side);
+        for(const mode of ['touch','arrows']){
+          choose('data-movement-choice',mode);
+          if(document.body.dataset.movementMode!==mode||
+             localStorage.getItem(MOVEMENT_PREF)!==mode)
+            throw Error('MENU movement preference did not persist: '+mode);
+          await new Promise(resolve=>requestAnimationFrame(resolve));
+          const ar=actions.getBoundingClientRect();
+          rectInView(ar,'action buttons '+orientation+'/'+side+'/'+mode);
+          const padVisible=getComputedStyle(pad).display!=='none';
+          if(padVisible!==(mode==='arrows'))
+            throw Error('Joystick visibility wrong: '+orientation+'/'+side+'/'+mode);
+          let overlapPx=0,px=null;
+          if(padVisible){
+            const pr=pad.getBoundingClientRect();
+            rectInView(pr,'joystick '+orientation+'/'+side+'/'+mode);
+            overlapPx=Math.max(0,Math.min(pr.right,ar.right)-Math.max(pr.left,ar.left))*
+              Math.max(0,Math.min(pr.bottom,ar.bottom)-Math.max(pr.top,ar.top));
+            if(overlapPx>1)throw Error('Joystick overlaps action controls in '+orientation+
+              '/'+side+': '+overlapPx+' px');
+            const padCenter=(pr.left+pr.right)/2,actionsCenter=(ar.left+ar.right)/2;
+            if(side==='right' && !(padCenter<actionsCenter))
+              throw Error('Right-handed layout did not keep joystick to left of actions');
+            if(side==='left' && !(padCenter>actionsCenter))
+              throw Error('Left-handed layout did not move joystick to right of actions');
+            px=[Math.round(pr.left),Math.round(pr.right)];
+          }
+          measurements.push({orientation,side,mode,viewport:[innerWidth,innerHeight],
+            padVisible,joystickX:px,actionX:[Math.round(ar.left),Math.round(ar.right)],
+            overlapPx});
+        }
+      }
+    }
+    const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');
+    const secondary=JSON.stringify(['slot1','slot2'].map(id=>({
+      name:slots[id]?.state?.player?.name,
+      coins:slots[id]?.state?.player?.coins,
+      level:slots[id]?.state?.player?.level
+    })));
+    if(JSON.stringify({name:player.name,coins:player.coins,level:player.level,xp:player.xp})!==
+       originalHero||secondary!==originalSecondary||
+       localStorage.getItem(ACTIVE_SLOT_KEY)!==oldActive)
+      throw Error('MENU movement/side choices replaced character progression');
+    return JSON.stringify({menuOptionsPassed:measurements.length,measurements,
+      savePreserved:true,physicalDeviceTest:false});
+  }finally{
+    if(!menu.hidden)menuButton.click();
+    setMovementMode(originalMode);
+    setControlSide(originalSide);
+    ThornhavenDevice.setOrientationPreference(originalOrientation);
+    row.hidden=originalRowHidden;
+  }
+})()`;
+
 const orientationControls=String.raw`(async()=>{
   if(!window.ThornhavenDevice ||
      typeof ThornhavenDevice.setOrientationPreference!=='function' ||
@@ -563,7 +719,7 @@ const orientationControls=String.raw`(async()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
