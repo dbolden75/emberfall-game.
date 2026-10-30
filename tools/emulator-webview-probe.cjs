@@ -582,6 +582,7 @@ const controlPreferences=String.raw`(async()=>{
         }
       }
       if(!ready)throw Error('Native Android '+orientation+' orientation never applied');
+      const touchActionsBySide={};
       for(const side of ['right','left']){
         choose('data-side-choice',side);
         if(document.body.dataset.controlSide!==side||
@@ -595,6 +596,7 @@ const controlPreferences=String.raw`(async()=>{
           await new Promise(resolve=>requestAnimationFrame(resolve));
           const ar=actions.getBoundingClientRect();
           rectInView(ar,'action buttons '+orientation+'/'+side+'/'+mode);
+          if(mode==='touch')touchActionsBySide[side]={left:ar.left,right:ar.right};
           const padVisible=getComputedStyle(pad).display!=='none';
           if(padVisible!==(mode==='arrows'))
             throw Error('Joystick visibility wrong: '+orientation+'/'+side+'/'+mode);
@@ -618,6 +620,10 @@ const controlPreferences=String.raw`(async()=>{
             overlapPx});
         }
       }
+      const leftTouch=touchActionsBySide.left,rightTouch=touchActionsBySide.right;
+      if(!leftTouch||!rightTouch||!(leftTouch.right+8<rightTouch.left))
+        throw Error('Left touch-mode action buttons did not move to the left in '+
+          orientation+': '+JSON.stringify(touchActionsBySide));
     }
     const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');
     const secondary=JSON.stringify(['slot1','slot2'].map(id=>({
@@ -630,7 +636,7 @@ const controlPreferences=String.raw`(async()=>{
        localStorage.getItem(ACTIVE_SLOT_KEY)!==oldActive)
       throw Error('MENU movement/side choices replaced character progression');
     return JSON.stringify({menuOptionsPassed:measurements.length,measurements,
-      savePreserved:true,physicalDeviceTest:false});
+      leftTouchActionLayoutVerified:true,savePreserved:true,physicalDeviceTest:false});
   }finally{
     if(!menu.hidden)menuButton.click();
     setMovementMode(originalMode);
