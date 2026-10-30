@@ -522,9 +522,24 @@ const controlPreferences=String.raw`(async()=>{
   document.getElementById('adventureScreen').hidden=true;
   function choose(attribute,value){
     if(menu.hidden)menuButton.click();
-    if(menu.hidden)throw Error('Game MENU did not open');
-    const button=menu.querySelector('['+attribute+'="'+value+'"]');
-    if(!button)throw Error('MENU option missing: '+attribute+'='+value);
+    if(menu.hidden||menu.dataset.page!=='main')
+      throw Error('Game main MENU did not open');
+    // Test the actual visible Settings -> Movement & controls navigation.
+    // Calling .click() on a hidden option would be a meaningless false pass.
+    const category=[...document.querySelectorAll('#menuCategories button')].find(
+      button=>button.textContent.trim().startsWith('Settings'));
+    if(!category||!category.getClientRects().length)
+      throw Error('Settings category absent from opened MENU');
+    category.click();
+    if(menu.dataset.page!=='settings')
+      throw Error('Settings category did not open');
+    const controls=document.getElementById('controlSettings');
+    if(!controls||controls.hidden)throw Error('Movement & controls section hidden');
+    if(!controls.open)controls.querySelector('summary').click();
+    if(!controls.open)throw Error('Movement & controls section did not expand');
+    const button=controls.querySelector('['+attribute+'="'+value+'"]');
+    if(!button||!button.getClientRects().length)
+      throw Error('Visible settings option missing: '+attribute+'='+value);
     button.click();
     if(!menu.hidden)throw Error('MENU did not close after '+attribute+'='+value);
     if(button.getAttribute('aria-pressed')!=='true')
