@@ -10,6 +10,23 @@ APK=app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk
 AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
 APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
 mkdir -p reports/emulator
+# Preserve host/guest evidence if any step fails before final logcat.
+# Every Android diagnostic is bounded so an offline emulator cannot conceal
+# the original failure status or hang this GitHub Actions job.
+capture_failure () {
+  local rc="$1"
+  trap - EXIT
+  if (( rc != 0 )); then
+    printf 'Failure exit code: %s\n' "$rc" > reports/emulator/qa-release-failure-status.txt
+    free -m > reports/emulator/qa-release-failure-host-memory.txt 2>&1 || true
+    timeout 10s adb devices -l > reports/emulator/qa-release-failure-devices.txt 2>&1 || true
+    timeout 10s adb logcat -d -v time > reports/emulator/qa-release-failure-logcat.txt 2>&1 || true
+    timeout 10s adb shell dumpsys activity activities > reports/emulator/qa-release-failure-activity.txt 2>&1 || true
+    timeout 10s adb shell dumpsys meminfo "$PKG" > reports/emulator/qa-release-failure-app-memory.txt 2>&1 || true
+  fi
+  exit "$rc"
+}
+trap 'capture_failure $?' EXIT
 for apk in "$OLD_APK" "$APK"; do
   test -s "$apk"
   "$APKSIGNER" verify --verbose "$apk" > /dev/null
