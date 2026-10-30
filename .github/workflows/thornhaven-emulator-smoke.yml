@@ -11,6 +11,7 @@ on:
       - qa/164-true-town-edge-entry-20261030
       - qa/164-android-joystick-drag-20261030
       - qa/164-android-portrait-landscape-controls-20261030
+      - qa/164-options-joystick-control-side-20261030
       - fix/fog-refresh-party-portraits-20261028
       - qa/164-release-apk-emulator-smoke-20261029
       - fix/emulator-launch-watchdog-20261029
