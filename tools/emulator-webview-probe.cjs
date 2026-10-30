@@ -528,8 +528,20 @@ const controlPreferences=String.raw`(async()=>{
     // Calling .click() on a hidden option would be a meaningless false pass.
     const category=[...document.querySelectorAll('#menuCategories button')].find(
       button=>button.textContent.trim().startsWith('Settings'));
-    if(!category||!category.getClientRects().length)
-      throw Error('Settings category absent from opened MENU');
+    if(!category||!category.getClientRects().length){
+      const cats=document.getElementById('menuCategories');
+      throw Error('Settings category absent from opened MENU: '+JSON.stringify({
+        menuHidden:menu.hidden,menuPage:menu.dataset.page,
+        menuDisplay:getComputedStyle(menu).display,menuRects:menu.getClientRects().length,
+        catsPresent:!!cats,catsHidden:cats?.hidden,
+        catsDisplay:cats?getComputedStyle(cats).display:null,
+        catsRects:cats?.getClientRects().length,
+        buttons:[...(cats?.querySelectorAll('button')||[])].map(b=>({
+          text:b.textContent,hidden:b.hidden,rects:b.getClientRects().length,
+          display:getComputedStyle(b).display})),
+        active:document.activeElement?.id,titleMenuActive
+      }));
+    }
     category.click();
     if(menu.dataset.page!=='settings')
       throw Error('Settings category did not open');
