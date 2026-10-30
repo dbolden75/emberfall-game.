@@ -493,7 +493,19 @@ const orientationControls=String.raw`(async()=>{
   const row=document.getElementById('controlRow'),game=document.getElementById('gameView');
   if(!pad||!actions||!row||!game)throw Error('Orientation QA controls missing');
   const oldHidden=row.hidden,original=ThornhavenDevice.getOrientationPreference();
-  const oldSlots=localStorage.getItem(SAVE_SLOTS_KEY),oldActive=localStorage.getItem(ACTIVE_SLOT_KEY);
+  const oldActive=localStorage.getItem(ACTIVE_SLOT_KEY);
+  // Compare character progression instead of raw JSON: the running game may
+  // legitimately autosave updated timestamps while the screen rotates.
+  function stableCharacters(){
+    const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+    return JSON.stringify(['slot1','slot2'].map(id=>{
+      const st=slots?.[id]?.state,p=st?.player;
+      return {name:p?.name,coins:p?.coins,level:p?.level,xp:p?.xp,
+        inventory:p?.inventory,miningXp:st?.gatheringSkills?.mining?.xp,
+        fishingXp:st?.gatheringSkills?.fishing?.xp};
+    }));
+  }
+  const oldCharacters=stableCharacters();
   hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
   row.hidden=false;game.hidden=false;
   document.getElementById('adventureScreen').hidden=true;
@@ -530,7 +542,7 @@ const orientationControls=String.raw`(async()=>{
         pad:[Math.round(p.width),Math.round(p.height)],
         actions:[Math.round(a.width),Math.round(a.height)],overlapPx});
     }
-    if(localStorage.getItem(SAVE_SLOTS_KEY)!==oldSlots ||
+    if(stableCharacters()!==oldCharacters ||
        localStorage.getItem(ACTIVE_SLOT_KEY)!==oldActive)
       throw Error('Orientation change unexpectedly replaced QA character slot data');
     return JSON.stringify({measurements,saveKeysPreserved:true,syntheticGeometry:true,
