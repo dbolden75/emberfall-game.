@@ -118,12 +118,11 @@ webview_phase town-edge-entry background
 # Verify a single held joystick pointer changes eight-way direction without
 # lifting, then returns to neutral on release/cancel and avoids action overlap.
 webview_phase touch-controls background
-# Keep the complete native portrait/landscape + left/right touch-control
-# matrix after existing save, lifecycle and map assertions, as in the passing
-# 2GiB emulator run 41079632991. Probe guest/host memory before rotation.
-free -m > reports/emulator/qa-release-before-controls-host-memory.txt || true
-timeout 10s adb shell cat /proc/meminfo > reports/emulator/qa-release-before-controls-guest-memory.txt 2>&1 || true
-webview_phase control-preferences background
+# The native portrait/landscape and left/right, touch/arrows matrix runs in
+# a separate clean Android emulator job using the exact same built game.
+# Combining repeated DocumentsUI open/save cycles with native rotation
+# caused intermittent host emulator GPU/ADB shutdown on post-merge main.
+# Do NOT drop the control assertions: see emulator-control-matrix-qa.sh.
 
 adb logcat -d -v time > reports/emulator/qa-release-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
