@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -405,6 +405,82 @@ const townEdgeEntry=String.raw`(async()=>{
   }
   return JSON.stringify({edgeEntries:observations,realFrameTransitions:true,originalSigner:false});
 })()`;
+
+// Exercise the LIVE Android WebView movement-pad event handlers, not just CSS.
+// One held synthetic pointer must steer right -> up -> southwest without a
+// lift, recenter to neutral, and leave no stuck movement after release/cancel.
+// These programmatic DOM events are QA probes, not physical touchscreen input.
+const touchControls=String.raw`(async()=>{
+  if(typeof movementAxes!=='function'||
+     typeof movementTouches==='undefined'||typeof PointerEvent!=='function')
+    throw Error('Movement-pad runtime or PointerEvent unavailable');
+  const pad=document.querySelector('.controls'),actions=document.querySelector('.actions');
+  const row=document.getElementById('controlRow'),game=document.getElementById('gameView');
+  if(!pad||!actions||!row||!game)throw Error('Movement controls missing');
+  const formerHidden=row.hidden;
+  hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
+  game.hidden=false;row.hidden=false;
+  document.getElementById('adventureScreen').hidden=true;
+  const r=pad.getBoundingClientRect(),a=actions.getBoundingClientRect();
+  const overlapWidth=Math.max(0,Math.min(r.right,a.right)-Math.max(r.left,a.left));
+  const overlapHeight=Math.max(0,Math.min(r.bottom,a.bottom)-Math.max(r.top,a.top));
+  if(r.width<100||r.height<100||getComputedStyle(pad).display==='none')
+    throw Error('Joystick/D-pad invisible or undersized');
+  if(overlapWidth*overlapHeight>1)
+    throw Error('Joystick overlaps action controls: '+overlapWidth+'x'+overlapHeight);
+  if(r.left<-.5||r.right>innerWidth+.5||a.right>innerWidth+.5)
+    throw Error('Controls outside viewport: '+innerWidth);
+  if(pad.querySelectorAll('[data-key]').length!==8)
+    throw Error('Eight direction buttons missing');
+  if(!combatReady())throw Error('Town gameplay not accepting movement input');
+  const cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2;
+  const id=8675309;
+  function fire(type,x,y,pointerId=id){
+    const target=type==='pointerdown' ? pad.querySelector('[data-key="ArrowRight"]') : pad;
+    target.dispatchEvent(new PointerEvent(type,{
+      bubbles:true,cancelable:true,pointerId,pointerType:'touch',
+      isPrimary:pointerId===id,button:0,buttons:type==='pointerup'?0:1,
+      clientX:x,clientY:y
+    }));
+  }
+  function expect(key,label){
+    const held=[...keys].filter(k=>k.startsWith('Touch:'));
+    const axis=movementAxes();
+    if(key===null ? held.length!==0 : held.length!==1||held[0]!=='Touch:'+key)
+      throw Error(label+' held '+held.join(','));
+    return {held,axis};
+  }
+  const seen=[];
+  try{
+    keys.clear();clearPadTouches();
+    const right=pad.querySelector('[data-key="ArrowRight"]').getBoundingClientRect();
+    const rightX=(right.left+right.right)/2,rightY=(right.top+right.bottom)/2;
+    fire('pointerdown',rightX,rightY);
+    seen.push({phase:'hold-right',...expect('ArrowRight','right')});
+    if(movementTouches.size!==1)throw Error('First touch not held');
+    fire('pointermove',cx,cy-42);
+    seen.push({phase:'drag-up',...expect('ArrowUp','up')});
+    fire('pointermove',cx,cy);
+    seen.push({phase:'neutral',...expect(null,'center')});
+    fire('pointermove',cx-42,cy+42);
+    seen.push({phase:'drag-southwest',...expect('DiagonalSW','southwest')});
+    fire('pointerup',cx-42,cy+42);
+    seen.push({phase:'released',...expect(null,'release')});
+    if(movementTouches.size!==0)throw Error('Release left held pointer behind');
+    fire('pointerdown',rightX,rightY);
+    expect('ArrowRight','second press');
+    fire('pointercancel',rightX,rightY);
+    seen.push({phase:'cancelled',...expect(null,'cancel')});
+    if(movementTouches.size!==0)throw Error('Cancel left held pointer behind');
+    return JSON.stringify({joystickHoldDrag:seen,padWidth:r.width,
+      actionOverlapPx:overlapWidth*overlapHeight,
+      syntheticPointerEvents:true,physicalDeviceTest:false,hasVirtualJoystick:false});
+  }finally{
+    clearPadTouches();keys.clear();
+    row.hidden=formerHidden;
+  }
+})()`;
+
 (async()=>{
   const page=await target();const {ws,evaluate}=await session(page.webSocketDebuggerUrl);
   try{
@@ -415,7 +491,7 @@ const townEdgeEntry=String.raw`(async()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
