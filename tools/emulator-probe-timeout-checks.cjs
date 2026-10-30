@@ -34,7 +34,7 @@ async function fixture(phase){
     answer(result){this.emit('message',{data:JSON.stringify({id:this.sent.id,result})});}
   }
   const session=vm.runInNewContext(transport+'\nsession',{
-    URL,WebSocket:Socket,phase,
+    URL,WebSocket:Socket,phase,console:{log(){}},
     setTimeout(fn,ms){const id=++nextTimer;timers.set(id,{fn,at:now+ms});return id;},
     clearTimeout(id){timers.delete(id);}
   });
@@ -71,5 +71,16 @@ async function fixture(phase){
   fault.socket.answer({exceptionDetails:{exception:{description:'game assertion failed'}}});
   await faultFailure;
   assert.equal(fault.timers.size,0);
+  for(const event of ['close','error']){
+    const disconnected=await fixture('control-preferences');
+    const failure=assert.rejects(disconnected.api.evaluate('pending',45000),
+      new RegExp('DevTools socket '+(event==='close'?'closed':'error')+'.*last QA stage: mode/select/portrait/right/touch'));
+    disconnected.socket.emit('message',{data:JSON.stringify({method:'Runtime.consoleAPICalled',
+      params:{args:[{value:'THORNHAVEN_QA_STAGE mode/select/portrait/right/touch'}]}})});
+    disconnected.socket.emit(event,{});await failure;
+    assert.equal(disconnected.timers.size,0);
+    for(const type of ['message','close','error'])assert.equal(disconnected.socket.listeners.get(type).size,0);
+  }
+  console.log('PASS emulator transport disconnects fail immediately with last QA stage and listener cleanup');
   console.log('PASS emulator probe deadlines: default 15s, delayed matrix, bounded 45s, cleanup, assertion propagation');
 })().catch(error=>{console.error(error);process.exitCode=1;});
