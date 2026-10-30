@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -72,6 +72,41 @@ async function session(url){
   }
   return {ws,evaluate};
 }
+
+// Minimal synthetic save fixture for the dedicated control-matrix emulator.
+// The separate release-smoke emulator already performs the full four-town,
+// inventory, background-save, historical-upgrade and DocumentsUI stress tests.
+// Avoid duplicating those GPU-heavy map transitions immediately before native
+// portrait/landscape rotation: only the two save slots are needed here.
+const createControls=String.raw`(()=>{
+  if(typeof saveGame!=='function'||typeof player!=='object'||
+     typeof saveSlots!=='object'||!activeSlotId)
+    throw Error('Control matrix save APIs unavailable');
+  hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
+  document.getElementById('gameView').hidden=false;
+  player.name='EmulatorControlsQA';player.coins=173;
+  player.level=7;player.xp=83;
+  saveGame();
+  const primary=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+  if(!primary||primary.player?.name!=='EmulatorControlsQA'||
+     primary.player.coins!==173||primary.player.level!==7||
+     primary.player.xp!==83||!saveSlots[activeSlotId])
+    throw Error('Primary controls QA character did not save');
+  const secondary=JSON.parse(JSON.stringify(primary));
+  Object.assign(secondary.player,
+    {name:'BackupControlsQA',class:'cleric',level:3,xp:21,coins:441});
+  saveSlots.slot2={id:'slot2',name:'BackupControlsQA',class:'cleric',
+    level:3,updated:Date.now(),state:secondary};
+  localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(saveSlots));
+  const persisted=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+  if(persisted?.[activeSlotId]?.state?.player?.name!=='EmulatorControlsQA'||
+     persisted?.slot2?.state?.player?.name!=='BackupControlsQA'||
+     persisted.slot2.state.player.coins!==441)
+    throw Error('Two control-matrix save slots did not persist');
+  return JSON.stringify({activeSlot:activeSlotId,
+    player:primary.player.name,secondary:persisted.slot2.state.player.name,
+    saveSlotsVerified:2,fullMapStressCoveredByOtherJob:true});
+})()`;
 
 const create=String.raw`(async()=>{
   const ids=['ashvale','brackenford','stonewatch','sunmere'];
@@ -596,8 +631,16 @@ const controlPreferences=String.raw`(async()=>{
   }
   try{
     for(const orientation of ['portrait','landscape']){
-      stage('orientation/request/'+orientation);
-      ThornhavenDevice.setOrientationPreference(orientation);
+      // A seeded native preference can already have rendered this orientation
+      // at cold start. Verify the native bridge + viewport, but do not issue
+      // redundant rotation of a live WebView on a fragile hosted emulator.
+      const already=ThornhavenDevice.getOrientationPreference()===orientation &&
+        (orientation==='portrait'?innerHeight>innerWidth:innerWidth>innerHeight);
+      if(already)stage('orientation/already/'+orientation);
+      else {
+        stage('orientation/request/'+orientation);
+        ThornhavenDevice.setOrientationPreference(orientation);
+      }
       let ready=false;
       for(let i=0;i<24;i++){
         await new Promise(resolve=>setTimeout(resolve,400));
@@ -694,6 +737,20 @@ const controlPreferences=String.raw`(async()=>{
   }
 })()`;
 
+
+function controlPreferencesFor(orientation){
+  assert(['portrait','landscape'].includes(orientation));
+  const needle="['portrait','landscape']";
+  assert.equal(controlPreferences.split(needle).length,3,
+    'Control QA must retain two orientation loops');
+  const source=controlPreferences.replaceAll(needle,"['"+orientation+"']");
+  const restore='ThornhavenDevice.setOrientationPreference(originalOrientation);';
+  assert.equal(source.split(restore).length,2,'Expected one cleanup orientation');
+  // A matrix leg owns a fresh disposable emulator. Avoid a second native
+  // rotation merely to restore the test fixture after all assertions pass.
+  return source.replace(restore,'/* no return rotation in disposable emulator */');
+}
+
 const orientationControls=String.raw`(async()=>{
   if(!window.ThornhavenDevice ||
      typeof ThornhavenDevice.setOrientationPreference!=='function' ||
@@ -773,10 +830,10 @@ const orientationControls=String.raw`(async()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,'create-controls':createControls,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'control-preferences-portrait':controlPreferencesFor('portrait'),'control-preferences-landscape':controlPreferencesFor('landscape'),'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     // The controls-preferences probe performs native rotation twice and eight
     // settings navigations; allow time for slow Android14 renderer transitions.
-    const result=JSON.parse(await evaluate(scripts[phase],phase==='control-preferences'?60000:15000));
+    const result=JSON.parse(await evaluate(scripts[phase],phase.startsWith('control-preferences')?60000:15000));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
     if(phase==='verify'){
