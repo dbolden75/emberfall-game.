@@ -23,6 +23,7 @@ failure_report () {
 }
 trap 'failure_report $?' EXIT
 test -s "$APK"
+node tools/emulator-matrix-checks.cjs | tee reports/control-matrix/static-validation.txt
 "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
 "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee reports/control-matrix/badging.txt
 grep -q "package: name='$PKG' versionCode='166' versionName='1.0.64'" reports/control-matrix/badging.txt
