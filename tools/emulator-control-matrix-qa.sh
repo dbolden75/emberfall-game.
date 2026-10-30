@@ -7,6 +7,8 @@ set -euo pipefail
 PKG=com.vaelbrink.ashvale.newjourney
 ACTIVITY=com.emberfall.ashvale.MainActivity
 APK=app/build/outputs/apk/debug/app-debug.apk
+orientation="${1:-both}"
+case "$orientation" in portrait|landscape|both) ;; *) echo "Invalid matrix orientation: $orientation" >&2; exit 2 ;; esac
 mkdir -p reports/control-matrix
 failure_report () {
   local rc="$1"
@@ -35,8 +37,12 @@ adb forward tcp:9222 "localabstract:webview_devtools_remote_$pid"
 # Create two persisted synthetic slots WITHOUT the four-town render sweep.
 # The independent release-smoke job still runs that full GPU-heavy coverage.
 node tools/emulator-webview-probe.cjs create-controls | tee reports/control-matrix/create.txt
-node tools/emulator-webview-probe.cjs control-preferences | tee reports/control-matrix/controls.txt
+if [[ "$orientation" == both ]]; then
+  node tools/emulator-webview-probe.cjs control-preferences | tee reports/control-matrix/controls.txt
+else
+  node tools/emulator-webview-probe.cjs "control-preferences-$orientation" | tee reports/control-matrix/controls.txt
+fi
 adb forward --remove tcp:9222
 timeout 10s adb logcat -d -v time > reports/control-matrix/logcat.txt || true
-echo 'PASS: clean Android 14 emulator controls: portrait/landscape, left/right, touch/arrows; synthetic save slots preserved.'
+echo "PASS: Android 14 emulator native controls $orientation: left/right and touch/arrows; two synthetic save slots preserved. Both matrix legs must pass for eight configurations."
 echo 'NOT VERIFIED: original-key installation, production Play delivery, real Samsung finger input.'
