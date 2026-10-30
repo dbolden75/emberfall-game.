@@ -30,6 +30,18 @@ grep -q "package: name='$PKG' versionCode='166' versionName='1.0.64'" reports/co
 # Never uninstall or clear data from a user device. This is a brand-new,
 # ephemeral Android emulator used only for synthetic test characters.
 adb install "$APK" | tee reports/control-matrix/install.txt
+# MainActivity reads Activity.getPreferences() BEFORE loading WebView.
+# In a disposable debuggable emulator, seed portrait preference before the
+# first launch instead of rotating an already-rendering landscape game.
+# This tests actual Android portrait startup and all four portrait layouts.
+# The prior PR84 regression already covered runtime native rotations.
+if [[ "$orientation" == portrait ]]; then
+  adb shell run-as "$PKG" mkdir -p shared_prefs
+  printf '%s\n' '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>' '<map>' '    <string name="orientation">portrait</string>' '</map>' |
+    adb shell run-as "$PKG" sh -c 'cat > shared_prefs/MainActivity.xml'
+  adb shell run-as "$PKG" cat shared_prefs/MainActivity.xml | tee reports/control-matrix/initial-native-preference.xml
+  grep -F '<string name="orientation">portrait</string>' reports/control-matrix/initial-native-preference.xml > /dev/null
+fi
 timeout 90s adb shell am start -n "$PKG/$ACTIVITY" | tee reports/control-matrix/start.txt
 sleep 12
 pid="$(adb shell pidof "$PKG" | tr -d '\r')"
