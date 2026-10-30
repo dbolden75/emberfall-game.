@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - fix/164-left-touch-action-layout-20261030
       - qa/release-variant-upgrade-saves-20261029
       - qa/164-android-background-save-20261030
       - qa/164-true-town-edge-entry-20261030
