@@ -51,6 +51,18 @@ webview_phase () {
 start_game old
 webview_phase create old
 adb exec-out screencap -p > reports/emulator/qa-release-old-gameplay.png
+
+# Browser localStorage flushes to disk asynchronously. Give Android's normal
+# background lifecycle a chance to flush real synthetic saves before closing.
+# A cold restart on the SAME historical APK proves durable persistence before
+# testing whether Android's -r updater preserves it.
+adb shell input keyevent KEYCODE_HOME
+sleep 6
+adb shell am force-stop "$PKG"
+start_game historical-cold
+webview_phase preupgrade historical-cold
+adb shell input keyevent KEYCODE_HOME
+sleep 5
 adb shell am force-stop "$PKG"
 
 # CRITICAL: keep Android app-private data in place during this upgrade.
