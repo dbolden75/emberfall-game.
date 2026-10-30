@@ -32,10 +32,10 @@ async function session(url){
     ws.addEventListener('error',()=>{clearTimeout(timer);reject(Error('DevTools connection failed'))},{once:true});
   });
   let id=0;
-  async function evaluate(expression){
+  async function evaluate(expression,timeoutMs=15000){
     const seq=++id;
     return await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{ws.removeEventListener('message',onMessage);reject(Error('DevTools eval timeout'))},15000);
+      const timer=setTimeout(()=>{ws.removeEventListener('message',onMessage);reject(Error('DevTools eval timeout after '+timeoutMs+'ms'))},timeoutMs);
       function onMessage(e){
         let msg;try{msg=JSON.parse(e.data.toString())}catch{return}
         if(msg.id!==seq)return;
@@ -739,7 +739,9 @@ const orientationControls=String.raw`(async()=>{
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
     const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
-    const result=JSON.parse(await evaluate(scripts[phase]));
+    // The controls-preferences probe performs native rotation twice and eight
+    // settings navigations; allow time for slow Android14 renderer transitions.
+    const result=JSON.parse(await evaluate(scripts[phase],phase==='control-preferences'?60000:15000));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
     if(phase==='verify'){
