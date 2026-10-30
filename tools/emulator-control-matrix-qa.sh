@@ -32,8 +32,9 @@ sleep 12
 pid="$(adb shell pidof "$PKG" | tr -d '\r')"
 test -n "$pid" || { echo 'FAIL control matrix app failed to start'; exit 1; }
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$pid"
-# Create two real synthetic saves before testing all 8 native combinations.
-node tools/emulator-webview-probe.cjs create | tee reports/control-matrix/create.txt
+# Create two persisted synthetic slots WITHOUT the four-town render sweep.
+# The independent release-smoke job still runs that full GPU-heavy coverage.
+node tools/emulator-webview-probe.cjs create-controls | tee reports/control-matrix/create.txt
 node tools/emulator-webview-probe.cjs control-preferences | tee reports/control-matrix/controls.txt
 adb forward --remove tcp:9222
 timeout 10s adb logcat -d -v time > reports/control-matrix/logcat.txt || true
