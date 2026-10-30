@@ -164,9 +164,10 @@ jobs:
           heap-size: 256M
           cores: 2
           disable-animations: true
-          # Disable Vulkan and use SwiftShader to test whether intermittent
-          # hosted Android 14 emulator GPU/ADB crashes can be avoided.
-          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          # Use the Android emulator runner's documented SwiftShader indirect mode,
+          # which has better Chromium/WebView compatibility than -gpu swiftshader.
+          # Continue disabling guest Vulkan to isolate hosted graphics issues.
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
           script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh && bash tools/emulator-release-qa.sh
       - name: Preserve smoke-test screenshot and logs
         if: always()
@@ -239,9 +240,10 @@ jobs:
           heap-size: 256M
           cores: 2
           disable-animations: true
-          # Disable Vulkan and use SwiftShader to test whether intermittent
-          # hosted Android 14 emulator GPU/ADB crashes can be avoided.
-          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          # Use the Android emulator runner's documented SwiftShader indirect mode,
+          # which has better Chromium/WebView compatibility than -gpu swiftshader.
+          # Continue disabling guest Vulkan to isolate hosted graphics issues.
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
           script: bash tools/emulator-control-matrix-qa.sh
       - name: Upload independent control matrix and crash diagnostics
         if: always()
