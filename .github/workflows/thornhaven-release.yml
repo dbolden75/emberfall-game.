@@ -82,6 +82,14 @@ jobs:
           cp "$aab" release-output/pre-sign-unsigned.aab
           jarsigner -keystore "$RUNNER_TEMP/thornhaven-signing/maintained.jks" -storepass:env STORE_PASSWORD -keypass:env KEY_PASSWORD "$aab" "$KEY_ALIAS"
           jarsigner -verify "$aab" | grep -q 'jar verified'
+          # The AAB is uploaded to Play, so independently check its actual
+          # certificate, not just the APK certificate or keystore alias.
+          keytool -printcert -jarfile "$aab" > release-output/aab-signing-cert.txt
+          aab_cert_sha256="$(awk '/^[[:space:]]*SHA256:/ {gsub(/:/, "", $2); print tolower($2); exit}' release-output/aab-signing-cert.txt)"
+          expected_cert_sha256=38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22
+          test "$aab_cert_sha256" = "$expected_cert_sha256" || { echo 'AAB maintained-key certificate mismatch'; exit 1; }
+          test "$(grep -c '^Signer #[0-9][0-9]*:' release-output/aab-signing-cert.txt)" -eq 1 || { echo 'AAB must have exactly one signer'; exit 1; }
+          echo "Maintained-key AAB signer verified: $aab_cert_sha256"
           python3 tools/release-native-parity.py \
             --signed-apk "$apk" --unsigned-apk "$unsigned" \
             --signed-aab "$aab" --unsigned-aab release-output/pre-sign-unsigned.aab
@@ -101,5 +109,6 @@ jobs:
             release-output/SHA256SUMS.txt
             release-output/apk-signature.txt
             release-output/apk-badging.txt
+            release-output/aab-signing-cert.txt
           if-no-files-found: error
           retention-days: 14
