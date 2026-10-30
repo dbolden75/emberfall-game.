@@ -490,6 +490,13 @@ const touchControls=String.raw`(async()=>{
 // silently fails or overlaps the action buttons is a release regression.
 // These are synthetic DOM clicks/geometry checks, not human finger input.
 const controlPreferences=String.raw`(async()=>{
+  // Synthetic fixtures bypass Continue/New Game, so title-menu CSS can still
+  // hide the main menu despite titleMenuActive=false. Use the real transition
+  // rather than overriding CSS or clicking invisible settings controls.
+  if(typeof leaveTitleMenu!=='function')throw Error('Title exit API unavailable');
+  leaveTitleMenu();
+  if(document.body.classList.contains('title-menu'))
+    throw Error('QA fixture did not leave title presentation');
   if(typeof setMovementMode!=='function'||typeof setControlSide!=='function'||
      !window.ThornhavenDevice||
      typeof ThornhavenDevice.setOrientationPreference!=='function')
