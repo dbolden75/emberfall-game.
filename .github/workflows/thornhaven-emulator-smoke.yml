@@ -152,9 +152,10 @@ jobs:
           api-level: 34
           arch: x86_64
           profile: pixel_5
-          # Pixel profile defaults can exceed runner RAM; keep the disposable
-          # AVD within the hosted Linux job's memory budget (exit 137 in QA).
-          ram-size: 1536M
+          # Use a 2 GiB guest for the WebView game and Android system services.
+          # Last evidence showed ~14 GiB host RAM available while the guest
+          # became adb-offline; avoid undersizing guest RAM as a confounder.
+          ram-size: 2048M
           heap-size: 256M
           cores: 2
           disable-animations: true
