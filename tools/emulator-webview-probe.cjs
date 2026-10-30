@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -336,6 +336,63 @@ const pickerRestored=String.raw`(()=>{
     restoredAfterReload:true});
 })()`;
 
+// QA uses real Android requestAnimationFrame edge detection to enter towns.
+// Unlike setMap(town), this covers mapConnections -> takeMapExit -> save/UI.
+const townEdgeEntry=String.raw`(async()=>{
+  if(typeof edgeSideAt!=='function'||typeof mapPlacementBlocked!=='function'||
+     typeof takeMapExit!=='function'||typeof renderScene!=='function')
+    throw Error('Town edge-transition runtime unavailable');
+  hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
+  document.getElementById('adventureScreen').hidden=true;
+  document.getElementById('gameView').hidden=false;
+  const faults=[],priorError=console.error,priorRender=renderScene;
+  let renders=0;
+  window.addEventListener('error',e=>faults.push(String(e.message||e.error)));
+  window.addEventListener('unhandledrejection',e=>faults.push(String(e.reason)));
+  console.error=function(...args){
+    const msg=args.map(v=>String(v)).join(' ');
+    if(/Map rendering error|Thornhaven save failed/i.test(msg))faults.push(msg);
+    return priorError.apply(this,args);
+  };
+  renderScene=function(...args){renders++;return priorRender.apply(this,args)};
+  const routes=[['glassridge','south','ashvale'],['sunharbor','east','sunmere'],
+    ['frostmarch','south','brackenford'],['redfen','south','stonewatch']];
+  const offsets=[0,90,-90,180,-180,300,-300,450,-450,600,-600];
+  const observations=[];
+  for(const [origin,side,destination] of routes){
+    if(!setMap(origin,480,315,false))throw Error('Cannot stage '+origin);
+    const edge=mapConnections[origin].exits.find(e=>
+      e.trigger==='edge'&&e.side===side&&e.to===destination);
+    if(!edge||!canUseMapExit(edge))throw Error('Town route blocked: '+origin);
+    const b=worldBounds(origin),cx=(b.minX+b.maxX)/2,cy=(b.minY+b.maxY)/2;
+    let point=null;
+    for(const offset of offsets){
+      const x=side==='east'?b.maxX-20:cx+offset;
+      const y=side==='south'?b.maxY-20:cy+offset;
+      if(edgeSideAt(x,y,b)===side&&!mapPlacementBlocked(origin,x,y,player.r)){
+        point={x,y};break;
+      }
+    }
+    if(!point)throw Error('No valid edge approach for '+origin);
+    // Place the QA hero at an unobstructed exit trigger. The running game
+    // frame, NOT a direct takeMapExit call, must perform the transition.
+    Object.assign(player,point);updateCamera();
+    const before=renders;
+    await new Promise(resolve=>setTimeout(resolve,900));
+    if(mapId!==destination)throw Error('Actual edge traversal failed: '+origin+' -> '+destination+' (at '+mapId+')');
+    if(renders-before<3)throw Error('Town rendering stopped after edge entry: '+destination);
+    if(!activeMap.town||activeMap.npcs.length<1||activeMap.enemies.length)
+      throw Error('Town NPCs/monster safety invalid after edge entry: '+destination);
+    if(renderErrorShown||faults.length)
+      throw Error('Town renderer/runtime exception: '+destination+' '+faults.join(' | '));
+    const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+    if(saved?.mapId!==destination||slots?.[activeSlotId]?.state?.mapId!==destination)
+      throw Error('Town transition did not persist active character: '+destination);
+    observations.push({from:origin,to:destination,frames:renders-before,npcs:activeMap.npcs.length,saved:true});
+  }
+  return JSON.stringify({edgeEntries:observations,realFrameTransitions:true,originalSigner:false});
+})()`;
 (async()=>{
   const page=await target();const {ws,evaluate}=await session(page.webSocketDebuggerUrl);
   try{
@@ -346,7 +403,7 @@ const pickerRestored=String.raw`(()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
