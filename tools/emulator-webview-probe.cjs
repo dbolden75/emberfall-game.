@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -481,6 +481,66 @@ const touchControls=String.raw`(async()=>{
   }
 })()`;
 
+
+// Validate native rotation, save slots and controls in BOTH orientations on
+// disposable Android 14. This is automated geometry, not physical touch.
+const orientationControls=String.raw`(async()=>{
+  if(!window.ThornhavenDevice ||
+     typeof ThornhavenDevice.setOrientationPreference!=='function' ||
+     typeof ThornhavenDevice.getOrientationPreference!=='function')
+    throw Error('Native orientation bridge missing');
+  const pad=document.querySelector('.controls'),actions=document.querySelector('.actions');
+  const row=document.getElementById('controlRow'),game=document.getElementById('gameView');
+  if(!pad||!actions||!row||!game)throw Error('Orientation QA controls missing');
+  const oldHidden=row.hidden,original=ThornhavenDevice.getOrientationPreference();
+  const oldSlots=localStorage.getItem(SAVE_SLOTS_KEY),oldActive=localStorage.getItem(ACTIVE_SLOT_KEY);
+  hasStarted=true;titleMenuActive=false;window.jarvisPaused=false;
+  row.hidden=false;game.hidden=false;
+  document.getElementById('adventureScreen').hidden=true;
+  const measurements=[];
+  try{
+    for(const mode of ['portrait','landscape']){
+      ThornhavenDevice.setOrientationPreference(mode);
+      let oriented=false;
+      for(let attempt=0;attempt<24;attempt++){
+        await new Promise(resolve=>setTimeout(resolve,400));
+        const dimensionsMatch=mode==='portrait' ? innerHeight>innerWidth : innerWidth>innerHeight;
+        if(ThornhavenDevice.getOrientationPreference()===mode && dimensionsMatch){
+          oriented=true;break;
+        }
+      }
+      if(!oriented)throw Error('Android did not reach '+mode+' orientation: '+
+        innerWidth+'x'+innerHeight+' preference='+ThornhavenDevice.getOrientationPreference());
+      await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+      const p=pad.getBoundingClientRect(),a=actions.getBoundingClientRect();
+      const overlapX=Math.max(0,Math.min(p.right,a.right)-Math.max(p.left,a.left));
+      const overlapY=Math.max(0,Math.min(p.bottom,a.bottom)-Math.max(p.top,a.top));
+      const overlapPx=overlapX*overlapY;
+      if(p.width<100||p.height<100||getComputedStyle(pad).display==='none')
+        throw Error(mode+' eight-way D-pad missing/undersized');
+      if(p.left<-.5||p.right>innerWidth+.5||
+         a.left<-.5||a.right>innerWidth+.5||
+         p.top<-.5||p.bottom>innerHeight+.5||
+         a.top<-.5||a.bottom>innerHeight+.5)
+        throw Error(mode+' controls outside viewport '+innerWidth+'x'+innerHeight);
+      if(overlapPx>1)throw Error(mode+' D-pad overlaps action buttons '+overlapPx+'px');
+      if(pad.querySelectorAll('[data-key]').length!==8)
+        throw Error(mode+' D-pad directions missing');
+      measurements.push({mode,viewport:[innerWidth,innerHeight],
+        pad:[Math.round(p.width),Math.round(p.height)],
+        actions:[Math.round(a.width),Math.round(a.height)],overlapPx});
+    }
+    if(localStorage.getItem(SAVE_SLOTS_KEY)!==oldSlots ||
+       localStorage.getItem(ACTIVE_SLOT_KEY)!==oldActive)
+      throw Error('Orientation change unexpectedly replaced QA character slot data');
+    return JSON.stringify({measurements,saveKeysPreserved:true,syntheticGeometry:true,
+      physicalDeviceTest:false});
+  }finally{
+    ThornhavenDevice.setOrientationPreference(original);
+    row.hidden=oldHidden;
+  }
+})()`;
+
 (async()=>{
   const page=await target();const {ws,evaluate}=await session(page.webSocketDebuggerUrl);
   try{
@@ -491,7 +551,7 @@ const touchControls=String.raw`(async()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
