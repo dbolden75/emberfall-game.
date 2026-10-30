@@ -93,6 +93,12 @@ webview_phase verify upgraded
 # Re-render all four towns in the NEW release variant and save again. The
 # second QA create uses the same synthetic fixture, not player information.
 webview_phase create upgraded
+# Run native orientation and left/right touch geometry early, before the
+# costly lifecycle/town sequence can accumulate guest-side process pressure.
+# Preserve guest/host memory evidence before the first native rotation.
+free -m > reports/emulator/qa-release-before-controls-host-memory.txt || true
+timeout 10s adb shell cat /proc/meminfo > reports/emulator/qa-release-before-controls-guest-memory.txt 2>&1 || true
+webview_phase control-preferences upgraded
 adb exec-out screencap -p > reports/emulator/qa-release-gameplay.png
 
 # A real process/activity restart must not lose either character or active slot.
@@ -118,14 +124,7 @@ webview_phase town-edge-entry background
 # Verify a single held joystick pointer changes eight-way direction without
 # lifting, then returns to neutral on release/cancel and avoids action overlap.
 webview_phase touch-controls background
-# Test native portrait and landscape once each in a single comprehensive
-# in-game MENU/controls matrix. This preserves orientation, eight-way D-pad,
-# touch/joystick side, visibility, geometry and save assertions while avoiding
-# an entire second native rotation cycle on memory-limited hosted emulators.
-# The earlier independent orientation-controls phase is kept as available QA,
-# but running both in succession caused repeated emulator loss after the
-# first portrait matrix. No assertion is suppressed or weakened.
-webview_phase control-preferences background
+# MENU/control matrix already ran above, before lifecycle/town tests.
 
 adb logcat -d -v time > reports/emulator/qa-release-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
