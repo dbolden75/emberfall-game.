@@ -37,8 +37,10 @@ adb install "$APK" | tee reports/control-matrix/install.txt
 # The prior PR84 regression already covered runtime native rotations.
 if [[ "$orientation" == portrait ]]; then
   adb shell run-as "$PKG" mkdir -p shared_prefs
+  # Pass XML as raw stdin directly to app-UID tee. adb shell sh -c loses
+  # quoting around redirection on some runners, writing outside app data.
   printf '%s\n' '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>' '<map>' '    <string name="orientation">portrait</string>' '</map>' |
-    adb shell run-as "$PKG" sh -c 'cat > shared_prefs/MainActivity.xml'
+    adb shell -T run-as "$PKG" tee shared_prefs/MainActivity.xml > /dev/null
   adb shell run-as "$PKG" cat shared_prefs/MainActivity.xml | tee reports/control-matrix/initial-native-preference.xml
   grep -F '<string name="orientation">portrait</string>' reports/control-matrix/initial-native-preference.xml > /dev/null
 fi
