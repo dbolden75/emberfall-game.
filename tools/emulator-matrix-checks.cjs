@@ -28,6 +28,9 @@ assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }}'));
 assert(workflow.includes('name: thornhaven-164-android-control-matrix-${{ matrix.orientation }}-evidence'));
 assert(shell.includes('control-preferences-$orientation'),'Native matrix must select its orientation');
+assert(shell.includes('run-as "$PKG" sh -c'), 'Native portrait startup preference must be seeded before WebView');
+assert(shell.indexOf('initial-native-preference.xml')<shell.indexOf('am start -n'), 'Native pref must be seeded before app launch');
+assert(expression.includes("const already=ThornhavenDevice.getOrientationPreference()===orientation"), 'Orientation must be verified before avoiding redundant rotation');
 for(const orientation of ['portrait','landscape']){
   const scoped=expression.replaceAll(needle,"['"+orientation+"']")
     .replace('ThornhavenDevice.setOrientationPreference(originalOrientation);',
