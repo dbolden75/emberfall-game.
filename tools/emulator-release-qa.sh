@@ -95,6 +95,10 @@ adb shell am force-stop "$PKG"
 start_game background
 webview_phase lifecycle-check background
 
+# Enter all four principal towns through actual map edge detection, not a
+# direct setMap(town) shortcut; require render frames, NPCs, and saved progress.
+webview_phase town-edge-entry background
+
 adb logcat -d -v time > reports/emulator/qa-release-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
   echo 'FAIL: Android Runtime recorded release-variant process crash'

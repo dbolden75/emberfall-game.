@@ -8,6 +8,7 @@ on:
       - main
       - qa/release-variant-upgrade-saves-20261029
       - qa/164-android-background-save-20261030
+      - qa/164-true-town-edge-entry-20261030
       - fix/fog-refresh-party-portraits-20261028
       - qa/164-release-apk-emulator-smoke-20261029
       - fix/emulator-launch-watchdog-20261029
