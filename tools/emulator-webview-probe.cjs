@@ -355,25 +355,37 @@ const townEdgeEntry=String.raw`(async()=>{
     return priorError.apply(this,args);
   };
   renderScene=function(...args){renders++;return priorRender.apply(this,args)};
-  const routes=[['glassridge','south','ashvale'],['sunharbor','east','sunmere'],
-    ['frostmarch','south','brackenford'],['redfen','south','stonewatch']];
+  // The 9x9 world regenerates its reciprocal compass exits at startup.
+  // Legacy static connection declarations are deliberately replaced, so
+  // derive each town's real neighboring entry routes from the live worldGrid.
+  if(!Array.isArray(worldGrid))throw Error('World grid missing from game');
+  const origins=[['north',0,1],['south',0,-1],['east',-1,0],['west',1,0]];
   const offsets=[0,90,-90,180,-180,300,-300,450,-450,600,-600];
   const observations=[];
-  for(const [origin,side,destination] of routes){
-    if(!setMap(origin,480,315,false))throw Error('Cannot stage '+origin);
-    const edge=mapConnections[origin].exits.find(e=>
-      e.trigger==='edge'&&e.side===side&&e.to===destination);
-    if(!edge||!canUseMapExit(edge))throw Error('Town route blocked: '+origin);
-    const b=worldBounds(origin),cx=(b.minX+b.maxX)/2,cy=(b.minY+b.maxY)/2;
-    let point=null;
-    for(const offset of offsets){
-      const x=side==='east'?b.maxX-20:cx+offset;
-      const y=side==='south'?b.maxY-20:cy+offset;
-      if(edgeSideAt(x,y,b)===side&&!mapPlacementBlocked(origin,x,y,player.r)){
-        point={x,y};break;
+  for(const destination of ['ashvale','sunmere','brackenford','stonewatch']){
+    const ty=worldGrid.findIndex(row=>row.includes(destination));
+    if(ty<0)throw Error('Town absent from 9x9 worldGrid: '+destination);
+    const tx=worldGrid[ty].indexOf(destination);
+    let route=null;
+    for(const [side,dx,dy] of origins){
+      const origin=worldGrid[ty+dy]?.[tx+dx];
+      if(!origin)continue;
+      const edge=mapConnections[origin]?.exits.find(e=>
+        e.trigger==='edge'&&e.side===side&&e.to===destination);
+      if(!edge||!canUseMapExit(edge))continue;
+      if(!setMap(origin,480,315,false))throw Error('Cannot stage '+origin);
+      const b=worldBounds(origin),cx=(b.minX+b.maxX)/2,cy=(b.minY+b.maxY)/2;
+      for(const offset of offsets){
+        const x=side==='east'?b.maxX-20:side==='west'?b.minX+20:cx+offset;
+        const y=side==='south'?b.maxY-20:side==='north'?b.minY+20:cy+offset;
+        if(edgeSideAt(x,y,b)===side&&!mapPlacementBlocked(origin,x,y,player.r)){
+          route={origin,side,point:{x,y}};break;
+        }
       }
+      if(route)break;
     }
-    if(!point)throw Error('No valid edge approach for '+origin);
+    if(!route)throw Error('No walkable adjacent edge route to '+destination);
+    const {origin,side,point}=route;
     // Place the QA hero at an unobstructed exit trigger. The running game
     // frame, NOT a direct takeMapExit call, must perform the transition.
     Object.assign(player,point);updateCamera();
