@@ -39,6 +39,7 @@ on:
       - 'tools/emulator-save-upgrade.sh'
       - 'tools/emulator-release-qa.sh'
       - 'tools/emulator-control-matrix-qa.sh'
+      - 'tools/emulator-matrix-checks.cjs'
       - 'tools/emulator-webview-probe.cjs'
       - 'tools/emulator-document-picker.py'
 jobs:
