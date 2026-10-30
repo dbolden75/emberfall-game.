@@ -10,6 +10,18 @@ APK=app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk
 AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
 APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
 mkdir -p reports/emulator
+# Keep failure evidence even when a WebView phase exits before the final logcat.
+# All capture commands are bounded; never hide the original failure status.
+capture_failure () {
+  local result=$?
+  if (( result != 0 )); then
+    timeout 10s adb devices -l > reports/emulator/qa-release-failure-devices.txt 2>&1 || true
+    timeout 10s adb logcat -d -v time > reports/emulator/qa-release-failure-logcat.txt 2>&1 || true
+    timeout 10s adb shell dumpsys activity activities > reports/emulator/qa-release-failure-activity.txt 2>&1 || true
+  fi
+  exit "$result"
+}
+trap capture_failure EXIT
 for apk in "$OLD_APK" "$APK"; do
   test -s "$apk"
   "$APKSIGNER" verify --verbose "$apk" > /dev/null

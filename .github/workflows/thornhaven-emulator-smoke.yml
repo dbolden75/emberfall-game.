@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - fix/emulator-control-preferences-deadline-20261030
       - qa/release-variant-upgrade-saves-20261029
       - qa/164-android-background-save-20261030
       - qa/164-true-town-edge-entry-20261030
@@ -37,6 +38,7 @@ on:
       - 'tools/emulator-save-upgrade.sh'
       - 'tools/emulator-release-qa.sh'
       - 'tools/emulator-webview-probe.cjs'
+      - 'tools/emulator-probe-timeout-checks.cjs'
       - 'tools/emulator-document-picker.py'
 jobs:
   emulator-smoke:
@@ -64,7 +66,9 @@ jobs:
         with:
           gradle-version: '8.11.1'
       - name: Syntax-check native WebView QA inspector
-        run: node --check tools/emulator-webview-probe.cjs
+        run: |
+          node --check tools/emulator-webview-probe.cjs
+          node tools/emulator-probe-timeout-checks.cjs
       - name: Checkout immutable historical Thornhaven 1.0.57 source
         uses: actions/checkout@v4
         with:
