@@ -28,7 +28,14 @@ assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }}'));
 assert(workflow.includes('name: thornhaven-164-android-control-matrix-${{ matrix.orientation }}-evidence'));
 assert(shell.includes('control-preferences-$orientation'),'Native matrix must select its orientation');
-assert(shell.includes('shell -T run-as "$PKG" tee shared_prefs/MainActivity.xml'), 'Native portrait startup preference must be seeded with an app-UID write before WebView');
+assert(shell.includes('shell -T run-as "$PKG" tee shared_prefs/com.emberfall.ashvale.MainActivity.xml'), 'Native portrait startup preference must be seeded with an app-UID write before WebView');
+// Android Activity.getLocalClassName() strips the application package only
+// when it is an actual prefix; this app deliberately retains a legacy namespace.
+const pkg=shell.match(/^PKG=(.+)$/m)[1],activity=shell.match(/^ACTIVITY=(.+)$/m)[1];
+const localClass=activity.startsWith(pkg+'.')?activity.slice(pkg.length+1):activity;
+assert.equal(localClass,'com.emberfall.ashvale.MainActivity');
+assert(shell.includes('cat shared_prefs/'+localClass+'.xml'), 'Read back the exact Android Activity preference file');
+assert(!shell.includes('shared_prefs/MainActivity.xml'), 'Wrong short preference filename would not seed this activity');
 assert(shell.indexOf('initial-native-preference.xml')<shell.indexOf('am start -n'), 'Native pref must be seeded before app launch');
 assert(expression.includes("const already=ThornhavenDevice.getOrientationPreference()===orientation"), 'Orientation must be verified before avoiding redundant rotation');
 for(const orientation of ['portrait','landscape']){
