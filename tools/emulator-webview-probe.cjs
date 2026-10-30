@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -729,6 +729,20 @@ const controlPreferences=String.raw`(async()=>{
   }
 })()`;
 
+
+function controlPreferencesFor(orientation){
+  assert(['portrait','landscape'].includes(orientation));
+  const needle="['portrait','landscape']";
+  assert.equal(controlPreferences.split(needle).length,3,
+    'Control QA must retain two orientation loops');
+  const source=controlPreferences.replaceAll(needle,"['"+orientation+"']");
+  const restore='ThornhavenDevice.setOrientationPreference(originalOrientation);';
+  assert.equal(source.split(restore).length,2,'Expected one cleanup orientation');
+  // A matrix leg owns a fresh disposable emulator. Avoid a second native
+  // rotation merely to restore the test fixture after all assertions pass.
+  return source.replace(restore,'/* no return rotation in disposable emulator */');
+}
+
 const orientationControls=String.raw`(async()=>{
   if(!window.ThornhavenDevice ||
      typeof ThornhavenDevice.setOrientationPreference!=='function' ||
@@ -808,10 +822,10 @@ const orientationControls=String.raw`(async()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,'create-controls':createControls,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,'create-controls':createControls,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'control-preferences-portrait':controlPreferencesFor('portrait'),'control-preferences-landscape':controlPreferencesFor('landscape'),'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     // The controls-preferences probe performs native rotation twice and eight
     // settings navigations; allow time for slow Android14 renderer transitions.
-    const result=JSON.parse(await evaluate(scripts[phase],phase==='control-preferences'?60000:15000));
+    const result=JSON.parse(await evaluate(scripts[phase],phase.startsWith('control-preferences')?60000:15000));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
     if(phase==='verify'){
