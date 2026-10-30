@@ -98,6 +98,9 @@ webview_phase lifecycle-check background
 # Enter all four principal towns through actual map edge detection, not a
 # direct setMap(town) shortcut; require render frames, NPCs, and saved progress.
 webview_phase town-edge-entry background
+# Verify a single held joystick pointer changes eight-way direction without
+# lifting, then returns to neutral on release/cancel and avoids action overlap.
+webview_phase touch-controls background
 
 adb logcat -d -v time > reports/emulator/qa-release-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
