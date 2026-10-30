@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - qa/release-variant-upgrade-saves-20261029
       - fix/fog-refresh-party-portraits-20261028
       - qa/164-release-apk-emulator-smoke-20261029
       - fix/emulator-launch-watchdog-20261029
@@ -89,39 +90,47 @@ jobs:
               assert original.count(old) == 1, 'WebView debug toggle changed in ' + project
               p.write_text(original.replace(old, 'WebView.setWebContentsDebuggingEnabled(true);'))
           PY
-          (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug)
+          (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug :app:assembleRelease)
           gradle --no-daemon :app:assembleDebug :app:assembleRelease
-          echo 'Built audited 1.0.57 DEBUG and 1.0.64 DEBUG plus UNSIGNED 1.0.64 RELEASE; no maintained signing credentials used.'
-      - name: Build disposable release-variant QA signature (never publish this package)
+          echo 'Built audited 1.0.57 DEBUG/RELEASE and 1.0.64 DEBUG/RELEASE; no maintained signing credentials used.'
+      - name: Sign historical and current RELEASE APKs with the SAME disposable QA key
         run: |
           set -euo pipefail
-          unsigned=app/build/outputs/apk/release/app-release-unsigned.apk
-          aligned="$RUNNER_TEMP/qa-release-aligned.apk"
-          apk=app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk
+          # This ephemeral key is NOT the original maintained release/upload key.
+          # QA APKs are deleted with the runner and must never be distributed.
           keystore="$RUNNER_TEMP/thornhaven-disposable-qa.p12"
-          test -s "$unsigned"
-          # One-run, non-production identity; deliberately differs from the
-          # maintained signing cert and must NEVER update a user's installation.
           keytool -genkeypair -noprompt -storetype PKCS12 \
             -alias qa-only -keyalg RSA -keysize 2048 -validity 1 \
             -dname 'CN=Thornhaven Disposable Emulator QA' \
             -keystore "$keystore" -storepass throwawayqa123 -keypass throwawayqa123
-          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -P 16 -f 4 "$unsigned" "$aligned"
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
-            --ks "$keystore" --ks-key-alias qa-only \
-            --ks-pass pass:throwawayqa123 --key-pass pass:throwawayqa123 \
-            --v2-signing-enabled true --v3-signing-enabled true \
-            --out "$apk" "$aligned"
-          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 "$apk"
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/qa-release-signature.txt"
-          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' "$RUNNER_TEMP/qa-release-signature.txt"
-          grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' "$RUNNER_TEMP/qa-release-signature.txt"
-          cert=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/qa-release-signature.txt" | head -n 1)
-          test -n "$cert"
-          test "$cert" != '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='166' versionName='1.0.64'"
-          rm -f "$keystore" "$aligned"
-          echo 'PASS: ephemeral test-only release APK. Never distribute; no maintained-key or Play-signature test.'
+          sign_qa () {
+            local unsigned="$1" apk="$2" code="$3" name="$4"
+            local aligned="$RUNNER_TEMP/qa-release-$code-aligned.apk"
+            local report="$RUNNER_TEMP/qa-release-$code-signature.txt"
+            test -s "$unsigned"
+            "$ANDROID_HOME/build-tools/36.0.0/zipalign" -P 16 -f 4 "$unsigned" "$aligned"
+            "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+              --ks "$keystore" --ks-key-alias qa-only \
+              --ks-pass pass:throwawayqa123 --key-pass pass:throwawayqa123 \
+              --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled true \
+              --out "$apk" "$aligned"
+            "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 "$apk"
+            "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > "$report"
+            grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' "$report"
+            grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' "$report"
+            "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='$code' versionName='$name'"
+            sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$report" | head -n 1 > "$RUNNER_TEMP/qa-release-$code-cert"
+            test -s "$RUNNER_TEMP/qa-release-$code-cert"
+            rm -f "$aligned"
+          }
+          sign_qa qa-historical-157/app/build/outputs/apk/release/app-release-unsigned.apk \
+            qa-historical-157/app/build/outputs/apk/release/thornhaven-ephemeral-historical-release-QA.apk 159 1.0.57
+          sign_qa app/build/outputs/apk/release/app-release-unsigned.apk \
+            app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk 166 1.0.64
+          cmp "$RUNNER_TEMP/qa-release-159-cert" "$RUNNER_TEMP/qa-release-166-cert"
+          ! grep -q '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22' "$RUNNER_TEMP/qa-release-166-cert"
+          rm -f "$keystore"
+          echo 'PASS: disposable 1.0.57 and 1.0.64 RELEASE APKs share one QA signer, distinct from the maintained original. Neither APK will be published.'
       - name: Release build daemons before booting memory-heavy emulator
         run: |
           gradle --stop || true
