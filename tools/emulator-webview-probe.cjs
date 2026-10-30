@@ -619,6 +619,25 @@ const controlPreferences=String.raw`(async()=>{
         }
       }
     }
+    // A hidden D-pad leaves a SINGLE action group. Previously both Left and
+    // Right kept it on the right because margin-left:auto defeated row-reverse.
+    // Assert actual viewport positions, not merely the persisted setting.
+    for(const orientation of ['portrait','landscape']){
+      const right=measurements.find(m=>m.orientation===orientation&&
+        m.side==='right'&&m.mode==='touch');
+      const left=measurements.find(m=>m.orientation===orientation&&
+        m.side==='left'&&m.mode==='touch');
+      if(!right||!left)throw Error('Missing touch geometry for '+orientation);
+      const width=left.viewport[0];
+      const leftCenter=(left.actionX[0]+left.actionX[1])/2;
+      const rightCenter=(right.actionX[0]+right.actionX[1])/2;
+      if(left.actionX[0]>right.actionX[0]-40 ||
+         !(leftCenter<width/2 && rightCenter>width/2))
+        throw Error('Touch-mode actions ignored Left side on '+orientation+
+          ': left='+JSON.stringify(left.actionX)+
+          ' right='+JSON.stringify(right.actionX)+
+          ' viewportWidth='+width);
+    }
     const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');
     const secondary=JSON.stringify(['slot1','slot2'].map(id=>({
       name:slots[id]?.state?.player?.name,
