@@ -2,7 +2,7 @@
 // Verify a bad Cloud Save cannot silently rewrite shrine rune puzzle progress.
 // Exercises the actual release Cloud Save core, not an imitation parser.
 const assert = require('node:assert/strict');
-const core = require(process.env.THORNHAVEN_CORE_PATH || './cloud-save-core.js');
+const core = require(process.env.THORNHAVEN_CORE_PATH || '../app/src/main/assets/cloud-save-core.js');
 
 function slots(progress){
   const state={
