@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - fix/fog-refresh-party-portraits-20261028
+      - qa/164-release-apk-emulator-smoke-20261029
       - fix/emulator-launch-watchdog-20261029
       - fix/164-legacy-enemy-coordinates-20261028
       - fix/164-legacy-equipment-summary-20261028
@@ -28,6 +29,7 @@ on:
       - '.github/workflows/thornhaven-emulator-smoke.yml'
       - 'tools/emulator-smoke.sh'
       - 'tools/emulator-save-upgrade.sh'
+      - 'tools/emulator-release-qa.sh'
       - 'tools/emulator-webview-probe.cjs'
       - 'tools/emulator-document-picker.py'
 jobs:
@@ -88,8 +90,38 @@ jobs:
               p.write_text(original.replace(old, 'WebView.setWebContentsDebuggingEnabled(true);'))
           PY
           (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug)
-          gradle --no-daemon :app:assembleDebug
-          echo 'Built separately from audited 1.0.57 and 1.0.64 sources; signatures are DEBUG, not Play or maintained release keys.'
+          gradle --no-daemon :app:assembleDebug :app:assembleRelease
+          echo 'Built audited 1.0.57 DEBUG and 1.0.64 DEBUG plus UNSIGNED 1.0.64 RELEASE; no maintained signing credentials used.'
+      - name: Build disposable release-variant QA signature (never publish this package)
+        run: |
+          set -euo pipefail
+          unsigned=app/build/outputs/apk/release/app-release-unsigned.apk
+          aligned="$RUNNER_TEMP/qa-release-aligned.apk"
+          apk=app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk
+          keystore="$RUNNER_TEMP/thornhaven-disposable-qa.p12"
+          test -s "$unsigned"
+          # One-run, non-production identity; deliberately differs from the
+          # maintained signing cert and must NEVER update a user's installation.
+          keytool -genkeypair -noprompt -storetype PKCS12 \
+            -alias qa-only -keyalg RSA -keysize 2048 -validity 1 \
+            -dname 'CN=Thornhaven Disposable Emulator QA' \
+            -keystore "$keystore" -storepass throwawayqa123 -keypass throwawayqa123
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -P 16 -f 4 "$unsigned" "$aligned"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+            --ks "$keystore" --ks-key-alias qa-only \
+            --ks-pass pass:throwawayqa123 --key-pass pass:throwawayqa123 \
+            --v2-signing-enabled true --v3-signing-enabled true \
+            --out "$apk" "$aligned"
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/qa-release-signature.txt"
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' "$RUNNER_TEMP/qa-release-signature.txt"
+          grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' "$RUNNER_TEMP/qa-release-signature.txt"
+          cert=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/qa-release-signature.txt" | head -n 1)
+          test -n "$cert"
+          test "$cert" != '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='166' versionName='1.0.64'"
+          rm -f "$keystore" "$aligned"
+          echo 'PASS: ephemeral test-only release APK. Never distribute; no maintained-key or Play-signature test.'
       - name: Release build daemons before booting memory-heavy emulator
         run: |
           gradle --stop || true
@@ -111,12 +143,12 @@ jobs:
           heap-size: 256M
           cores: 2
           disable-animations: true
-          script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh
+          script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh && bash tools/emulator-release-qa.sh
       - name: Preserve smoke-test screenshot and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-163-android-emulator-smoke-evidence
+          name: thornhaven-164-android-emulator-smoke-evidence
           path: reports/emulator/
           if-no-files-found: ignore
           retention-days: 7
