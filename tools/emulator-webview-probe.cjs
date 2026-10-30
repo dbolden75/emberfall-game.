@@ -631,6 +631,10 @@ const controlPreferences=String.raw`(async()=>{
           if(padVisible){
             const pr=pad.getBoundingClientRect();
             rectInView(pr,'joystick '+orientation+'/'+side+'/'+mode);
+            if(pr.width<100||pr.height<100||
+               pad.querySelectorAll('[data-key]').length!==8)
+              throw Error('Eight-way directional pad missing or undersized in '+
+                orientation+'/'+side+'/'+mode);
             overlapPx=Math.max(0,Math.min(pr.right,ar.right)-Math.max(pr.left,ar.left))*
               Math.max(0,Math.min(pr.bottom,ar.bottom)-Math.max(pr.top,ar.top));
             if(overlapPx>1)throw Error('Joystick overlaps action controls in '+orientation+
