@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -191,6 +191,47 @@ const legacyShop=String.raw`(()=>{
   if(stock===undefined)delete townQuestState._townStock;else townQuestState._townStock=stock;
  }
 })()`;
+
+// Android lifecycle regression: change *live* character data without directly
+// saving it, then send the disposable emulator Home and kill the process.
+// This checks the real Activity.onPause / document visibility backup path,
+// not the periodic autosave or a test calling saveGame() explicitly.
+const lifecycleStage=String.raw`(()=>{
+  const prior=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+  if(!prior?.player||!saveSlots?.[activeSlotId])
+    throw Error('No prior saved primary character for lifecycle test');
+  if(player.name!==prior.player.name||player.coins!==prior.player.coins)
+    throw Error('Current in-memory hero does not match disk before background test');
+  const before=prior.player.coins,after=before+91;
+  if(!Number.isSafeInteger(after))throw Error('Invalid lifecycle coin fixture');
+  hasStarted=true;titleMenuActive=false;
+  if(switchingCharacter)throw Error('Character switch blocks lifecycle save');
+  // Defeat the frame's 2-second autosave during this test; pagehide or
+  // visibilitychange must persist the change when Android backgrounds it.
+  saveClock=-600;
+  player.coins=after;
+  localStorage.setItem('thornhaven_lifecycle_qa',JSON.stringify({
+    before,after,slot:activeSlotId,hero:prior.player.name
+  }));
+  if(JSON.parse(localStorage.getItem(SAVE_KEY)).player.coins!==before)
+    throw Error('Progress was already saved; lifecycle gate would be vacuous');
+  return JSON.stringify({previousCoins:before,unsavedCoins:after,activeSlot:activeSlotId});
+})()`;
+const lifecycleCheck=String.raw`(()=>{
+  const marker=JSON.parse(localStorage.getItem('thornhaven_lifecycle_qa')||'null');
+  const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+  const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+  if(!marker||!save||!slots)throw Error('Lifecycle QA marker/saves disappeared');
+  if(save.player?.coins!==marker.after||save.player?.name!==marker.hero)
+    throw Error('Android background event did not persist unsaved active hero');
+  if(slots[marker.slot]?.state?.player?.coins!==marker.after)
+    throw Error('Background save failed to persist active character slot');
+  if(localStorage.getItem(ACTIVE_SLOT_KEY)!==marker.slot)
+    throw Error('Background save lost active slot selection');
+  return JSON.stringify({persistedCoins:save.player.coins,activeSlot:marker.slot,
+    backedUpSlot:slots[marker.slot].name,backgroundSaveVerified:true});
+})()`;
+
 const pickerSave=String.raw`(()=>{
   if(typeof ThornhavenCloudSave?.save!=='function')throw Error('Android SAF Save bridge absent');
   const button=document.getElementById('titleCloudSave');
@@ -305,7 +346,7 @@ const pickerRestored=String.raw`(()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,preupgrade:verify,verify,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     const result=JSON.parse(await evaluate(scripts[phase]));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.

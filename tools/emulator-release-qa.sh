@@ -51,6 +51,18 @@ webview_phase () {
 start_game old
 webview_phase create old
 adb exec-out screencap -p > reports/emulator/qa-release-old-gameplay.png
+
+# Browser localStorage flushes to disk asynchronously. Give Android's normal
+# background lifecycle a chance to flush real synthetic saves before closing.
+# A cold restart on the SAME historical APK proves durable persistence before
+# testing whether Android's -r updater preserves it.
+adb shell input keyevent KEYCODE_HOME
+sleep 6
+adb shell am force-stop "$PKG"
+start_game historical-cold
+webview_phase preupgrade historical-cold
+adb shell input keyevent KEYCODE_HOME
+sleep 5
 adb shell am force-stop "$PKG"
 
 # CRITICAL: keep Android app-private data in place during this upgrade.
@@ -72,10 +84,21 @@ sleep 6
 adb shell am force-stop "$PKG"
 start_game restart
 webview_phase verify restart
+
+# Exercise the actual Android background lifecycle path. Deliberately change
+# the synthetic hero in memory without calling saveGame or waiting 2 seconds.
+# The app must persist that change when Home causes Activity.onPause.
+webview_phase lifecycle-stage restart
+adb shell input keyevent KEYCODE_HOME
+sleep 7
+adb shell am force-stop "$PKG"
+start_game background
+webview_phase lifecycle-check background
+
 adb logcat -d -v time > reports/emulator/qa-release-logcat.txt
 if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
   echo 'FAIL: Android Runtime recorded release-variant process crash'
   exit 1
 fi
-echo 'PASS: same disposable QA signer: 1.0.57 RELEASE -> 1.0.64 RELEASE upgrade retained 2 character slots, inventory, XP and active slot; four towns rendered before/after; cold restart passed.'
+echo 'PASS: same disposable QA signer: 1.0.57 RELEASE -> 1.0.64 RELEASE upgrade retained 2 character slots, inventory, XP and active slot; four towns rendered before/after; cold restart and Android background lifecycle saves passed.'
 echo 'NOT VERIFIED: maintained-key APK installation, Google Play distribution/signing/versionCode acceptance, physical Samsung, authenticated Drive account.'
