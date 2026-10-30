@@ -118,11 +118,13 @@ webview_phase town-edge-entry background
 # Verify a single held joystick pointer changes eight-way direction without
 # lifting, then returns to neutral on release/cancel and avoids action overlap.
 webview_phase touch-controls background
-# Verify actual Android portrait->landscape orientation requests keep the
-# D-pad/action controls usable, in viewport and separate, without losing saves.
-webview_phase orientation-controls background
-# Exercise the actual in-game MENU to switch joystick/touch and left/right
-# controls in portrait and landscape, with save-state and geometry checks.
+# Test native portrait and landscape once each in a single comprehensive
+# in-game MENU/controls matrix. This preserves orientation, eight-way D-pad,
+# touch/joystick side, visibility, geometry and save assertions while avoiding
+# an entire second native rotation cycle on memory-limited hosted emulators.
+# The earlier independent orientation-controls phase is kept as available QA,
+# but running both in succession caused repeated emulator loss after the
+# first portrait matrix. No assertion is suppressed or weakened.
 webview_phase control-preferences background
 
 adb logcat -d -v time > reports/emulator/qa-release-logcat.txt
