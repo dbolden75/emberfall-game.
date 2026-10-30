@@ -32,10 +32,10 @@ async function session(url){
     ws.addEventListener('error',()=>{clearTimeout(timer);reject(Error('DevTools connection failed'))},{once:true});
   });
   let id=0;
-  async function evaluate(expression){
+  async function evaluate(expression,timeoutMs=15000){
     const seq=++id;
     return await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{ws.removeEventListener('message',onMessage);reject(Error('DevTools eval timeout'))},15000);
+      const timer=setTimeout(()=>{ws.removeEventListener('message',onMessage);reject(Error('DevTools eval timeout after '+timeoutMs+'ms ('+phase+')'))},timeoutMs);
       function onMessage(e){
         let msg;try{msg=JSON.parse(e.data.toString())}catch{return}
         if(msg.id!==seq)return;
@@ -720,7 +720,11 @@ const orientationControls=String.raw`(async()=>{
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
     const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
-    const result=JSON.parse(await evaluate(scripts[phase]));
+    // The preference matrix has two bounded native orientation waits of up to
+    // 24*400ms each, plus eight rendered layout checks. A 15s transport deadline
+    // can expire before its own 19.2s orientation budget on a slow emulator.
+    // Keep ordinary probes at 15s and give only this matrix a bounded 45s budget.
+    const result=JSON.parse(await evaluate(scripts[phase],phase==='control-preferences'?45000:15000));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
     if(phase==='verify'){
