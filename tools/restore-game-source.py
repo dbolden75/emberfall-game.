@@ -84,6 +84,15 @@ assert content.count(old)==1, 'Expected exactly one shop sell inventory expressi
 content=content.replace(old,new,1)
 assert hashlib.sha256(content).hexdigest() == '406e7f4e4d3bab9cfd55bb85ec369b0f4cc7fc725b168a9dfa2874bb1cb3034e', 'Merchant legacy inventory safety patch hash mismatch'
 
+# Left-handed touch mode hides the direction pad. The late row-reverse rule
+# otherwise leaves the sole action cluster on the right. Keep joystick mode
+# unchanged and do not alter any saved-character data or Android identifiers.
+assert hashlib.sha256(content).hexdigest() == '406e7f4e4d3bab9cfd55bb85ec369b0f4cc7fc725b168a9dfa2874bb1cb3034e', 'Pre-control-layout source hash mismatch'
+left_touch_css = b'''<style id="left-touch-action-alignment">\n/* In touch mode there is no movement pad; honor left-handed action placement. */\nbody[data-control-side="left"][data-movement-mode="touch"]:has(#gameView:not([hidden])) .shell .touchBar{flex-direction:row;justify-content:flex-start}\nbody[data-control-side="left"][data-movement-mode="touch"]:has(#gameView:not([hidden])) .shell .actions{margin-left:0;margin-right:auto}\n</style>\n'''
+assert content.count(b'</head>') == 1 and b'left-touch-action-alignment' not in content, 'Unexpected control layout markup'
+content = content.replace(b'</head>', left_touch_css + b'</head>', 1)
+assert hashlib.sha256(content).hexdigest() == '0650d090467209070b2875e6b9894e9c2dbe3847e559bbb78cf375e9ea949b85', 'Left-touch layout patch hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
