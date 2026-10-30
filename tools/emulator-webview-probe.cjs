@@ -631,8 +631,16 @@ const controlPreferences=String.raw`(async()=>{
   }
   try{
     for(const orientation of ['portrait','landscape']){
-      stage('orientation/request/'+orientation);
-      ThornhavenDevice.setOrientationPreference(orientation);
+      // A seeded native preference can already have rendered this orientation
+      // at cold start. Verify the native bridge + viewport, but do not issue
+      // redundant rotation of a live WebView on a fragile hosted emulator.
+      const already=ThornhavenDevice.getOrientationPreference()===orientation &&
+        (orientation==='portrait'?innerHeight>innerWidth:innerWidth>innerHeight);
+      if(already)stage('orientation/already/'+orientation);
+      else {
+        stage('orientation/request/'+orientation);
+        ThornhavenDevice.setOrientationPreference(orientation);
+      }
       let ready=false;
       for(let i=0;i<24;i++){
         await new Promise(resolve=>setTimeout(resolve,400));
