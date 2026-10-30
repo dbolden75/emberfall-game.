@@ -236,6 +236,11 @@ function safeEnemySnapshots(mapStates){
   // valid, but supplied cooldowns must be finite nonnegative numbers.
   if(saved.gatherNodes!=null&&(!Array.isArray(saved.gatherNodes)||
    !saved.gatherNodes.every(time=>typeof time==='number'&&Number.isFinite(time)&&time>=0)))return false;
+  // Shrine load coerces runeProgress with Number(...), so a corrupt text
+  // counter can silently advance/skip a puzzle or block the next rune.
+  // Legitimate saves write a nonnegative integer; older saves may omit it.
+  if(saved.runeProgress!=null&&
+   (!Number.isSafeInteger(saved.runeProgress)||saved.runeProgress<0))return false;
   // The game's loader applies Boolean(chest.open/treasure.opened). A corrupted
   // string such as 'false' becomes true and permanently skips dungeon loot.
   // Keep missing or null historical snapshots compatible.
