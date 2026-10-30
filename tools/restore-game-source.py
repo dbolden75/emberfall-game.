@@ -84,6 +84,20 @@ assert content.count(old)==1, 'Expected exactly one shop sell inventory expressi
 content=content.replace(old,new,1)
 assert hashlib.sha256(content).hexdigest() == '406e7f4e4d3bab9cfd55bb85ec369b0f4cc7fc725b168a9dfa2874bb1cb3034e', 'Merchant legacy inventory safety patch hash mismatch'
 
+# Keep the visible action buttons on the chosen LEFT side when touch-to-move
+# hides the directional pad. The normal two-group joystick layout is unchanged.
+# Restore and authenticate the original gameplay/save data first, then apply
+# this single CSS-only release fix to the generated Android HTML.
+left_touch_anchor = b'body[data-control-side="left"]:has(#gameView:not([hidden])) .shell .touchBar{flex-direction:row-reverse;justify-content:space-between}'
+left_touch_rules = (
+    b'\n/* Keep lone action group left when touch-to-move hides the D-pad. */\n'
+    b'body[data-control-side="left"]:not([data-movement-mode="arrows"]):has(#gameView:not([hidden])) .shell .touchBar{justify-content:flex-end}\n'
+    b'body[data-control-side="left"]:not([data-movement-mode="arrows"]):has(#gameView:not([hidden])) .shell .actions{margin-left:0;margin-right:auto}\n'
+)
+assert content.count(left_touch_anchor) == 1, 'Left-touch layout rule anchor changed'
+content = content.replace(left_touch_anchor, left_touch_anchor + left_touch_rules, 1)
+assert hashlib.sha256(content).hexdigest() == '0519ec8b8cc5ed8d83311fa36feb0c81a6dbb64ee447021bbb41fa42d46780b1', 'Left-touch CSS fix hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():

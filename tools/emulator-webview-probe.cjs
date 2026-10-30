@@ -27,24 +27,46 @@ async function session(url){
   const endpoint=new URL(url);endpoint.hostname='127.0.0.1';endpoint.port='9222';
   const ws=new WebSocket(endpoint);
   await new Promise((resolve,reject)=>{
-    const timer=setTimeout(()=>reject(Error('DevTools socket timeout')),10000);
-    ws.addEventListener('open',()=>{clearTimeout(timer);resolve()},{once:true});
-    ws.addEventListener('error',()=>{clearTimeout(timer);reject(Error('DevTools connection failed'))},{once:true});
+    function cleanup(){clearTimeout(timer);ws.removeEventListener('open',onOpen);ws.removeEventListener('error',onError);}
+    function onOpen(){cleanup();resolve();}
+    function onError(){cleanup();reject(Error('DevTools connection failed'));}
+    const timer=setTimeout(()=>{cleanup();reject(Error('DevTools socket timeout'));},10000);
+    ws.addEventListener('open',onOpen,{once:true});
+    ws.addEventListener('error',onError,{once:true});
   });
+  // Forward only structured QA stage markers; a native rotation that kills
+  // the renderer must not be reported as an unexplained gameplay assertion.
+  ws.send(JSON.stringify({id:0,method:'Runtime.enable'}));
   let id=0;
-  async function evaluate(expression){
+  async function evaluate(expression,timeoutMs=15000){
     const seq=++id;
     return await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{ws.removeEventListener('message',onMessage);reject(Error('DevTools eval timeout'))},15000);
+      let lastStage='none';
+      function cleanup(){
+        clearTimeout(timer);ws.removeEventListener('message',onMessage);
+        ws.removeEventListener('close',onClose);ws.removeEventListener('error',onError);
+      }
+      function fail(message){cleanup();reject(Error(message+'; last QA stage: '+lastStage));}
+      function onClose(){fail('DevTools socket closed during '+phase);}
+      function onError(){fail('DevTools socket error during '+phase);}
+      const timer=setTimeout(()=>fail('DevTools eval timeout after '+timeoutMs+'ms ('+phase+')'),timeoutMs);
       function onMessage(e){
         let msg;try{msg=JSON.parse(e.data.toString())}catch{return}
+        if(msg.method==='Runtime.consoleAPICalled'){
+          const stage=msg.params?.args?.[0]?.value;
+          if(typeof stage==='string'&&stage.startsWith('THORNHAVEN_QA_STAGE ')){
+            lastStage=stage.slice('THORNHAVEN_QA_STAGE '.length);console.log(stage);
+          }
+          return;
+        }
         if(msg.id!==seq)return;
-        clearTimeout(timer);ws.removeEventListener('message',onMessage);
+        cleanup();
         if(msg.error)return reject(Error(JSON.stringify(msg.error)));
         if(msg.result?.exceptionDetails)return reject(Error(msg.result.exceptionDetails.exception?.description||msg.result.exceptionDetails.text));
         resolve(msg.result?.result?.value);
       }
       ws.addEventListener('message',onMessage);
+      ws.addEventListener('close',onClose);ws.addEventListener('error',onError);
       ws.send(JSON.stringify({id:seq,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true,userGesture:true}}));
     });
   }
@@ -490,6 +512,8 @@ const touchControls=String.raw`(async()=>{
 // silently fails or overlaps the action buttons is a release regression.
 // These are synthetic DOM clicks/geometry checks, not human finger input.
 const controlPreferences=String.raw`(async()=>{
+  const stage=label=>console.log('THORNHAVEN_QA_STAGE '+label);
+  stage('control-preferences/start');
   // Synthetic fixtures bypass Continue/New Game, so title-menu CSS can still
   // hide the main menu despite titleMenuActive=false. Use the real transition
   // rather than overriding CSS or clicking invisible settings controls.
@@ -572,6 +596,7 @@ const controlPreferences=String.raw`(async()=>{
   }
   try{
     for(const orientation of ['portrait','landscape']){
+      stage('orientation/request/'+orientation);
       ThornhavenDevice.setOrientationPreference(orientation);
       let ready=false;
       for(let i=0;i<24;i++){
@@ -582,17 +607,21 @@ const controlPreferences=String.raw`(async()=>{
         }
       }
       if(!ready)throw Error('Native Android '+orientation+' orientation never applied');
+      stage('orientation/ready/'+orientation);
       for(const side of ['right','left']){
+        stage('side/select/'+orientation+'/'+side);
         choose('data-side-choice',side);
         if(document.body.dataset.controlSide!==side||
            localStorage.getItem(CONTROL_PREF)!==side)
           throw Error('MENU side preference did not persist: '+side);
         for(const mode of ['touch','arrows']){
+          stage('mode/select/'+orientation+'/'+side+'/'+mode);
           choose('data-movement-choice',mode);
           if(document.body.dataset.movementMode!==mode||
              localStorage.getItem(MOVEMENT_PREF)!==mode)
             throw Error('MENU movement preference did not persist: '+mode);
           await new Promise(resolve=>requestAnimationFrame(resolve));
+          stage('layout/frame/'+orientation+'/'+side+'/'+mode);
           const ar=actions.getBoundingClientRect();
           rectInView(ar,'action buttons '+orientation+'/'+side+'/'+mode);
           const padVisible=getComputedStyle(pad).display!=='none';
@@ -602,6 +631,10 @@ const controlPreferences=String.raw`(async()=>{
           if(padVisible){
             const pr=pad.getBoundingClientRect();
             rectInView(pr,'joystick '+orientation+'/'+side+'/'+mode);
+            if(pr.width<100||pr.height<100||
+               pad.querySelectorAll('[data-key]').length!==8)
+              throw Error('Eight-way directional pad missing or undersized in '+
+                orientation+'/'+side+'/'+mode);
             overlapPx=Math.max(0,Math.min(pr.right,ar.right)-Math.max(pr.left,ar.left))*
               Math.max(0,Math.min(pr.bottom,ar.bottom)-Math.max(pr.top,ar.top));
             if(overlapPx>1)throw Error('Joystick overlaps action controls in '+orientation+
@@ -619,6 +652,27 @@ const controlPreferences=String.raw`(async()=>{
         }
       }
     }
+    stage('geometry/compare');
+    // A hidden D-pad leaves a SINGLE action group. Previously both Left and
+    // Right kept it on the right because margin-left:auto defeated row-reverse.
+    // Assert actual viewport positions, not merely the persisted setting.
+    for(const orientation of ['portrait','landscape']){
+      const right=measurements.find(m=>m.orientation===orientation&&
+        m.side==='right'&&m.mode==='touch');
+      const left=measurements.find(m=>m.orientation===orientation&&
+        m.side==='left'&&m.mode==='touch');
+      if(!right||!left)throw Error('Missing touch geometry for '+orientation);
+      const width=left.viewport[0];
+      const leftCenter=(left.actionX[0]+left.actionX[1])/2;
+      const rightCenter=(right.actionX[0]+right.actionX[1])/2;
+      if(left.actionX[0]>right.actionX[0]-40 ||
+         !(leftCenter<width/2 && rightCenter>width/2))
+        throw Error('Touch-mode actions ignored Left side on '+orientation+
+          ': left='+JSON.stringify(left.actionX)+
+          ' right='+JSON.stringify(right.actionX)+
+          ' viewportWidth='+width);
+    }
+    stage('saves/compare');
     const slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');
     const secondary=JSON.stringify(['slot1','slot2'].map(id=>({
       name:slots[id]?.state?.player?.name,
@@ -720,7 +774,9 @@ const orientationControls=String.raw`(async()=>{
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
     const scripts={create,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
-    const result=JSON.parse(await evaluate(scripts[phase]));
+    // The controls-preferences probe performs native rotation twice and eight
+    // settings navigations; allow time for slow Android14 renderer transitions.
+    const result=JSON.parse(await evaluate(scripts[phase],phase==='control-preferences'?60000:15000));
     // Only the current candidate has Android's SAF backup bridge. The historical
     // 1.0.57 source deliberately did not expose it.
     if(phase==='verify'){
