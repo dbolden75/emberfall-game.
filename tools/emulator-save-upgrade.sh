@@ -18,8 +18,8 @@ old_cert="$("$APKSIGNER" verify --print-certs "$OLD" | sed -n 's/^Signer #1 cert
 new_cert="$("$APKSIGNER" verify --print-certs "$NEW" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
 test -n "$old_cert" && test "$old_cert" = "$new_cert" || { echo 'FAIL: historical and current debug APK signing certificates differ'; exit 1; }
 echo "PASS: historical/current APK DEBUG signing certificate matches: $old_cert"
-"$AAPT" dump badging "$OLD" | grep -q "package: name='$PKG' versionCode='159'"
-"$AAPT" dump badging "$NEW" | grep -q "package: name='$PKG' versionCode='166'"
+"$AAPT" dump badging "$OLD" | grep -F "package: name='$PKG' versionCode='159'" > /dev/null
+"$AAPT" dump badging "$NEW" | grep -F "package: name='$PKG' versionCode='166'" > /dev/null
 # Remove only the transient DEBUG app in the disposable GitHub emulator.
 adb uninstall "$PKG" | tee reports/emulator/qa-reset.txt
 adb install "$OLD" | tee reports/emulator/qa-install-157.txt
