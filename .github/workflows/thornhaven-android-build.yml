@@ -38,6 +38,8 @@ jobs:
             --evidence-dir reports/browser-interactive-qa
           python3 tools/browser-camp-story-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-camp-story-qa
+          python3 tools/browser-gathering-qa.py --assets app/src/main/assets \
+            --evidence-dir reports/browser-gathering-qa
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -45,6 +47,7 @@ jobs:
           path: |
             reports/browser-interactive-qa/*.png
             reports/browser-camp-story-qa/*.png
+            reports/browser-gathering-qa/*.png
           if-no-files-found: ignore
       - uses: actions/setup-java@v4
         with:
