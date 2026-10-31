@@ -13,6 +13,17 @@ case "$side" in left|right|both) ;; *) echo "Invalid matrix side: $side" >&2; ex
 if [[ "$orientation" == both && "$side" != both ]]; then echo "An isolated side requires one orientation" >&2; exit 2; fi
 case "$orientation" in portrait|landscape|both) ;; *) echo "Invalid matrix orientation: $orientation" >&2; exit 2 ;; esac
 mkdir -p reports/control-matrix
+# Keep logcat flowing while the guest is still alive. On the intermittent
+# Android 14 failure, ADB/port 5554 disappears before an on-failure `adb logcat -d`
+# can return guest crash details. Streaming preserves events up to that loss.
+logcat_pid=""
+stop_streamed_logcat () {
+  if [[ -n "$logcat_pid" ]]; then
+    kill "$logcat_pid" 2>/dev/null || true
+    wait "$logcat_pid" 2>/dev/null || true
+    logcat_pid=""
+  fi
+}
 failure_report () {
   local rc="$1"
   trap - EXIT
@@ -21,7 +32,9 @@ failure_report () {
     timeout 8s adb devices -l > reports/control-matrix/devices.txt 2>&1 || true
     timeout 8s adb logcat -d -v time > reports/control-matrix/logcat.txt 2>&1 || true
     free -m > reports/control-matrix/host-memory.txt 2>&1 || true
+    ps -eo pid,ppid,rss,stat,cmd > reports/control-matrix/host-processes.txt 2>&1 || true
   fi
+  stop_streamed_logcat
   exit "$rc"
 }
 trap 'failure_report $?' EXIT
@@ -33,6 +46,10 @@ grep -q "package: name='$PKG' versionCode='166' versionName='1.0.64'" reports/co
 # Never uninstall or clear data from a user device. This is a brand-new,
 # ephemeral Android emulator used only for synthetic test characters.
 adb install "$APK" | tee reports/control-matrix/install.txt
+# Start collection BEFORE Activity launch: logs captured only after the runner
+# notices a disconnect cannot explain an emulator crash/kill. QA emulator only.
+adb logcat -v threadtime -b main -b system -b crash > reports/control-matrix/streamed-logcat.txt 2>&1 &
+logcat_pid=$!
 # Activity.getPreferences() uses getLocalClassName(). Because ACTIVITY's
 # namespace differs from PKG, Android retains its FULL class name for this file.
 # MainActivity reads that preference BEFORE loading WebView.
