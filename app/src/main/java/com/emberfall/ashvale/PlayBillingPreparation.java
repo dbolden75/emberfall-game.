@@ -71,7 +71,12 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private void accept(Purchase p){
         if(p.getPurchaseState()==Purchase.PurchaseState.PENDING){message="Payment pending. Items will arrive only after Google confirms payment.";publish();return;}
         if(!valid(p)){message="Purchase could not be verified. No items were granted.";publish();return;}
+        // Billing callbacks run on the UI thread. Roll back the entire in-memory
+        // ledger if disk persistence fails, rather than exposing an uncommitted
+        // entitlement or dropping an existing (possibly delivered) receipt.
+        JSONObject previous=null;
         try{
+            previous=new JSONObject(receipts.toString());
             String id=hash(p.getPurchaseToken()),product=p.getProducts().get(0);
             JSONObject existing=receipts.optJSONObject(id);
             if(existing==null){
@@ -82,10 +87,13 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             }
             existing.put("active",true);
             if(!consumable(product)&&p.isAcknowledged())existing.put("finished",true);
-            if(!persist()){receipts.remove(id);message="Cannot save purchase receipt. Free device storage and restore purchases.";}
+            if(!persist()){receipts=previous;message="Cannot save purchase receipt. Free device storage and restore purchases.";}
             else message="Verified purchase ready for delivery.";
             publish();
-        }catch(Exception e){message="Could not store the purchase. Tap Restore purchases to retry.";publish();}
+        }catch(Exception e){
+            if(previous!=null)receipts=previous;
+            message="Could not store the purchase. Tap Restore purchases to retry.";publish();
+        }
     }
     private boolean persist(){return prefs.edit().putString("receipts",receipts.toString()).commit();}
     private ProductDetails.OneTimePurchaseOfferDetails offer(ProductDetails p){
@@ -102,15 +110,23 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             JSONArray deliveries=new JSONArray(),owned=new JSONArray();
             Iterator<String> keys=receipts.keys();
             while(keys.hasNext()){
-                JSONObject r=receipts.getJSONObject(keys.next());
-                // Revalidate persisted receipts as well; corrupt storage never becomes ownership.
-                Purchase original=new Purchase(r.getString("json"),r.getString("signature"));
-                if(!valid(original)||!r.optBoolean("active")||!r.optString("id").equals(hash(original.getPurchaseToken()))||!r.optString("product").equals(original.getProducts().get(0)))continue;
-                String signedProfile=original.getAccountIdentifiers()==null?"":original.getAccountIdentifiers().getObfuscatedProfileId();
-                if(consumable(r.optString("product"))&&!r.optString("profile").equals(signedProfile))continue;
-                String product=r.getString("product");
-                if(!consumable(product))owned.put(product);
-                if(!r.optBoolean("delivered"))deliveries.put(new JSONObject().put("id",r.getString("id")).put("product",product).put("profile",r.optString("profile")));
+                // One damaged old record must not hide unrelated verified purchases.
+                // Always validate signature, package, token, product and profile
+                // separately before including a receipt in the JS snapshot.
+                JSONObject r=receipts.optJSONObject(keys.next());
+                if(r==null)continue;
+                try{
+                    Purchase original=new Purchase(r.getString("json"),r.getString("signature"));
+                    if(!valid(original)||!r.optBoolean("active")||!r.optString("id").equals(hash(original.getPurchaseToken()))||!r.optString("product").equals(original.getProducts().get(0)))continue;
+                    String signedProfile=original.getAccountIdentifiers()==null?"":original.getAccountIdentifiers().getObfuscatedProfileId();
+                    if(consumable(r.optString("product"))&&!r.optString("profile").equals(signedProfile))continue;
+                    String product=r.getString("product");
+                    if(!consumable(product))owned.put(product);
+                    if(!r.optBoolean("delivered"))deliveries.put(new JSONObject().put("id",r.getString("id")).put("product",product).put("profile",r.optString("profile")));
+                }catch(Exception invalidReceipt){
+                    // Leave the suspicious entry untouched for a later Play restore.
+                    // Invalid data never grants rewards or blocks unrelated receipts.
+                }
             }
             result.put("products",items).put("owned",owned).put("deliveries",deliveries);snapshot=result.toString();
         }catch(Exception e){snapshot="{\"message\":\"Purchase storage needs recovery. Restore purchases to retry.\",\"products\":{},\"owned\":[],\"deliveries\":[]}";}
