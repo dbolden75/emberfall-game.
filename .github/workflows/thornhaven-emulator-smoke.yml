@@ -164,6 +164,7 @@ jobs:
             --ks-pass=pass:throwawayqa123 --key-pass=pass:throwawayqa123
           unzip -p "$apks" universal.apk > "$universal"
           test -s "$universal"
+          mkdir -p reports/emulator
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$universal" > reports/emulator/qa-aab-universal-signer.txt
           universal_cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' reports/emulator/qa-aab-universal-signer.txt | head -n 1)"
           test -n "$universal_cert"
