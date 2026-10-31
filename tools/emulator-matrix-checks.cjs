@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Static safety gate for the two Android 14 emulator legs. This cannot replace
+// Static safety gate for Android 14/16 native emulator legs. This cannot replace
 // native tests: it prevents accidental loss of native orientation/UI assertions
 // when splitting a flaky hosted-emulator run into independent jobs.
 const assert=require('node:assert/strict');
@@ -24,9 +24,11 @@ for(const assertion of ['rectInView(', 'overlapPx>1','Touch-mode actions ignored
 assert.match(probe,/'control-preferences-portrait':controlPreferencesFor\('portrait'\)/);
 assert.match(probe,/'control-preferences-landscape':controlPreferencesFor\('landscape'\)/);
 assert.match(workflow,/orientation: \[portrait, landscape\]/);
+assert.match(workflow,/api-level: \[34, 36\]/,'Android 14 and Android 16 coverage required');
+assert(workflow.includes('api-level: ${{ matrix.api-level }}'));
 assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }}'));
-assert(workflow.includes('name: thornhaven-164-android-control-matrix-${{ matrix.orientation }}-evidence'));
+assert(workflow.includes('name: thornhaven-164-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-evidence'));
 assert(shell.includes('control-preferences-$orientation'),'Native matrix must select its orientation');
 assert(shell.includes('shell -T run-as "$PKG" tee shared_prefs/com.emberfall.ashvale.MainActivity.xml'), 'Native portrait startup preference must be seeded with an app-UID write before WebView');
 // Android Activity.getLocalClassName() strips the application package only
@@ -48,4 +50,4 @@ for(const orientation of ['portrait','landscape']){
 }
 const check=spawnSync('bash',['-n','tools/emulator-control-matrix-qa.sh'],{encoding:'utf8'});
 assert.equal(check.status,0,'Shell syntax invalid: '+check.stderr);
-console.log('PASS: Android 14 CI requires 2 native orientations x 2 sides x 2 movement modes; all geometry, save and setting assertions retained. This is static, NOT emulator/device testing.');
+console.log('PASS (static): Android 14/16 CI requires 2 APIs x 2 orientations x 2 sides x 2 movement modes; geometry, save and settings assertions retained. Not native emulator testing.');
