@@ -16,6 +16,7 @@ on:
       - qa/164-independent-control-matrix-20261030
       - fix/fog-refresh-party-portraits-20261028
       - qa/164-release-apk-emulator-smoke-20261029
+      - qa/164-aab-universal-emulator-20261030
       - fix/emulator-launch-watchdog-20261029
       - fix/164-legacy-enemy-coordinates-20261028
       - fix/164-legacy-equipment-summary-20261028
@@ -88,6 +89,13 @@ jobs:
           printf '%s  %s\n' '0519ec8b8cc5ed8d83311fa36feb0c81a6dbb64ee447021bbb41fa42d46780b1' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 166' app/build.gradle
           grep -q "versionName '1.0.64'" app/build.gradle
+          # Keep a byte-exact copy of the uninstrumented production-variant
+          # AAB before enabling the temporary WebView debugger for synthetic
+          # save tests. Only the disposable QA-derived APK will be installed.
+          grep -q 'WebView.setWebContentsDebuggingEnabled(false);' app/src/main/java/com/emberfall/ashvale/MainActivity.java
+          gradle --no-daemon :app:bundleRelease
+          cp app/build/outputs/bundle/release/app-release.aab "$RUNNER_TEMP/thornhaven-uninstrumented-release.aab"
+          test -s "$RUNNER_TEMP/thornhaven-uninstrumented-release.aab"
           # Debug inspection exists only on the disposable emulator runner.
           # Neither production MainActivity is edited in Git or published.
           python3 - <<'PY'
@@ -138,7 +146,33 @@ jobs:
             app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk 166 1.0.64
           cmp "$RUNNER_TEMP/qa-release-159-cert" "$RUNNER_TEMP/qa-release-166-cert"
           ! grep -q '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22' "$RUNNER_TEMP/qa-release-166-cert"
-          rm -f "$keystore"
+          # Google Play installs APKs generated from an AAB, rather than
+          # copying our directly signed standalone release APK. Add a real
+          # emulator install smoke for that conversion without private keys.
+          aab="$RUNNER_TEMP/thornhaven-uninstrumented-release.aab"
+          tool="$RUNNER_TEMP/bundletool-all-1.18.3.jar"
+          curl -fL --retry 3 --silent --show-error \
+            'https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar' -o "$tool"
+          printf '%s  %s\n' 'a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29' "$tool" | sha256sum -c -
+          java -jar "$tool" validate --bundle="$aab"
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@package)" = 'com.vaelbrink.ashvale.newjourney'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '166'
+          apks="$RUNNER_TEMP/thornhaven-aab-install-qa.apks"
+          universal="$RUNNER_TEMP/thornhaven-aab-install-qa.apk"
+          java -jar "$tool" build-apks --bundle="$aab" --output="$apks" \
+            --mode=universal --ks="$keystore" --ks-key-alias=qa-only \
+            --ks-pass=pass:throwawayqa123 --key-pass=pass:throwawayqa123
+          unzip -p "$apks" universal.apk > "$universal"
+          test -s "$universal"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$universal" > reports/emulator/qa-aab-universal-signer.txt
+          universal_cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' reports/emulator/qa-aab-universal-signer.txt | head -n 1)"
+          test -n "$universal_cert"
+          test "$universal_cert" = "$(cat "$RUNNER_TEMP/qa-release-166-cert")" || { echo 'AAB-universal QA signer differs from synthetic release-QA signer'; exit 1; }
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$universal" | grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='166' versionName='1.0.64'"
+          cmp <(unzip -p "$aab" base/assets/index.html) <(unzip -p "$universal" assets/index.html)
+          sha256sum "$aab" "$universal" > reports/emulator/qa-aab-universal-hashes.txt
+          rm -f "$keystore" "$tool" "$apks"
+          echo 'PASS: clean production AAB generated a disposable QA-signed universal APK with the same temporary key as the emulator release fixture.'
           echo 'PASS: disposable 1.0.57 and 1.0.64 RELEASE APKs share one QA signer, distinct from the maintained original. Neither APK will be published.'
       - name: Release build daemons before booting memory-heavy emulator
         run: |
@@ -169,7 +203,7 @@ jobs:
           # which has better Chromium/WebView compatibility than -gpu swiftshader.
           # Continue disabling guest Vulkan to isolate hosted graphics issues.
           emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
-          script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh && bash tools/emulator-release-qa.sh
+          script: bash tools/emulator-smoke.sh && bash tools/emulator-save-upgrade.sh && bash tools/emulator-release-qa.sh && bash tools/emulator-aab-install-qa.sh
       - name: Preserve smoke-test screenshot and logs
         if: always()
         uses: actions/upload-artifact@v4
