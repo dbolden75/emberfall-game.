@@ -118,9 +118,14 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     @JavascriptInterface public String state(){return snapshot;}
     @JavascriptInterface public void restore(){activity.runOnUiThread(this::connect);}
     @JavascriptInterface public void buy(String product,String profile){activity.runOnUiThread(()->{
-        if(closed||busy||!client.isReady()||profile==null||!profile.matches("[a-f0-9]{64}"))return;
-        ProductDetails p=catalog.get(product);if(p==null)return;
-        ProductDetails.OneTimePurchaseOfferDetails o=offer(p);if(o==null)return;
+        if(closed)return;
+        if(busy){message="A Google Play checkout is already open.";publish();return;}
+        if(!client.isReady()){message="Reconnecting to Google Play. Retry when the item price appears.";publish();connect();return;}
+        if(profile==null||!profile.matches("[a-f0-9]{64}")){message="Load and save your character before purchasing.";publish();return;}
+        ProductDetails p=catalog.get(product);
+        if(p==null){message="This item is unavailable from Google Play. Tap Restore purchases to refresh.";publish();return;}
+        ProductDetails.OneTimePurchaseOfferDetails o=offer(p);
+        if(o==null){message="No eligible purchase option is available for this item.";publish();return;}
         busy=true;message="Opening Google Play checkout…";publish();
         BillingFlowParams.ProductDetailsParams params=BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(p).setOfferToken(o.getOfferToken()).build();
         BillingResult result=client.launchBillingFlow(activity,BillingFlowParams.newBuilder().setProductDetailsParamsList(Collections.singletonList(params)).setObfuscatedProfileId(profile).build());

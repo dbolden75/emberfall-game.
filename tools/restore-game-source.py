@@ -98,6 +98,10 @@ assert content.count(left_touch_anchor) == 1, 'Left-touch layout rule anchor cha
 content = content.replace(left_touch_anchor, left_touch_anchor + left_touch_rules, 1)
 assert hashlib.sha256(content).hexdigest() == '0519ec8b8cc5ed8d83311fa36feb0c81a6dbb64ee447021bbb41fa42d46780b1', 'Left-touch CSS fix hash mismatch'
 
+# Connect both public shop APIs to the verified native checkout implementation.
+assert content.count(b'</body>') == 1
+content = content.replace(b'</body>', b'<script src="purchase-api.js"></script>\n</body>', 1)
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
