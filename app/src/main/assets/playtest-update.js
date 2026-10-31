@@ -157,7 +157,7 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
     Keep ≥44px-high controls and shrink their row on narrow landscape screens. */
  @media(orientation:landscape) and (max-height:380px){
   body:has(#gameView:not([hidden])) .shell #explorationActions{
-   width:min(186px,calc(100vw - 340px));transform:translateX(calc(50vw - 103px))
+   position:relative;left:calc(50vw - 10px);width:min(186px,calc(100vw - 328px));transform:translateX(-50%)
   }
  }
  `;document.head.appendChild(css);
