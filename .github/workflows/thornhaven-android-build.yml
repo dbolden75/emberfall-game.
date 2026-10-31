@@ -28,6 +28,20 @@ jobs:
           python3 tools/verify.py
           python3 tools/test-release-native-parity.py
           for test in tools/*checks.cjs; do node "$test"; done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Chromium interactive gameplay and world-map smoke (QA only)
+        run: |
+          python3 -m pip install --disable-pip-version-check playwright==1.57.0
+          python3 tools/browser-interactive-qa.py --assets app/src/main/assets \
+            --evidence-dir reports/browser-interactive-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: thornhaven-browser-interactive-qa
+          path: reports/browser-interactive-qa/*.png
+          if-no-files-found: ignore
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
