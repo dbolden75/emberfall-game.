@@ -84,7 +84,9 @@ def assert_hit_targets(page, mode):
     A control can be within the viewport yet be covered by another overlay;
     center taps must reach the joystick and all three battle actions.
     """
-    selectors = ['#attack', '#skillButton', '#dodgeButton',\n                 '#explorationActions button:first-child',\n                 '#explorationActions button:last-child']
+    selectors = ['#attack', '#skillButton', '#dodgeButton',
+                 '#explorationActions button:first-child',
+                 '#explorationActions button:last-child']
     if mode == 'arrows':
         selectors.append('.shell .controls')
     hits = page.evaluate("""selectors => selectors.map(selector => {
@@ -186,7 +188,8 @@ def main():
             results=[check_case(browser,Path(args.assets),Path(args.evidence_dir),name,w,h)
                      for name,w,h in [('portrait',420,900),('landscape',900,420),
                                       ('p360',360,780),('l780',780,360),
-                                      ('p320',320,568),('l568',568,320),\n                                      ('l480',480,320)]]
+                                      ('p320',320,568),('l568',568,320),
+                                      ('l480',480,320)]]
         finally:
             browser.close()
     print(json.dumps({'status':'PASS','scope':'Headless Chromium, real packaged HTML, synthetic storage; not Android/Play or hardware','results':results},indent=2))
