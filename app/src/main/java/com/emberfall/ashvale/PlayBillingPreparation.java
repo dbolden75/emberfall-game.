@@ -133,8 +133,18 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private ProductDetails.OneTimePurchaseOfferDetails offer(ProductDetails p){
         List<ProductDetails.OneTimePurchaseOfferDetails> offers=p.getOneTimePurchaseOfferDetailsList();
         if(offers==null)return null;
-        for(ProductDetails.OneTimePurchaseOfferDetails o:offers)if(o.getOfferId()==null)return o;
-        return null;
+        ProductDetails.OneTimePurchaseOfferDetails eligibleOffer=null;
+        for(ProductDetails.OneTimePurchaseOfferDetails o:offers){
+            // Gameplay purchases grant permanent or consumed items: never select
+            // a rental or a preorder that cannot deliver an item immediately.
+            if(o.getRentalDetails()!=null||o.getPreorderDetails()!=null)continue;
+            // Prefer the regular buy purchase option, when available.
+            if(o.getOfferId()==null)return o;
+            // Some eligible one-time offers are offer-id-specific. Previously
+            // those products were hidden even though Google Play could sell them.
+            if(eligibleOffer==null)eligibleOffer=o;
+        }
+        return eligibleOffer;
     }
     private void publish(){
         try{
