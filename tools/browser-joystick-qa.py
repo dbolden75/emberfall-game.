@@ -70,8 +70,12 @@ def assert_layout(box):
         assert (p['x'] < a['x']) == (box['side'] == 'right'), f'Side swap failed: {box}'
     else:
         assert p['display'] == 'none', f'Touch mode should hide joystick: {box}'
-        # Regression for left-hand touch-to-move mode: lone action group stays left.
-        assert (a['x'] < box['w']/2) == (box['side'] == 'left'), f'Touch mode action side failed: {box}'
+        # Compare the group center, not its left edge: on a 320px viewport a
+        # correctly right-aligned 158px group starts at x=157 (left of midpoint).
+        # Strict comparisons also reject an incorrectly centered action group.
+        center = a['x'] + a['w']/2
+        correct_side = center < box['w']/2 if box['side'] == 'left' else center > box['w']/2
+        assert correct_side, f'Touch mode action side failed: {box}'
 
 
 def assert_hit_targets(page, mode):
