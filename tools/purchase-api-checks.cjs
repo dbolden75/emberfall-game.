@@ -18,6 +18,7 @@ function setup({native=true,test=false,available=true}={}){
  t=setup();t.c.playStore.busy=true;assert.equal((await t.api.purchase('halo')).status,'busy');assert.equal(t.calls.length,0);
  t=setup();t.c.ensurePurchaseProfile=()=>{throw Error('disk full')};assert.equal((await t.api.purchase('halo')).status,'error');assert.equal(t.calls.length,0);
  t=setup();t.c.hasStarted=false;assert.equal((await t.api.purchase('halo')).status,'unavailable');assert.equal(t.calls.length,0);
+ t=setup();t.c.premiumProduct=()=>({id:'halo',saleEnabled:false});assert.equal((await t.api.purchase('halo')).status,'unavailable');assert.equal(t.calls.length,0);
  t=setup();assert.equal((await t.api.purchase('unknown')).status,'unavailable');assert.equal(t.calls.length,0);
  console.log('PASS: public APIs and Buy/Restore route to native billing; test character, unavailable product, missing bridge, busy checkout, storage failure and unloaded character do not start payment.');
 })().catch(e=>{console.error(e);process.exitCode=1});

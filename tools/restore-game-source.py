@@ -102,6 +102,9 @@ assert hashlib.sha256(content).hexdigest() == '0519ec8b8cc5ed8d83311fa36feb0c81a
 assert content.count(b'</body>') == 1
 content = content.replace(b'</body>', b'<script src="purchase-api.js"></script>\n</body>', 1)
 
+import runpy
+content = runpy.run_path(str(root / 'tools/align-monetization.py'))['align'](content)
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():

@@ -12,7 +12,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 SCRIPT_TAG = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>')
-PRODUCT = 'thornhaven_levels_1'
+PRODUCT = 'emberfall_aura_embers'
 STYLE = 'emberfall_aura_embers'
 
 
