@@ -1,0 +1,21 @@
+name: Thornhaven continuity audit
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/audit-continuity.cjs'
+      - 'docs/THORNHAVEN_CONTINUITY.md'
+      - '.github/workflows/continuity-audit.yml'
+  workflow_dispatch:
+jobs:
+  continuity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit names without changing game state
+        run: node scripts/audit-continuity.cjs
+      - name: Validate existing world-map script
+        run: node scripts/test-world-map.cjs
