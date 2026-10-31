@@ -17,6 +17,7 @@ on:
       - fix/fog-refresh-party-portraits-20261028
       - qa/164-release-apk-emulator-smoke-20261029
       - qa/164-aab-universal-emulator-20261030
+      - ci/aab-install-preserves-android-package-state-20261031
       - fix/emulator-launch-watchdog-20261029
       - fix/164-legacy-enemy-coordinates-20261028
       - fix/164-legacy-equipment-summary-20261028
