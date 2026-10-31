@@ -74,6 +74,28 @@ def assert_layout(box):
         assert (a['x'] < box['w']/2) == (box['side'] == 'left'), f'Touch mode action side failed: {box}'
 
 
+def assert_hit_targets(page, mode):
+    """Check real hit-testing, not only element rectangles.
+
+    A control can be within the viewport yet be covered by another overlay;
+    center taps must reach the joystick and all three battle actions.
+    """
+    selectors = ['#attack', '#skillButton', '#dodgeButton']
+    if mode == 'arrows':
+        selectors.append('.shell .controls')
+    hits = page.evaluate("""selectors => selectors.map(selector => {
+      const target = document.querySelector(selector);
+      if (!target) return {selector, hit: false, reason: 'missing'};
+      const rect = target.getBoundingClientRect();
+      const top = document.elementFromPoint(rect.x + rect.width / 2,
+                                            rect.y + rect.height / 2);
+      return {selector, hit: rect.width > 0 && rect.height > 0 &&
+              !!top && (top === target || target.contains(top)),
+              top: top && (top.id || top.className || top.tagName)};
+    })""", selectors)
+    assert all(hit['hit'] for hit in hits), f'Controls covered by another UI layer: {hits}'
+
+
 def steer(page):
     pad = page.locator('.shell .controls').bounding_box()
     assert pad and pad['width'] >= 120, pad
@@ -112,10 +134,12 @@ def check_case(browser, assets: Path, evidence: Path, name: str, w: int, h: int)
         for side in ('right','left'):
             box=check_layout(page,side,'arrows',name)
             assert_layout(box)
+            assert_hit_targets(page, 'arrows')
             steer(page)
             cases.append(f'{side}-joystick')
             box=check_layout(page,side,'touch',name)
             assert_layout(box)
+            assert_hit_targets(page, 'touch')
             cases.append(f'{side}-touch')
         # Exact preference keys must be persisted by the real game setters.
         assert page.evaluate("localStorage.getItem('emberfall_control_side_v1')") == 'left'
@@ -156,7 +180,9 @@ def main():
         browser=p.chromium.launch(executable_path=args.browser,headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
         try:
             results=[check_case(browser,Path(args.assets),Path(args.evidence_dir),name,w,h)
-                     for name,w,h in [('portrait',420,900),('landscape',900,420)]]
+                     for name,w,h in [('portrait',420,900),('landscape',900,420),
+                                      ('p360',360,780),('l780',780,360),
+                                      ('p320',320,568),('l568',568,320)]]
         finally:
             browser.close()
     print(json.dumps({'status':'PASS','scope':'Headless Chromium, real packaged HTML, synthetic storage; not Android/Play or hardware','results':results},indent=2))
