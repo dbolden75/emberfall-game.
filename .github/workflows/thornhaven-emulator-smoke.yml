@@ -39,6 +39,7 @@ on:
       - 'tools/emulator-smoke.sh'
       - 'tools/emulator-save-upgrade.sh'
       - 'tools/emulator-release-qa.sh'
+      - 'tools/emulator-aab-install-qa.sh'
       - 'tools/emulator-control-matrix-qa.sh'
       - 'tools/emulator-matrix-checks.cjs'
       - 'tools/emulator-webview-probe.cjs'
