@@ -44,6 +44,11 @@ jobs:
             --evidence-dir reports/browser-pet-combat-qa
           python3 tools/browser-joystick-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-joystick-qa
+          # Run each orientation in its own Chromium process to bound 26-MB HTML memory.
+          python3 tools/browser-purchase-qa.py --assets app/src/main/assets \
+            --evidence-dir reports/browser-purchase-qa --orientation portrait
+          python3 tools/browser-purchase-qa.py --assets app/src/main/assets \
+            --evidence-dir reports/browser-purchase-qa --orientation landscape
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -54,6 +59,7 @@ jobs:
             reports/browser-gathering-qa/*.png
             reports/browser-pet-combat-qa/*.png
             reports/browser-joystick-qa/*.png
+            reports/browser-purchase-qa/*.png
           if-no-files-found: ignore
       - uses: actions/setup-java@v4
         with:
