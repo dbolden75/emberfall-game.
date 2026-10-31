@@ -33,6 +33,7 @@ on:
       - qa/163-render-stress
       - qa/163-historical-157-upgrade
       - qa/166-android16-native-controls-20261031
+      - qa/166-android14-portrait-side-isolation-20261031
     paths:
       - 'app/**'
       - 'source-payload/**'
@@ -228,6 +229,20 @@ jobs:
       matrix:
         orientation: [portrait, landscape]
         api-level: [34, 36]
+        side: [both]
+        # Android 14 portrait repeatedly killed the hosted emulator at the
+        # third settings transition; test two sides in separate fresh WebViews.
+        exclude:
+          - orientation: portrait
+            api-level: 34
+            side: both
+        include:
+          - orientation: portrait
+            api-level: 34
+            side: right
+          - orientation: portrait
+            api-level: 34
+            side: left
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
@@ -290,12 +305,12 @@ jobs:
           # which has better Chromium/WebView compatibility than -gpu swiftshader.
           # Continue disabling guest Vulkan to isolate hosted graphics issues.
           emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
-          script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }}
+          script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}
       - name: Upload independent control matrix and crash diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-164-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-evidence
+          name: thornhaven-164-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence
           path: reports/control-matrix/
           if-no-files-found: ignore
           retention-days: 7
