@@ -152,6 +152,14 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
  #explorationActions{display:flex;gap:5px;margin-top:5px;pointer-events:auto}
  body .shell #explorationActions button{flex:1;min-width:0;min-height:44px;padding:4px;border:1px solid #8c794f;border-radius:5px;background:#202c23ed;color:#f0dca8;font:10px system-ui}
  @media(orientation:landscape) and (max-height:500px){body:has(#gameView:not([hidden])) .shell .hudSide{width:186px}body:has(#gameView:not([hidden])) .shell #partyPortraits button{height:58px}body .shell #partyPortraits canvas,body .shell #partyPortraits img{height:42px!important;width:34px!important}}
+ /* In shallow landscape, the bottom joystick/attack strip covers the HUD's map and pet buttons.
+    Center the HUD buttons in the open lane between the two handed control groups.
+    Keep ≥44px-high controls and shrink their row on narrow landscape screens. */
+ @media(orientation:landscape) and (max-height:380px){
+  body:has(#gameView:not([hidden])) .shell #explorationActions{
+   position:relative;left:calc(50vw - 10px);width:min(186px,calc(100vw - 328px));transform:translateX(-50%)
+  }
+ }
  `;document.head.appendChild(css);
  const previous=ui;let portraitKey='';
  ui=function(){previous();
