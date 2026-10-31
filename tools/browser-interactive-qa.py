@@ -85,9 +85,66 @@ def check_orientation(browser, assets: Path, output: Path, orientation: str, wid
     assert not errors, f"Uncaught game JavaScript errors: {errors[:5]}"
     output.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(output / (orientation + "-world-map-detail.png")), timeout=20000)
+    # Regression for historical town-entry freezes. These QA-only direct map
+    # transitions exercise all four town loading paths, not walking or portals.
+    page.evaluate("closePanel('travelScreen')")
+    towns = ("ashvale", "sunmere", "brackenford", "stonewatch")
+    for town in towns:
+        info = page.evaluate("""id => {
+            const entry = mapEntry(id, 'default');
+            const ok = setMap(id, entry[0], entry[1]);
+            ui(); // invokes the existing game's save path, without mock writes
+            const slots = JSON.parse(localStorage.getItem('emberfall_character_slots_v1') || '{}');
+            return {ok, id: mapId, name: activeMap.name,
+                    hud: document.getElementById('mapName').textContent,
+                    is_town: !!activeMap.town, enemies: activeMap.enemies.length,
+                    npcs: activeMap.npcs.length,
+                    saved_map: slots[activeSlotId]?.state?.mapId};
+        }""", town)
+        assert info["ok"] and info["id"] == town, f"Town transition failed: {town}: {info}"
+        assert info["is_town"] and info["enemies"] == 0 and info["npcs"] > 0, (
+            f"Town loaded incorrectly or spawned hostile enemies: {town}: {info}")
+        assert info["name"] == info["hud"] and info["saved_map"] == town, (
+            f"Town HUD or saved map differs: {town}: {info}")
+        assert page.get_by_role("button", name="INTERACT").is_visible(), (
+            f"Gameplay controls inaccessible in {town}")
+    assert not errors, f"Town transition JavaScript errors: {errors[:5]}"
+
+    # Verify title-menu Continue, then a fresh browser page seeded ONLY with
+    # the game's own saved storage. This is not native WebView save durability.
+    expected = page.evaluate("({name: player.name, className: player.class, level: player.level, "
+                             "coins: player.coins, inventory: JSON.stringify(player.inventory), map: mapId})")
+    page.evaluate("showTitleMenu()")
+    assert page.locator("#titleContinue").is_enabled(), "Saved hero missing from title screen"
+    page.locator("#titleContinue").click()
+    same_page = page.evaluate("({name: player.name, map: mapId})")
+    assert same_page == {"name": hero, "map": "stonewatch"}, (
+        f"Continue failed to retain current character/town: {same_page}")
+    seed = page.evaluate("window.__qaStorage")
+    reopened = browser.new_page(viewport={"width": width, "height": height},
+                                is_mobile=True, has_touch=True, device_scale_factor=1)
+    reopened_errors = []
+    reopened.on("pageerror", lambda err: reopened_errors.append(str(err)))
+    try:
+        reopened.set_content(html_for_browser(assets, seed), wait_until="domcontentloaded", timeout=60000)
+        assert reopened.locator("#titleContinue").is_enabled(), "Saved hero not offered after reload"
+        reopened.locator("#titleContinue").click()
+        actual = reopened.evaluate("({name: player.name, className: player.class, "
+                                   "level: player.level, coins: player.coins, "
+                                   "inventory: JSON.stringify(player.inventory), map: mapId})")
+        assert actual == expected, f"Reload changed player state or town: {expected} -> {actual}"
+        assert reopened.locator("#mapName").inner_text() == "Stonewatch", (
+            "Reloaded HUD did not show the saved town")
+        assert reopened.get_by_role("button", name="INTERACT").is_visible(), (
+            "Reloaded character has no gameplay controls")
+        assert not reopened_errors, f"Reopened gameplay JS errors: {reopened_errors[:5]}"
+        reopened.screenshot(path=str(output / (orientation + "-town-save-resume.png")), timeout=20000)
+    finally:
+        reopened.close()
     result = {"orientation": orientation, "viewport": [width, height], "created_hero": hero,
               "character_in_save": True, "world_map_region": node_id, "world_map_detail_updated": True,
-              "page_errors": len(errors)}
+              "page_errors": len(errors), "town_transitions": list(towns),
+              "same_page_continue": True, "fresh_page_resume": True}
     page.close()
     return result
 
