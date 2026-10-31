@@ -38,6 +38,17 @@ assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}'));
 assert(workflow.includes('name: thornhaven-164-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
 assert(shell.includes('control-preferences-$orientation'),'Native matrix must select its orientation');
+const logcatLaunch='adb logcat -v threadtime -b main -b system -b crash > reports/control-matrix/streamed-logcat.txt 2>&1 &';
+assert(shell.includes(logcatLaunch),'Guest crash logs must stream before ADB disappears');
+assert(shell.indexOf('adb install "$APK"') < shell.indexOf(logcatLaunch) &&
+       shell.indexOf(logcatLaunch) < shell.indexOf('am start -n'),
+       'Stream guest logcat after APK installation, before Activity launch');
+assert(shell.includes('stop_streamed_logcat') &&
+       shell.includes('kill "$logcat_pid"') &&
+       shell.includes('wait "$logcat_pid"'),
+       'Background logcat must be reaped on every exit');
+assert(shell.includes('host-processes.txt'),
+       'Host emulator/QEMU process diagnostics missing on failure');
 assert(shell.includes('control-preferences-$orientation-$side'),'Isolated side must run real WebView settings tests');
 assert(shell.includes('shell -T run-as "$PKG" tee shared_prefs/com.emberfall.ashvale.MainActivity.xml'), 'Native portrait startup preference must be seeded with an app-UID write before WebView');
 // Android Activity.getLocalClassName() strips the application package only
