@@ -66,4 +66,11 @@ for(const side of ['left','right']){
 }
 const check=spawnSync('bash',['-n','tools/emulator-control-matrix-qa.sh'],{encoding:'utf8'});
 assert.equal(check.status,0,'Shell syntax invalid: '+check.stderr);
+for(const args of [['portrait','wrong-side'],['both','left']]){
+  const invalid=spawnSync('bash',['tools/emulator-control-matrix-qa.sh',...args],
+                          {encoding:'utf8'});
+  assert.equal(invalid.status,2,'Invalid native control scope did not fail closed: '+
+               JSON.stringify(args)+' '+invalid.stderr);
+}
+
 console.log('PASS (static): Android 14/16 CI requires 2 APIs x 2 orientations x 2 sides x 2 movement modes; geometry, save and settings assertions retained. Not native emulator testing.');
