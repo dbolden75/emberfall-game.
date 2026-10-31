@@ -77,6 +77,41 @@ jobs:
             --gradle app/build.gradle \
             --activity app/src/main/java/com/emberfall/ashvale/MainActivity.java \
             --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
+      - name: Validate Google Play bundle format and QA-generated universal APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This is offline bundletool compatibility QA, NOT Play Console acceptance.
+          aab=app/build/outputs/bundle/release/app-release.aab
+          test -s "$aab"
+          tool="$RUNNER_TEMP/bundletool-all-1.18.3.jar"
+          curl -fL --retry 3 --silent --show-error \
+            'https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar' -o "$tool"
+          printf '%s  %s\n' a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29 "$tool" | sha256sum -c -
+          java -jar "$tool" validate --bundle="$aab"
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@package)" = 'com.vaelbrink.ashvale.newjourney'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '166'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionName)" = '1.0.64'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/uses-sdk/@android:targetSdkVersion)" = '36'
+          # Disposable QA signing for bundletool's generated APK. Never distribute it.
+          qa_key="$RUNNER_TEMP/thornhaven-bundletool-qa.p12"
+          qa_set="$RUNNER_TEMP/thornhaven-bundletool-qa.apks"
+          qa_apk="$RUNNER_TEMP/thornhaven-bundletool-universal-qa.apk"
+          keytool -genkeypair -noprompt -storetype PKCS12 \
+            -keystore "$qa_key" -alias qa-only -keyalg RSA -keysize 2048 -validity 1 \
+            -dname 'CN=Thornhaven Disposable Bundletool QA' \
+            -storepass throwawayqa123 -keypass throwawayqa123
+          java -jar "$tool" build-apks --bundle="$aab" --output="$qa_set" \
+            --mode=universal --ks="$qa_key" --ks-key-alias=qa-only \
+            --ks-pass=pass:throwawayqa123 --key-pass=pass:throwawayqa123
+          unzip -p "$qa_set" universal.apk > "$qa_apk"
+          test -s "$qa_apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$qa_apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$qa_apk" | \
+            grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='166' versionName='1.0.64'"
+          cmp <(unzip -p "$aab" base/assets/index.html) <(unzip -p "$qa_apk" assets/index.html)
+          rm -f "$qa_key" "$qa_set" "$qa_apk" "$tool"
+          echo 'PASS: bundletool 1.18.3 validated the AAB and generated a matching QA-signed universal APK. NOT a Play-delivered update.'
       - name: Stage unsigned release outputs and Android signing utilities
         run: |
           set -eu
