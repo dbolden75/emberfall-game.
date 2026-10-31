@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape','control-preferences-portrait-left','control-preferences-portrait-right'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -696,23 +696,24 @@ const controlPreferences=String.raw`(async()=>{
       }
     }
     stage('geometry/compare');
-    // A hidden D-pad leaves a SINGLE action group. Previously both Left and
-    // Right kept it on the right because margin-left:auto defeated row-reverse.
-    // Assert actual viewport positions, not merely the persisted setting.
+    // Hosted emulators can exercise one side in a fresh WebView to avoid
+    // Android 14 portrait renderer exhaustion. Each isolated leg proves
+    // its own absolute position, not merely the stored setting.
     for(const orientation of ['portrait','landscape']){
       const right=measurements.find(m=>m.orientation===orientation&&
         m.side==='right'&&m.mode==='touch');
       const left=measurements.find(m=>m.orientation===orientation&&
         m.side==='left'&&m.mode==='touch');
-      if(!right||!left)throw Error('Missing touch geometry for '+orientation);
-      const width=left.viewport[0];
-      const leftCenter=(left.actionX[0]+left.actionX[1])/2;
-      const rightCenter=(right.actionX[0]+right.actionX[1])/2;
-      if(left.actionX[0]>right.actionX[0]-40 ||
-         !(leftCenter<width/2 && rightCenter>width/2))
+      if(!right&&!left)throw Error('Missing touch geometry for '+orientation);
+      const width=(right||left).viewport[0];
+      const rightCenter=right?(right.actionX[0]+right.actionX[1])/2:null;
+      const leftCenter=left?(left.actionX[0]+left.actionX[1])/2:null;
+      if((right&&!(rightCenter>width/2))||
+         (left&&!(leftCenter<width/2))||
+         (right&&left&&left.actionX[0]>right.actionX[0]-40))
         throw Error('Touch-mode actions ignored Left side on '+orientation+
-          ': left='+JSON.stringify(left.actionX)+
-          ' right='+JSON.stringify(right.actionX)+
+          ': left='+JSON.stringify(left?.actionX)+
+          ' right='+JSON.stringify(right?.actionX)+
           ' viewportWidth='+width);
     }
     stage('saves/compare');
@@ -738,12 +739,18 @@ const controlPreferences=String.raw`(async()=>{
 })()`;
 
 
-function controlPreferencesFor(orientation){
+function controlPreferencesFor(orientation,side=null){
   assert(['portrait','landscape'].includes(orientation));
   const needle="['portrait','landscape']";
   assert.equal(controlPreferences.split(needle).length,3,
     'Control QA must retain two orientation loops');
-  const source=controlPreferences.replaceAll(needle,"['"+orientation+"']");
+  let source=controlPreferences.replaceAll(needle,"['"+orientation+"']");
+  if(side!==null){
+    assert(['left','right'].includes(side),'Invalid isolated control side');
+    const sides="['right','left']";
+    assert.equal(source.split(sides).length,2,'Expected one side loop');
+    source=source.replace(sides,"['"+side+"']");
+  }
   const restore='ThornhavenDevice.setOrientationPreference(originalOrientation);';
   assert.equal(source.split(restore).length,2,'Expected one cleanup orientation');
   // A matrix leg owns a fresh disposable emulator. Avoid a second native
@@ -830,7 +837,7 @@ const orientationControls=String.raw`(async()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,'create-controls':createControls,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'control-preferences-portrait':controlPreferencesFor('portrait'),'control-preferences-landscape':controlPreferencesFor('landscape'),'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={create,'create-controls':createControls,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'control-preferences-portrait':controlPreferencesFor('portrait'),'control-preferences-landscape':controlPreferencesFor('landscape'),'control-preferences-portrait-left':controlPreferencesFor('portrait','left'),'control-preferences-portrait-right':controlPreferencesFor('portrait','right'),'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     // The controls-preferences probe performs native rotation twice and eight
     // settings navigations; allow time for slow Android14 renderer transitions.
     const result=JSON.parse(await evaluate(scripts[phase],phase.startsWith('control-preferences')?60000:15000));

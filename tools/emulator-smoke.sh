@@ -32,10 +32,15 @@ PY
 # Capture exposed game UI, not the Android system's fullscreen tutorial.
 sleep 3
 adb exec-out screencap -p > reports/emulator/startup.png
-adb shell uiautomator dump /sdcard/thornhaven-hierarchy.xml >/dev/null
-adb shell cat /sdcard/thornhaven-hierarchy.xml > reports/emulator/ui-hierarchy.xml
-if grep -Eq 'Viewing full screen|GOT IT' reports/emulator/ui-hierarchy.xml; then
-  echo 'FAIL: Android immersive tutorial still obscures the game'
+# Avoid launching the memory-heavy UIAutomator instrumentation process just
+# to detect the fullscreen tutorial. On API34 that process was the last action
+# after valid game screenshots immediately before a shell exit 137. A focused
+# window belonging to our MainActivity ensures SystemUI is not covering it.
+timeout 12s adb shell dumpsys window > reports/emulator/window-state.txt
+if ! grep -F 'mCurrentFocus=' reports/emulator/window-state.txt |
+     grep -Fq "$PKG/$ACTIVITY"; then
+  echo 'FAIL: Thornhaven is not the focused window (possible SystemUI overlay)'
+  grep -F 'mCurrentFocus=' reports/emulator/window-state.txt || true
   exit 1
 fi
 # Interact with Start New Game on the landscape title screen, then check for
