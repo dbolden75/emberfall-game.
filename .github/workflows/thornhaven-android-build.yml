@@ -40,6 +40,8 @@ jobs:
             --evidence-dir reports/browser-camp-story-qa
           python3 tools/browser-gathering-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-gathering-qa
+          python3 tools/browser-pet-combat-qa.py --assets app/src/main/assets \
+            --evidence-dir reports/browser-pet-combat-qa
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -48,6 +50,7 @@ jobs:
             reports/browser-interactive-qa/*.png
             reports/browser-camp-story-qa/*.png
             reports/browser-gathering-qa/*.png
+            reports/browser-pet-combat-qa/*.png
           if-no-files-found: ignore
       - uses: actions/setup-java@v4
         with:
