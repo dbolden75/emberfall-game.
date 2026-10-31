@@ -68,6 +68,34 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private boolean valid(Purchase p){
         try{return p.getPurchaseState()==Purchase.PurchaseState.PURCHASED&&p.getQuantity()==1&&p.getProducts().size()==1&&Arrays.asList(PRODUCT_IDS).contains(p.getProducts().get(0))&&activity.getPackageName().equals(p.getPackageName())&&!p.getPurchaseToken().isEmpty()&&BillingSignature.verify(Base64.decode(PUBLIC_KEY,Base64.DEFAULT),p.getOriginalJson(),Base64.decode(p.getSignature(),Base64.DEFAULT));}catch(Exception e){return false;}
     }
+    // A stored receipt is reusable only when its saved token, product and
+    // signed purchase still agree with the newly verified Play purchase.
+    // Otherwise rebuild it as undelivered instead of retaining a corrupt
+    // 'delivered' / 'finished' marker that could suppress a paid item.
+    private boolean trustworthySavedReceipt(JSONObject record, Purchase current){
+        if(record==null)return false;
+        try{
+            Purchase saved=new Purchase(record.getString("json"),record.getString("signature"));
+            String product=current.getProducts().get(0);
+            String profile=current.getAccountIdentifiers()==null?"":current.getAccountIdentifiers().getObfuscatedProfileId();
+            String savedProfile=saved.getAccountIdentifiers()==null?"":saved.getAccountIdentifiers().getObfuscatedProfileId();
+            if(profile==null)profile="";
+            if(savedProfile==null)savedProfile="";
+            return valid(saved)
+                && current.getPurchaseToken().equals(saved.getPurchaseToken())
+                && product.equals(saved.getProducts().get(0))
+                && hash(current.getPurchaseToken()).equals(record.optString("id"))
+                && current.getPurchaseToken().equals(record.optString("token"))
+                && product.equals(record.optString("product"))
+                && profile.equals(record.optString("profile"))
+                && (!consumable(product)||profile.equals(savedProfile));
+        }catch(Exception invalidStoredReceipt){return false;}
+    }
+    private boolean trustworthySavedReceipt(JSONObject record){
+        if(record==null)return false;
+        try{return trustworthySavedReceipt(record,new Purchase(record.getString("json"),record.getString("signature")));}
+        catch(Exception invalidStoredReceipt){return false;}
+    }
     private void accept(Purchase p){
         if(p.getPurchaseState()==Purchase.PurchaseState.PENDING){message="Payment pending. Items will arrive only after Google confirms payment.";publish();return;}
         if(!valid(p)){message="Purchase could not be verified. No items were granted.";publish();return;}
@@ -78,12 +106,18 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         try{
             previous=new JSONObject(receipts.toString());
             String id=hash(p.getPurchaseToken()),product=p.getProducts().get(0);
+            String profile=p.getAccountIdentifiers()==null?"":p.getAccountIdentifiers().getObfuscatedProfileId();
+            if(consumable(product)&&(profile==null||!profile.matches("[a-f0-9]{64}"))){message="Purchase has no matching character. It has not been consumed or acknowledged.";publish();return;}
+            if(profile==null)profile="";
             JSONObject existing=receipts.optJSONObject(id);
-            if(existing==null){
-                String profile=p.getAccountIdentifiers()==null?"":p.getAccountIdentifiers().getObfuscatedProfileId();
-                if(consumable(product)&&(profile==null||!profile.matches("[a-f0-9]{64}"))){message="Purchase has no matching character. It has not been consumed or acknowledged.";publish();return;}
-                existing=new JSONObject().put("id",id).put("product",product).put("profile",profile==null?"":profile).put("token",p.getPurchaseToken()).put("json",p.getOriginalJson()).put("signature",p.getSignature()).put("delivered",false).put("finished",false);
+            if(!trustworthySavedReceipt(existing,p)){
+                // A corrupt old record must never permanently hide a real Play
+                // purchase. Character save receipt IDs still prevent replay.
+                existing=new JSONObject().put("id",id).put("product",product).put("profile",profile).put("token",p.getPurchaseToken()).put("json",p.getOriginalJson()).put("signature",p.getSignature()).put("delivered",false).put("finished",false);
                 receipts.put(id,existing);
+            }else{
+                // The stored identity is verified; retain durable delivery state.
+                existing.put("json",p.getOriginalJson()).put("signature",p.getSignature());
             }
             existing.put("active",true);
             if(!consumable(product)&&p.isAcknowledged())existing.put("finished",true);
@@ -117,7 +151,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                 if(r==null)continue;
                 try{
                     Purchase original=new Purchase(r.getString("json"),r.getString("signature"));
-                    if(!valid(original)||!r.optBoolean("active")||!r.optString("id").equals(hash(original.getPurchaseToken()))||!r.optString("product").equals(original.getProducts().get(0)))continue;
+                    if(!valid(original)||!r.optBoolean("active")||!r.optString("id").equals(hash(original.getPurchaseToken()))||!r.optString("token").equals(original.getPurchaseToken())||!r.optString("product").equals(original.getProducts().get(0)))continue;
                     String signedProfile=original.getAccountIdentifiers()==null?"":original.getAccountIdentifiers().getObfuscatedProfileId();
                     if(consumable(r.optString("product"))&&!r.optString("profile").equals(signedProfile))continue;
                     String product=r.getString("product");
@@ -156,10 +190,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     });}
     // Called only after the game has atomically committed both reward and receipt ID.
     @JavascriptInterface public void delivered(String id){activity.runOnUiThread(()->{
-        JSONObject r=receipts.optJSONObject(id);if(r==null||!r.optBoolean("active"))return;
+        JSONObject r=receipts.optJSONObject(id);if(r==null||!r.optBoolean("active")||!trustworthySavedReceipt(r))return;
         try{r.put("delivered",true);if(!persist()){r.put("delivered",false);return;}finish(r);publish();}catch(Exception ignored){}
     });}
-    private void retryFinishing(){Iterator<String> keys=receipts.keys();while(keys.hasNext()){JSONObject r=receipts.optJSONObject(keys.next());if(r!=null&&r.optBoolean("delivered")&&!r.optBoolean("finished"))finish(r);}}
+    private void retryFinishing(){Iterator<String> keys=receipts.keys();while(keys.hasNext()){JSONObject r=receipts.optJSONObject(keys.next());if(r!=null&&r.optBoolean("delivered")&&!r.optBoolean("finished")&&trustworthySavedReceipt(r))finish(r);}}
     private void finish(JSONObject r){
         String id=r.optString("id");if(closed||!client.isReady()||r.optBoolean("finished")||!finishing.add(id))return;
         if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->complete(r,result)));
