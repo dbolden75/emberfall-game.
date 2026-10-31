@@ -36,11 +36,15 @@ jobs:
           python3 -m pip install --disable-pip-version-check playwright==1.57.0
           python3 tools/browser-interactive-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-interactive-qa
+          python3 tools/browser-camp-story-qa.py --assets app/src/main/assets \
+            --evidence-dir reports/browser-camp-story-qa
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: thornhaven-browser-interactive-qa
-          path: reports/browser-interactive-qa/*.png
+          path: |
+            reports/browser-interactive-qa/*.png
+            reports/browser-camp-story-qa/*.png
           if-no-files-found: ignore
       - uses: actions/setup-java@v4
         with:
