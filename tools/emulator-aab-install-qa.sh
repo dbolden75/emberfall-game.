@@ -20,6 +20,11 @@ adb wait-for-device
 # version 166 using this same disposable QA signer. Do not uninstall/clear it.
 adb shell dumpsys package "$PKG" > "$OUT/qa-aab-before-package.txt"
 grep -q 'versionCode=166' "$OUT/qa-aab-before-package.txt"
+# Android keeps the original first-install timestamp on a genuine in-place
+# replacement. A reinstall after uninstalling would reset it and invalidate
+# this non-destructive install test, even if the fresh APK could launch.
+before_first_install="$(sed -n 's/^[[:space:]]*firstInstallTime=//p' "$OUT/qa-aab-before-package.txt" | head -n 1)"
+test -n "$before_first_install" || { echo 'FAIL: prior package firstInstallTime unavailable'; exit 1; }
 adb shell am force-stop "$PKG"
 # A successful same-signer in-place replacement is the key packaging check.
 # No -d, uninstall, clear-data or data-reset fallbacks are allowed.
@@ -27,6 +32,13 @@ timeout --signal=TERM --kill-after=10s 120s adb install -r "$APK" | tee "$OUT/qa
 grep -qx 'Success' "$OUT/qa-aab-install-in-place.txt"
 adb shell dumpsys package "$PKG" > "$OUT/qa-aab-after-package.txt"
 grep -q 'versionCode=166' "$OUT/qa-aab-after-package.txt"
+after_first_install="$(sed -n 's/^[[:space:]]*firstInstallTime=//p' "$OUT/qa-aab-after-package.txt" | head -n 1)"
+test "$before_first_install" = "$after_first_install" || {
+  echo 'FAIL: Android firstInstallTime changed during AAB install; not a verified in-place replacement'
+  exit 1
+}
+printf 'PASS: app firstInstallTime preserved across the AAB-derived APK replacement: %s\n' "$after_first_install" |
+  tee "$OUT/qa-aab-package-preservation.txt"
 adb shell pm path "$PKG" | grep -q '^package:'
 adb logcat -c
 # Production WebView debugging is disabled in this AAB. We therefore verify
@@ -37,6 +49,12 @@ for stage in start restart; do
   sleep 12
   pid="$(adb shell pidof "$PKG" | tr -d '\r')"
   test -n "$pid" || { echo "FAIL: AAB-derived universal APK process exited on $stage"; exit 1; }
+  # A live background process is not enough: the installed production-mode
+  # Activity must actually be resumed in Android's foreground.
+  timeout 20s adb shell dumpsys activity activities > "$OUT/qa-aab-$stage-foreground.txt"
+  grep -E 'topResumedActivity=|mResumedActivity=' "$OUT/qa-aab-$stage-foreground.txt" |
+    grep -F "$PKG" > /dev/null ||
+    { echo "FAIL: Thornhaven was not the foreground-resumed Activity on $stage"; exit 1; }
   adb exec-out screencap -p > "$OUT/qa-aab-$stage-screen.png"
   python3 - "$OUT/qa-aab-$stage-screen.png" <<'PY'
 from pathlib import Path
