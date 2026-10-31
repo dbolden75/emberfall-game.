@@ -197,10 +197,10 @@ jobs:
           emulator-build: 14472402
           arch: x86_64
           profile: pixel_5
-          # Use a 2 GiB guest for the WebView game and Android system services.
-          # Last evidence showed ~14 GiB host RAM available while the guest
-          # became adb-offline; avoid undersizing guest RAM as a confounder.
-          ram-size: 2048M
+          # Trial 3 GiB guest: API34 WebView/ADB disconnected even after portrait
+          # handedness isolation; failed-run evidence showed 14.7 GiB host RAM
+          # available, so eliminate guest memory pressure as a confounder.
+          ram-size: 3072M
           heap-size: 256M
           cores: 2
           disable-animations: true
@@ -297,7 +297,7 @@ jobs:
           emulator-build: 14472402
           arch: x86_64
           profile: pixel_5
-          ram-size: 2048M
+          ram-size: 3072M
           heap-size: 256M
           cores: 2
           disable-animations: true
