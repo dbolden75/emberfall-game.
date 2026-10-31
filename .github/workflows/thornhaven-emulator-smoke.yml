@@ -32,6 +32,7 @@ on:
       - qa/163-native-upgrade-probe
       - qa/163-render-stress
       - qa/163-historical-157-upgrade
+      - qa/166-android16-native-controls-20261031
     paths:
       - 'app/**'
       - 'source-payload/**'
@@ -220,12 +221,13 @@ jobs:
   # of the long release-upgrade + Android document-provider stress scenario.
   # The same game HTML is verified, but this job never touches production keys.
   control-matrix:
-    # Two fresh Android 14 emulators each verify all four side/movement modes.
+    # Verify all controls on both Android 14 and Android 16 (target SDK 36).
     # Combined matrix covers the original eight cases with every assertion.
     strategy:
       fail-fast: false
       matrix:
         orientation: [portrait, landscape]
+        api-level: [34, 36]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
@@ -271,10 +273,10 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm || true
-      - name: Test 8 native control preferences on clean Android 14 emulator
+      - name: Test native control preferences on Android 14 and 16 emulators
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           # Pin to stable Android Emulator 36.3.10 (build 14472402), rather
           # than rolling 37.2.13 which repeatedly crashes host GPU/ADB.
           emulator-build: 14472402
@@ -293,7 +295,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-164-android-control-matrix-${{ matrix.orientation }}-evidence
+          name: thornhaven-164-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-evidence
           path: reports/control-matrix/
           if-no-files-found: ignore
           retention-days: 7
