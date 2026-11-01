@@ -36,6 +36,7 @@ assert(native.includes('if(!saleEnabled(product))'));
 // Draft/retired product IDs remain eligible for authenticated historical receipt recovery,
 // but the native store must never advertise or check out these blocked IDs.
 assert(native.includes('Arrays.asList(PRODUCT_IDS).contains(p.getProducts().get(0))'));
+assert(native.includes('for(String id:PRODUCT_IDS)if(saleEnabled(id))products.add('));
 assert(native.includes('if(saleEnabled(p.getProductId()))catalog.put(p.getProductId(),p);'));
 assert(native.includes('if(!saleEnabled(p.getProductId()))continue;'));
 console.log('PASS: catalog parity, blocked XP/levels, draft crowns/pets, character-bound delivery, replay/reload, pet protection, save failure and live crown/pet commit.');
