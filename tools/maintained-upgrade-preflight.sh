@@ -69,74 +69,8 @@ fi
 device_sdk=$("$ADB" "${adb_args[@]}" shell getprop ro.build.version.sdk) || {
   echo 'BLOCKED: cannot query the Android device SDK level' >&2; exit 1;
 }
-device_sdk=${device_sdk//$("$ADB" "${adb_args[@]}" shell pm path "$PACKAGE") || {
-  echo 'BLOCKED: Thornhaven package not installed or unreadable on Android device' >&2; exit 1;
-}
-base_path=$(printf '%s\n' "$paths" | tr -d '\r' | sed -n 's/^package:\(.*\/base\.apk\)$/\1/p' | head -n1)
-[[ -n "$base_path" ]] || { echo 'BLOCKED: could not locate installed base.apk' >&2; exit 1; }
-
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-"$ADB" "${adb_args[@]}" pull "$base_path" "$tmp/installed-base.apk" >/dev/null || {
-  echo 'BLOCKED: could not read installed base.apk for signature comparison' >&2; exit 1;
-}
-installed_badging=$(badging "$tmp/installed-base.apk") || {
-  echo 'BLOCKED: installed APK manifest could not be verified' >&2; exit 1;
-}
-installed_pkg=$(package_field "$installed_badging" name) || exit 1
-installed_code=$(package_field "$installed_badging" versionCode) || exit 1
-[[ "$installed_pkg" == "$PACKAGE" && "$installed_code" =~ ^[0-9]+$ ]] || {
-  echo 'BLOCKED: installed APK package/version does not match Thornhaven' >&2; exit 1;
-}
-installed_cert=$(certificate "$tmp/installed-base.apk") || {
-  echo 'BLOCKED: installed APK certificate could not be verified' >&2; exit 1;
-}
-if [[ "$installed_cert" != "$candidate_cert" ]]; then
-  echo 'BLOCKED: installed Thornhaven uses a different certificate (possibly Google Play App Signing).' >&2
-  echo 'Do not uninstall or sideload over this app. Use the enrolled Google Play update track.' >&2
-  exit 1
-fi
-if (( 10#$candidate_code <= 10#$installed_code )); then
-  echo "BLOCKED: candidate versionCode $candidate_code is not newer than installed $installed_code" >&2
-  exit 1
-fi
-printf 'PASS: candidate signer matches installed app; package %s; installed versionCode %s -> candidate %s.\n' "$PACKAGE" "$installed_code" "$candidate_code"
-echo 'This was READ-ONLY preflight. No APK was installed and no saved data was changed.'
-\r'/}
-device_sdk=${device_sdk//$("$ADB" "${adb_args[@]}" shell pm path "$PACKAGE") || {
-  echo 'BLOCKED: Thornhaven package not installed or unreadable on Android device' >&2; exit 1;
-}
-base_path=$(printf '%s\n' "$paths" | tr -d '\r' | sed -n 's/^package:\(.*\/base\.apk\)$/\1/p' | head -n1)
-[[ -n "$base_path" ]] || { echo 'BLOCKED: could not locate installed base.apk' >&2; exit 1; }
-
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-"$ADB" "${adb_args[@]}" pull "$base_path" "$tmp/installed-base.apk" >/dev/null || {
-  echo 'BLOCKED: could not read installed base.apk for signature comparison' >&2; exit 1;
-}
-installed_badging=$(badging "$tmp/installed-base.apk") || {
-  echo 'BLOCKED: installed APK manifest could not be verified' >&2; exit 1;
-}
-installed_pkg=$(package_field "$installed_badging" name) || exit 1
-installed_code=$(package_field "$installed_badging" versionCode) || exit 1
-[[ "$installed_pkg" == "$PACKAGE" && "$installed_code" =~ ^[0-9]+$ ]] || {
-  echo 'BLOCKED: installed APK package/version does not match Thornhaven' >&2; exit 1;
-}
-installed_cert=$(certificate "$tmp/installed-base.apk") || {
-  echo 'BLOCKED: installed APK certificate could not be verified' >&2; exit 1;
-}
-if [[ "$installed_cert" != "$candidate_cert" ]]; then
-  echo 'BLOCKED: installed Thornhaven uses a different certificate (possibly Google Play App Signing).' >&2
-  echo 'Do not uninstall or sideload over this app. Use the enrolled Google Play update track.' >&2
-  exit 1
-fi
-if (( 10#$candidate_code <= 10#$installed_code )); then
-  echo "BLOCKED: candidate versionCode $candidate_code is not newer than installed $installed_code" >&2
-  exit 1
-fi
-printf 'PASS: candidate signer matches installed app; package %s; installed versionCode %s -> candidate %s.\n' "$PACKAGE" "$installed_code" "$candidate_code"
-echo 'This was READ-ONLY preflight. No APK was installed and no saved data was changed.'
-\n'/}
+device_sdk=${device_sdk//$'\r'/}
+device_sdk=${device_sdk//$'\n'/}
 [[ "$device_sdk" =~ ^[0-9]+$ ]] || {
   echo 'BLOCKED: Android device SDK level is missing or invalid' >&2; exit 1;
 }
