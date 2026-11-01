@@ -76,10 +76,15 @@ const bridge=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/CloudSaveD
 
 const ioGuards=bridge.match(/if \(pending != null \|\| documentIoActive\) \{/g)||[];
 assert.equal(ioGuards.length,2,'Both native save and load must reject overlapping document I/O');
-assert.match(bridge,/documentIoActive = true;\s*io\.execute\(\(\) -> \{/,
+assert.match(bridge,/documentIoActive = true;\s*try \{\s*io\.execute\(\(\) -> \{/,
  'Keep the document busy after the picker closes and before worker I/O starts');
-assert.match(bridge,/\} finally \{\s*activity\.runOnUiThread\(\(\) -> documentIoActive = false\);\s*\}/,
- 'Release the busy state after success or failure on the UI thread');
+assert.match(bridge,
+ /private void finishDocument\(Pending request, boolean ok, String message, String text\) \{[\s\S]*?activity\.runOnUiThread\(\(\) -> \{\s*documentIoActive = false;\s*result\(request\.id, request\.action, ok, false, message, text\);/,
+ 'Clear native busy flag before notifying the WebView of backup completion');
+assert.match(bridge,/catch \(RuntimeException cannotStart\) \{\s*documentIoActive = false;/,
+ 'Rejected worker scheduling must not leave backups permanently disabled');
+assert.equal((bridge.match(/finishDocument\(request, (?:true|false),/g)||[]).length,3,
+ 'Both successful operations and I/O failure must use the one-shot completion path');
 console.log('PASS: Cloud Save serializes picker operations through worker completion.');
 
 const manifest=fs.readFileSync('app/src/main/AndroidManifest.xml','utf8');
