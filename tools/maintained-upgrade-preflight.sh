@@ -22,7 +22,11 @@ done
 badging() {
   # Consume the whole aapt output: grep -m1 closes the pipe early, which
   # can SIGPIPE aapt and falsely fail the preflight under set -o pipefail.
-  "$AAPT" dump badging "$1" | awk '/^package: / && !found { print; found=1 } END { if (!found) exit 1 }'
+  "$AAPT" dump badging "$1" | awk '
+    /^package: / { package_count++; if (package_count == 1) print; next }
+    /^sdkVersion:/ { sdk_count++; if (sdk_count == 1) print; next }
+    END { if (package_count != 1 || sdk_count != 1) exit 1 }
+  '
 }
 package_field() {
   local badge=$1 field=$2
@@ -38,6 +42,10 @@ certificate() {
 }
 
 candidate_badging=$(badging "$CANDIDATE") || { echo 'BLOCKED: unreadable candidate APK manifest' >&2; exit 1; }
+candidate_min_sdk=$(printf '%s\n' "$candidate_badging" | sed -n "s/^sdkVersion:'\\([0-9][0-9]*\\)'$/\\1/p")
+[[ "$candidate_min_sdk" =~ ^[0-9]+$ ]] || {
+  echo 'BLOCKED: candidate APK has no valid minimum Android SDK' >&2; exit 1;
+}
 candidate_pkg=$(package_field "$candidate_badging" name) || exit 1
 candidate_code=$(package_field "$candidate_badging" versionCode) || exit 1
 [[ "$candidate_pkg" == "$PACKAGE" && "$candidate_code" =~ ^[0-9]+$ ]] || {
@@ -56,6 +64,85 @@ else
   mapfile -t connected < <("$ADB" devices | awk 'NR>1 && $2=="device" {print $1}')
   [[ ${#connected[@]} -eq 1 ]] || { echo 'BLOCKED: connect exactly one authorized Android device or set ADB_SERIAL' >&2; exit 1; }
   adb_args=(-s "${connected[0]}")
+fi
+
+device_sdk=$("$ADB" "${adb_args[@]}" shell getprop ro.build.version.sdk) || {
+  echo 'BLOCKED: cannot query the Android device SDK level' >&2; exit 1;
+}
+device_sdk=${device_sdk//$("$ADB" "${adb_args[@]}" shell pm path "$PACKAGE") || {
+  echo 'BLOCKED: Thornhaven package not installed or unreadable on Android device' >&2; exit 1;
+}
+base_path=$(printf '%s\n' "$paths" | tr -d '\r' | sed -n 's/^package:\(.*\/base\.apk\)$/\1/p' | head -n1)
+[[ -n "$base_path" ]] || { echo 'BLOCKED: could not locate installed base.apk' >&2; exit 1; }
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+"$ADB" "${adb_args[@]}" pull "$base_path" "$tmp/installed-base.apk" >/dev/null || {
+  echo 'BLOCKED: could not read installed base.apk for signature comparison' >&2; exit 1;
+}
+installed_badging=$(badging "$tmp/installed-base.apk") || {
+  echo 'BLOCKED: installed APK manifest could not be verified' >&2; exit 1;
+}
+installed_pkg=$(package_field "$installed_badging" name) || exit 1
+installed_code=$(package_field "$installed_badging" versionCode) || exit 1
+[[ "$installed_pkg" == "$PACKAGE" && "$installed_code" =~ ^[0-9]+$ ]] || {
+  echo 'BLOCKED: installed APK package/version does not match Thornhaven' >&2; exit 1;
+}
+installed_cert=$(certificate "$tmp/installed-base.apk") || {
+  echo 'BLOCKED: installed APK certificate could not be verified' >&2; exit 1;
+}
+if [[ "$installed_cert" != "$candidate_cert" ]]; then
+  echo 'BLOCKED: installed Thornhaven uses a different certificate (possibly Google Play App Signing).' >&2
+  echo 'Do not uninstall or sideload over this app. Use the enrolled Google Play update track.' >&2
+  exit 1
+fi
+if (( 10#$candidate_code <= 10#$installed_code )); then
+  echo "BLOCKED: candidate versionCode $candidate_code is not newer than installed $installed_code" >&2
+  exit 1
+fi
+printf 'PASS: candidate signer matches installed app; package %s; installed versionCode %s -> candidate %s.\n' "$PACKAGE" "$installed_code" "$candidate_code"
+echo 'This was READ-ONLY preflight. No APK was installed and no saved data was changed.'
+\r'/}
+device_sdk=${device_sdk//$("$ADB" "${adb_args[@]}" shell pm path "$PACKAGE") || {
+  echo 'BLOCKED: Thornhaven package not installed or unreadable on Android device' >&2; exit 1;
+}
+base_path=$(printf '%s\n' "$paths" | tr -d '\r' | sed -n 's/^package:\(.*\/base\.apk\)$/\1/p' | head -n1)
+[[ -n "$base_path" ]] || { echo 'BLOCKED: could not locate installed base.apk' >&2; exit 1; }
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+"$ADB" "${adb_args[@]}" pull "$base_path" "$tmp/installed-base.apk" >/dev/null || {
+  echo 'BLOCKED: could not read installed base.apk for signature comparison' >&2; exit 1;
+}
+installed_badging=$(badging "$tmp/installed-base.apk") || {
+  echo 'BLOCKED: installed APK manifest could not be verified' >&2; exit 1;
+}
+installed_pkg=$(package_field "$installed_badging" name) || exit 1
+installed_code=$(package_field "$installed_badging" versionCode) || exit 1
+[[ "$installed_pkg" == "$PACKAGE" && "$installed_code" =~ ^[0-9]+$ ]] || {
+  echo 'BLOCKED: installed APK package/version does not match Thornhaven' >&2; exit 1;
+}
+installed_cert=$(certificate "$tmp/installed-base.apk") || {
+  echo 'BLOCKED: installed APK certificate could not be verified' >&2; exit 1;
+}
+if [[ "$installed_cert" != "$candidate_cert" ]]; then
+  echo 'BLOCKED: installed Thornhaven uses a different certificate (possibly Google Play App Signing).' >&2
+  echo 'Do not uninstall or sideload over this app. Use the enrolled Google Play update track.' >&2
+  exit 1
+fi
+if (( 10#$candidate_code <= 10#$installed_code )); then
+  echo "BLOCKED: candidate versionCode $candidate_code is not newer than installed $installed_code" >&2
+  exit 1
+fi
+printf 'PASS: candidate signer matches installed app; package %s; installed versionCode %s -> candidate %s.\n' "$PACKAGE" "$installed_code" "$candidate_code"
+echo 'This was READ-ONLY preflight. No APK was installed and no saved data was changed.'
+\n'/}
+[[ "$device_sdk" =~ ^[0-9]+$ ]] || {
+  echo 'BLOCKED: Android device SDK level is missing or invalid' >&2; exit 1;
+}
+if (( 10#$candidate_min_sdk > 10#$device_sdk )); then
+  echo "BLOCKED: candidate requires Android API $candidate_min_sdk, device only supports API $device_sdk" >&2
+  exit 1
 fi
 
 paths=$("$ADB" "${adb_args[@]}" shell pm path "$PACKAGE") || {
