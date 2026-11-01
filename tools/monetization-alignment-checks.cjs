@@ -6,12 +6,21 @@ const native=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/PlayBillin
 const ids=JSON.parse('['+native.match(/PRODUCT_IDS=\{(.*?)\}/s)[1]+']');
 assert.deepEqual(ids.slice().sort(),products.map(p=>p.id).sort());
 for(const p of products.filter(p=>['xp','levels'].includes(p.category)))assert(p.legacyRestoreOnly&&p.saleEnabled===false);
+// Cinder is the cost:0 starter pet and is automatically granted by ensureStarterPet.
+// Never let a paid copy of that free pet enter the native or WebView catalog.
+assert(!ids.includes('thornhaven_pet_wolf'));
+assert(!products.some(p=>p.petId==='dalen'));
+for(const p of products.filter(p=>p.launchStatus==='draft'))assert.strictEqual(p.saleEnabled,false);
+assert(html.includes("PREMIUM_PRODUCTS.filter(p=>p.saleEnabled!==false).filter(p=>premiumCategory"));
+assert(html.includes("function ensureStarterPet()"));
+assert(html.includes("dalen:{name:'Cinder'"));
+assert(html.includes("cost:0"));
 const profile='b'.repeat(64),id='a'.repeat(64);
 const state={player:{level:17,xp:23,coins:8,name:'Tester',class:'warrior',inventory:[{id:'legacy',count:1}]},companions:[],townQuestState:{_purchaseProfile:profile,quest:{claimed:true}}};
 function grant(product,input=state){return reward(input,{id,product,profile},products)}
 const crowns=grant('thornhaven_crowns_100');assert.equal(crowns.player.coins,108);assert.equal(grant('thornhaven_crowns_100',crowns).player.coins,108);
 assert.deepEqual(crowns.player.inventory,state.player.inventory);assert.equal(crowns.player.level,17);assert.equal(crowns.player.xp,23);assert.deepEqual(crowns.townQuestState.quest,state.townQuestState.quest);
-for(const product of ['thornhaven_pet_wolf','thornhaven_pet_dragon']){
+for(const product of ['thornhaven_pet_dragon']){
  const pet=grant(product);assert.equal(pet.companions.length,1);assert(pet.companions[0].purchasedWithRealMoney);assert.equal(pet.companions[0].level,8);assert.equal(pet.companions[0].active,false);
  assert.equal(grant(product,pet).companions.length,1);
  const second=reward(pet,{id:'c'.repeat(64),product,profile},products);assert.equal(second.companions.length,1);
