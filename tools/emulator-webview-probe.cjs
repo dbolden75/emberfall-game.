@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape','control-preferences-portrait-left','control-preferences-portrait-right'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape','control-preferences-portrait-left','control-preferences-portrait-right','control-preferences-landscape-left','control-preferences-landscape-right'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
