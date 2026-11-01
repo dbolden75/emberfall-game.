@@ -36,4 +36,33 @@ assert(delivered.includes('!trustworthySavedReceipt(r)'),
 const finish=body('private void retryFinishing()','private void finish(JSONObject r)');
 assert(finish.includes('trustworthySavedReceipt(r)'),
        'Restored receipts must not finish corrupted purchase tokens');
+// A lost BillingClient connection can discard consume/ack callbacks. Clear
+// the in-flight token set and reject callbacks from that ended Play session,
+// otherwise Restore permanently skips an otherwise valid receipt.
+const connection=body('void connect(){','private void refresh(){');
+const disconnected=connection.slice(connection.indexOf('public void onBillingServiceDisconnected()'));
+for(const guard of ['billingSessionEpoch++','finishing.clear()','busy=false','catalog.clear()'])
+  assert(disconnected.includes(guard),'Disconnect must recover: '+guard);
+const finishMethod=body('private void finish(JSONObject r)','private void complete(JSONObject r');
+assert(finishMethod.includes('final int finishSession=billingSessionEpoch;'),
+       'Finish requests must capture the Play session identity');
+assert.equal(finishMethod.split('complete(r,result,finishSession)').length-1,2,
+       'Consumption and acknowledgement callbacks must preserve their session identity');
+const completeMethod=body('private void complete(JSONObject r','void close(){');
+assert(completeMethod.indexOf('if(closed||finishSession!=billingSessionEpoch)return;')>=0,
+       'End-of-session responses must not persist stale receipts');
+assert(completeMethod.indexOf('if(closed||finishSession!=billingSessionEpoch)return;')
+       < completeMethod.indexOf('finishing.remove('),
+       'Reject stale finish callbacks before changing the current session token set');
+const purchasesUpdated=body('@Override public void onPurchasesUpdated','@JavascriptInterface public void delivered');
+assert(purchasesUpdated.includes('if(closed)return;'),
+       'Purchase callbacks may not mutate the ledger after Activity teardown');
+const deliveredGuard=body('@JavascriptInterface public void delivered','private void retryFinishing()');
+assert(deliveredGuard.includes('if(closed)return;'),
+       'Delayed JavaScript delivery callbacks must not persist after teardown');
+const shutdown=src.slice(src.indexOf('void close(){'));
+assert(shutdown.includes('billingSessionEpoch++')&&shutdown.includes('finishing.clear()'),
+       'Closing BillingClient must invalidate unfinished requests');
+console.log('PASS (static): stale consume/ack callbacks are isolated by Play session; disconnect clears blocked finishing and checkout, teardown suppresses late callbacks.');
+
 console.log('PASS (static): corrupted Play receipt identity cannot inherit delivery/finish state or bypass native acknowledgement guards; Android CI compiles Java and runs purchase simulations separately.');
