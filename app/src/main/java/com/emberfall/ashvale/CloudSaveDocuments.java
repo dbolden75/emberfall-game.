@@ -136,7 +136,8 @@ final class CloudSaveDocuments {
         // Do not permit a second picker while the first document's I/O is
         // incomplete; otherwise exports/imports can overlap and race results.
         documentIoActive = true;
-        io.execute(() -> {
+        try {
+            io.execute(() -> {
             try {
                 if ("save".equals(request.action)) {
                     try (OutputStream output = activity.getContentResolver().openOutputStream(uri, "wt")) {
@@ -149,7 +150,7 @@ final class CloudSaveDocuments {
                     try (InputStream verification = activity.getContentResolver().openInputStream(uri)) {
                         BackupDocumentIntegrity.verify(verification, request.bytes);
                     }
-                    result(request.id, "save", true, false, null, null);
+                    finishDocument(request, true, null, null);
                 } else {
                     String text;
                     try (InputStream input = activity.getContentResolver().openInputStream(uri)) {
@@ -172,18 +173,30 @@ final class CloudSaveDocuments {
                         }
                         text = new String(output.toByteArray(), StandardCharsets.UTF_8);
                     }
-                    result(request.id, "load", true, false, null, text);
+                    finishDocument(request, true, null, text);
                 }
             } catch (Exception e) {
-                result(request.id, request.action, false, false,
+                finishDocument(request, false,
                     "save".equals(request.action)
                         ? "Backup export could not be verified. Local characters are unchanged; check the selected document before relying on it."
                         : "The document operation failed. Your local characters have not been replaced.", null);
-            } finally {
-                activity.runOnUiThread(() -> documentIoActive = false);
             }
-        });
+            });
+        } catch (RuntimeException cannotStart) {
+            documentIoActive = false;
+            result(request.id, request.action, false, false,
+                "The document worker is unavailable. Local characters are unchanged.", null);
+        }
         return true;
+    }
+
+    // Dispatch a single UI completion: clear the busy flag BEFORE the JS
+    // notification, so a player can immediately request another backup.
+    private void finishDocument(Pending request, boolean ok, String message, String text) {
+        activity.runOnUiThread(() -> {
+            documentIoActive = false;
+            result(request.id, request.action, ok, false, message, text);
+        });
     }
 
     private void result(String id, String action, boolean ok, boolean cancelled,
