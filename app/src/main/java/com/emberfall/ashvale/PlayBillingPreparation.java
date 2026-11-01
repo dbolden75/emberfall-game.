@@ -53,7 +53,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         for(String id:PRODUCT_IDS)products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
             catalog.clear();
-            if(status.getResponseCode()==BillingClient.BillingResponseCode.OK)for(ProductDetails p:result.getProductDetailsList())catalog.put(p.getProductId(),p);
+            if(status.getResponseCode()==BillingClient.BillingResponseCode.OK)for(ProductDetails p:result.getProductDetailsList())if(saleEnabled(p.getProductId()))catalog.put(p.getProductId(),p);
             message=catalog.isEmpty()?"No products are available from Google Play yet.":"Google Play checkout ready. Prices are supplied by Google Play.";publish();
         }));
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
@@ -152,7 +152,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         try{
             JSONObject result=new JSONObject().put("message",message).put("busy",busy);
             JSONObject items=new JSONObject();
-            for(ProductDetails p:catalog.values()){ProductDetails.OneTimePurchaseOfferDetails o=offer(p);if(o!=null)items.put(p.getProductId(),new JSONObject().put("price",o.getFormattedPrice()));}
+            for(ProductDetails p:catalog.values()){if(!saleEnabled(p.getProductId()))continue;ProductDetails.OneTimePurchaseOfferDetails o=offer(p);if(o!=null)items.put(p.getProductId(),new JSONObject().put("price",o.getFormattedPrice()));}
             JSONArray deliveries=new JSONArray(),owned=new JSONArray();
             Iterator<String> keys=receipts.keys();
             while(keys.hasNext()){
