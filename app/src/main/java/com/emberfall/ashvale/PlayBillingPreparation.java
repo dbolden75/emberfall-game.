@@ -13,7 +13,9 @@ import org.json.*;
 /** Client-only Play Billing for this offline game. Never trusts preview/UI ownership. */
 final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private static final String PUBLIC_KEY="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtdx3DqRc7RNNs/qsOnPSrSSy7MEW1dAIfBu78KLdMpAkOOQ2G/aNfpOf4AHkvzHpyq+FVRWsZqejqA62A59SkBpz0IyQBnSgdKq6S1f9sHD97+E33ovzWiykkp1Iy+j9UboiSjLBtVnvrt+30J59jDPYkdUFkMI3Xtyl/P2zHZxJHijQn0x1pCabxa2foD3POJ0uqXL35sl1FIpsywatFOmrKPz5UhYk3ES6+U4d4gJS/CfB52mIMEnBVzBXDNcQMpl/UnoneG5VjE0bEDG5OT0YAfIXwJK5GCFaYL45vJO083ZuLKnXeNMkqAhl089L+8Jc4khi5ZK9MxObfeO8SQIDAQAB";
-    static final String[] PRODUCT_IDS={"emberfall_aura_embers","emberfall_aura_frost","emberfall_aura_arcane","emberfall_trail_embers","emberfall_trail_stars","emberfall_trail_leaves","emberfall_title_emberborn","emberfall_title_wayfarer","emberfall_title_champion","emberfall_bundle_founder","thornhaven_xp_boost_25_15m","thornhaven_builder_contract_25_15m","thornhaven_levels_1","thornhaven_levels_5","thornhaven_levels_10"};
+    static final String[] PRODUCT_IDS={"emberfall_aura_embers","emberfall_aura_frost","emberfall_aura_arcane","emberfall_trail_embers","emberfall_trail_stars","emberfall_trail_leaves","emberfall_title_emberborn","emberfall_title_wayfarer","emberfall_title_champion","emberfall_bundle_founder","thornhaven_xp_boost_25_15m","thornhaven_builder_contract_25_15m","thornhaven_levels_1","thornhaven_levels_5","thornhaven_levels_10","thornhaven_crowns_100","thornhaven_pet_dragon"};
+    // Receipt recovery remains supported; these products must not start new checkout.
+    private static boolean saleEnabled(String id){return Arrays.asList(PRODUCT_IDS).contains(id)&&!id.startsWith("thornhaven_levels_")&&!id.equals("thornhaven_xp_boost_25_15m")&&!id.startsWith("thornhaven_crowns_")&&!id.startsWith("thornhaven_pet_");}
     private final Activity activity;
     private final BillingClient client;
     private final SharedPreferences prefs;
@@ -48,10 +50,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private void refresh(){
         if(closed||!client.isReady())return;
         List<QueryProductDetailsParams.Product> products=new ArrayList<>();
-        for(String id:PRODUCT_IDS)products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
+        for(String id:PRODUCT_IDS)if(saleEnabled(id))products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
             catalog.clear();
-            if(status.getResponseCode()==BillingClient.BillingResponseCode.OK)for(ProductDetails p:result.getProductDetailsList())catalog.put(p.getProductId(),p);
+            if(status.getResponseCode()==BillingClient.BillingResponseCode.OK)for(ProductDetails p:result.getProductDetailsList())if(saleEnabled(p.getProductId()))catalog.put(p.getProductId(),p);
             message=catalog.isEmpty()?"No products are available from Google Play yet.":"Google Play checkout ready. Prices are supplied by Google Play.";publish();
         }));
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
@@ -150,7 +152,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         try{
             JSONObject result=new JSONObject().put("message",message).put("busy",busy);
             JSONObject items=new JSONObject();
-            for(ProductDetails p:catalog.values()){ProductDetails.OneTimePurchaseOfferDetails o=offer(p);if(o!=null)items.put(p.getProductId(),new JSONObject().put("price",o.getFormattedPrice()));}
+            for(ProductDetails p:catalog.values()){if(!saleEnabled(p.getProductId()))continue;ProductDetails.OneTimePurchaseOfferDetails o=offer(p);if(o!=null)items.put(p.getProductId(),new JSONObject().put("price",o.getFormattedPrice()));}
             JSONArray deliveries=new JSONArray(),owned=new JSONArray();
             Iterator<String> keys=receipts.keys();
             while(keys.hasNext()){
@@ -179,6 +181,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     @JavascriptInterface public void restore(){activity.runOnUiThread(this::connect);}
     @JavascriptInterface public void buy(String product,String profile){activity.runOnUiThread(()->{
         if(closed)return;
+        if(!saleEnabled(product)){message="This product is not approved for new purchases.";publish();return;}
         if(busy){message="A Google Play checkout is already open.";publish();return;}
         if(!client.isReady()){message="Reconnecting to Google Play. Retry when the item price appears.";publish();connect();return;}
         if(profile==null||!profile.matches("[a-f0-9]{64}")){message="Load and save your character before purchasing.";publish();return;}

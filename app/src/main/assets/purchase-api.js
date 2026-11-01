@@ -6,7 +6,7 @@
   mode:window.ThornhavenPlayPurchases?'google-play':'preview',
   getCatalog:()=>JSON.parse(JSON.stringify(PREMIUM_PRODUCTS)),
   purchase:async id=>{
-   if(!premiumProduct(id))return show(result('unavailable','This item is not in the shop.'));
+   if(!premiumProduct(id)||premiumProduct(id).saleEnabled===false)return show(result('unavailable','This item is not in the shop.'));
    if(!hasStarted||titleMenuActive||switchingCharacter)return show(result('unavailable','Load your character before making a purchase.'));
    if(danTesting())return show(result('test-character','Real payments are disabled for TheDanCode. Load a normal character to use Google Play checkout.'));
    if(!window.ThornhavenPlayPurchases)return show(result('unavailable','Google Play checkout requires the Android Play release.'));
