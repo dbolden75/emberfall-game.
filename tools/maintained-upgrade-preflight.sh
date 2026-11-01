@@ -22,7 +22,11 @@ done
 badging() {
   # Consume the whole aapt output: grep -m1 closes the pipe early, which
   # can SIGPIPE aapt and falsely fail the preflight under set -o pipefail.
-  "$AAPT" dump badging "$1" | awk '/^package: / && !found { print; found=1 } END { if (!found) exit 1 }'
+  "$AAPT" dump badging "$1" | awk '
+    /^package: / { package_count++; if (package_count == 1) print; next }
+    /^sdkVersion:/ { sdk_count++; if (sdk_count == 1) print; next }
+    END { if (package_count != 1 || sdk_count != 1) exit 1 }
+  '
 }
 package_field() {
   local badge=$1 field=$2
@@ -38,6 +42,10 @@ certificate() {
 }
 
 candidate_badging=$(badging "$CANDIDATE") || { echo 'BLOCKED: unreadable candidate APK manifest' >&2; exit 1; }
+candidate_min_sdk=$(printf '%s\n' "$candidate_badging" | sed -n "s/^sdkVersion:'\\([0-9][0-9]*\\)'$/\\1/p")
+[[ "$candidate_min_sdk" =~ ^[0-9]+$ ]] || {
+  echo 'BLOCKED: candidate APK has no valid minimum Android SDK' >&2; exit 1;
+}
 candidate_pkg=$(package_field "$candidate_badging" name) || exit 1
 candidate_code=$(package_field "$candidate_badging" versionCode) || exit 1
 [[ "$candidate_pkg" == "$PACKAGE" && "$candidate_code" =~ ^[0-9]+$ ]] || {
@@ -56,6 +64,18 @@ else
   mapfile -t connected < <("$ADB" devices | awk 'NR>1 && $2=="device" {print $1}')
   [[ ${#connected[@]} -eq 1 ]] || { echo 'BLOCKED: connect exactly one authorized Android device or set ADB_SERIAL' >&2; exit 1; }
   adb_args=(-s "${connected[0]}")
+fi
+
+device_sdk=$("$ADB" "${adb_args[@]}" shell getprop ro.build.version.sdk) || {
+  echo 'BLOCKED: cannot query the Android device SDK level' >&2; exit 1;
+}
+device_sdk=${device_sdk//$'\r'/}
+[[ "$device_sdk" =~ ^[0-9]+$ ]] || {
+  echo 'BLOCKED: Android device SDK level is missing or invalid' >&2; exit 1;
+}
+if (( 10#$candidate_min_sdk > 10#$device_sdk )); then
+  echo "BLOCKED: candidate requires Android API $candidate_min_sdk, device only supports API $device_sdk" >&2
+  exit 1
 fi
 
 paths=$("$ADB" "${adb_args[@]}" shell pm path "$PACKAGE") || {
