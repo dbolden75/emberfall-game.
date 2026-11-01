@@ -41,6 +41,16 @@ def check_run(args, env, *, capture=False) -> str:
     return p.stdout if capture else ''
 
 
+
+def verify_aab_signing_identity(certificate_output: str) -> None:
+    """Require one signer with Thornhaven's exact maintained-key certificate."""
+    signers = re.findall(r'(?m)^Signer #[0-9]+:', certificate_output)
+    fingerprints = re.findall(r'(?m)^\s*SHA256:\s*([0-9A-Fa-f:]+)\s*$', certificate_output)
+    if (len(signers) != 1 or len(fingerprints) != 1
+            or fingerprints[0].replace(':', '').lower() != EXPECTED_CERT):
+        raise RuntimeError('AAB maintained-key signing certificate mismatch')
+
+
 def extract_selected(zip_path: Path, folder: Path, names: tuple[str, ...]) -> None:
     with zipfile.ZipFile(zip_path) as z:
         if z.testzip() is not None:
@@ -119,6 +129,9 @@ def main() -> None:
         verification = check_run(['jarsigner', '-verify', aab], env, capture=True)
         if 'jar verified' not in verification:
             raise RuntimeError('AAB JAR signature verification failed')
+        # Check the certificate embedded in the resulting AAB independently.
+        cert_report = check_run(['keytool', '-printcert', '-jarfile', aab], env, capture=True)
+        verify_aab_signing_identity(cert_report)
         check_run(['python3', Path(__file__).with_name('release-native-parity.py'),
                    '--signed-apk', apk, '--unsigned-apk', private / 'app-release-unsigned.apk',
                    '--signed-aab', aab, '--unsigned-aab', unsigned_aab], env)
