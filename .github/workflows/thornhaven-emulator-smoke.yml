@@ -36,6 +36,7 @@ on:
       - qa/166-android14-portrait-side-isolation-20261031
       - qa/166-stream-native-logcat-on-emulator-loss-20261031
       - qa/166-api34-landscape-isolation-main-20261031
+      - fix/cloud-save-io-callback-sequencing
     paths:
       - 'app/**'
       - 'source-payload/**'

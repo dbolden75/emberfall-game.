@@ -31,6 +31,10 @@ final class CloudSaveDocuments {
     private final WebView webView;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private Pending pending;
+    // This flag stays set until the document worker has finished. The picker
+    // may close before an export has been written or an import has been read.
+    // Access it on the UI thread, just like pending.
+    private boolean documentIoActive;
     private volatile boolean closed;
 
     private static final class Pending {
@@ -69,7 +73,7 @@ final class CloudSaveDocuments {
 
     private void beginSave(String id, String json) {
         if (closed || !validRequest(id)) return;
-        if (pending != null) {
+        if (pending != null || documentIoActive) {
             result(id, "save", false, false, "Finish the current backup first.", null);
             return;
         }
@@ -99,7 +103,7 @@ final class CloudSaveDocuments {
 
     private void beginLoad(String id) {
         if (closed || !validRequest(id)) return;
-        if (pending != null) {
+        if (pending != null || documentIoActive) {
             result(id, "load", false, false, "Finish the current backup first.", null);
             return;
         }
@@ -129,7 +133,11 @@ final class CloudSaveDocuments {
             return true;
         }
         Uri uri = data.getData();
-        io.execute(() -> {
+        // Do not permit a second picker while the first document's I/O is
+        // incomplete; otherwise exports/imports can overlap and race results.
+        documentIoActive = true;
+        try {
+            io.execute(() -> {
             try {
                 if ("save".equals(request.action)) {
                     try (OutputStream output = activity.getContentResolver().openOutputStream(uri, "wt")) {
@@ -142,7 +150,7 @@ final class CloudSaveDocuments {
                     try (InputStream verification = activity.getContentResolver().openInputStream(uri)) {
                         BackupDocumentIntegrity.verify(verification, request.bytes);
                     }
-                    result(request.id, "save", true, false, null, null);
+                    finishDocument(request, true, null, null);
                 } else {
                     String text;
                     try (InputStream input = activity.getContentResolver().openInputStream(uri)) {
@@ -165,16 +173,30 @@ final class CloudSaveDocuments {
                         }
                         text = new String(output.toByteArray(), StandardCharsets.UTF_8);
                     }
-                    result(request.id, "load", true, false, null, text);
+                    finishDocument(request, true, null, text);
                 }
             } catch (Exception e) {
-                result(request.id, request.action, false, false,
+                finishDocument(request, false,
                     "save".equals(request.action)
                         ? "Backup export could not be verified. Local characters are unchanged; check the selected document before relying on it."
                         : "The document operation failed. Your local characters have not been replaced.", null);
             }
-        });
+            });
+        } catch (RuntimeException cannotStart) {
+            documentIoActive = false;
+            result(request.id, request.action, false, false,
+                "The document worker is unavailable. Local characters are unchanged.", null);
+        }
         return true;
+    }
+
+    // Dispatch a single UI completion: clear the busy flag BEFORE the JS
+    // notification, so a player can immediately request another backup.
+    private void finishDocument(Pending request, boolean ok, String message, String text) {
+        activity.runOnUiThread(() -> {
+            documentIoActive = false;
+            result(request.id, request.action, ok, false, message, text);
+        });
     }
 
     private void result(String id, String action, boolean ok, boolean cancelled,
