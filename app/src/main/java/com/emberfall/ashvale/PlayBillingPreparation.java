@@ -25,6 +25,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private boolean closed, busy, connecting;
     // Ignore results from earlier Play sessions after a disconnect or a newer refresh.
     private int refreshEpoch;
+    // Unlike refreshEpoch, this changes only when a Play connection is lost
+    // or the activity is destroyed. A finishing response must belong to
+    // the same billing session that started the request.
+    private int billingSessionEpoch;
     private static boolean consumable(String id){return id.startsWith("thornhaven_");}
     PlayBillingPreparation(Activity activity){
         this.activity=activity; prefs=activity.getSharedPreferences("verified_play_purchases",0);
@@ -45,7 +49,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                 if(result.getResponseCode()==BillingClient.BillingResponseCode.OK)refresh();
                 else {message="Google Play purchases are unavailable. Install the Play test release and retry.";publish();}
             });}
-            public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{if(closed)return;refreshEpoch++;connecting=false;catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
+            public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{if(closed)return;refreshEpoch++;billingSessionEpoch++;connecting=false;busy=false;finishing.clear();catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
         });
     }
     private void refresh(){
@@ -198,6 +202,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         if(result.getResponseCode()!=BillingClient.BillingResponseCode.OK){busy=false;message="Checkout could not start. No new purchase was delivered. Restore purchases and retry.";publish();}
     });}
     @Override public void onPurchasesUpdated(BillingResult result,List<Purchase> purchases){activity.runOnUiThread(()->{
+        if(closed)return;
         busy=false;
         if(result.getResponseCode()==BillingClient.BillingResponseCode.OK&&purchases!=null)for(Purchase p:purchases)accept(p);
         else if(result.getResponseCode()==BillingClient.BillingResponseCode.USER_CANCELED)message="Purchase cancelled. No items were granted.";
@@ -206,19 +211,24 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     });}
     // Called only after the game has atomically committed both reward and receipt ID.
     @JavascriptInterface public void delivered(String id){activity.runOnUiThread(()->{
+        if(closed)return;
         JSONObject r=receipts.optJSONObject(id);if(r==null||!r.optBoolean("active")||!trustworthySavedReceipt(r))return;
         try{r.put("delivered",true);if(!persist()){r.put("delivered",false);return;}finish(r);publish();}catch(Exception ignored){}
     });}
     private void retryFinishing(){Iterator<String> keys=receipts.keys();while(keys.hasNext()){JSONObject r=receipts.optJSONObject(keys.next());if(r!=null&&r.optBoolean("delivered")&&!r.optBoolean("finished")&&trustworthySavedReceipt(r))finish(r);}}
     private void finish(JSONObject r){
         String id=r.optString("id");if(closed||!client.isReady()||r.optBoolean("finished")||!finishing.add(id))return;
-        if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->complete(r,result)));
-        else client.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(r.optString("token")).build(),result->activity.runOnUiThread(()->complete(r,result)));
+        final int finishSession=billingSessionEpoch;
+        if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->complete(r,result,finishSession)));
+        else client.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(r.optString("token")).build(),result->activity.runOnUiThread(()->complete(r,result,finishSession)));
     }
-    private void complete(JSONObject r,BillingResult result){
+    private void complete(JSONObject r,BillingResult result,int finishSession){
+        // Ignore callbacks from an ended connection. After disconnect the
+        // finishing set is cleared so Restore can retry the valid receipt.
+        if(closed||finishSession!=billingSessionEpoch)return;
         finishing.remove(r.optString("id"));
         if(result.getResponseCode()==BillingClient.BillingResponseCode.OK)try{r.put("finished",true);persist();}catch(Exception ignored){}
         message=result.getResponseCode()==BillingClient.BillingResponseCode.OK?"Purchase delivered and saved.":"Items saved. Google Play confirmation will retry when you restore purchases.";publish();
     }
-    void close(){closed=true;refreshEpoch++;catalog.clear();client.endConnection();}
+    void close(){closed=true;refreshEpoch++;billingSessionEpoch++;finishing.clear();busy=false;catalog.clear();client.endConnection();}
 }
