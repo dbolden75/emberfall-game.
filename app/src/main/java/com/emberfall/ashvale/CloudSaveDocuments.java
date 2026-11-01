@@ -31,6 +31,10 @@ final class CloudSaveDocuments {
     private final WebView webView;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private Pending pending;
+    // This flag stays set until the document worker has finished. The picker
+    // may close before an export has been written or an import has been read.
+    // Access it on the UI thread, just like pending.
+    private boolean documentIoActive;
     private volatile boolean closed;
 
     private static final class Pending {
@@ -69,7 +73,7 @@ final class CloudSaveDocuments {
 
     private void beginSave(String id, String json) {
         if (closed || !validRequest(id)) return;
-        if (pending != null) {
+        if (pending != null || documentIoActive) {
             result(id, "save", false, false, "Finish the current backup first.", null);
             return;
         }
@@ -99,7 +103,7 @@ final class CloudSaveDocuments {
 
     private void beginLoad(String id) {
         if (closed || !validRequest(id)) return;
-        if (pending != null) {
+        if (pending != null || documentIoActive) {
             result(id, "load", false, false, "Finish the current backup first.", null);
             return;
         }
@@ -129,6 +133,9 @@ final class CloudSaveDocuments {
             return true;
         }
         Uri uri = data.getData();
+        // Do not permit a second picker while the first document's I/O is
+        // incomplete; otherwise exports/imports can overlap and race results.
+        documentIoActive = true;
         io.execute(() -> {
             try {
                 if ("save".equals(request.action)) {
@@ -172,6 +179,8 @@ final class CloudSaveDocuments {
                     "save".equals(request.action)
                         ? "Backup export could not be verified. Local characters are unchanged; check the selected document before relying on it."
                         : "The document operation failed. Your local characters have not been replaced.", null);
+            } finally {
+                activity.runOnUiThread(() -> documentIoActive = false);
             }
         });
         return true;
