@@ -11,13 +11,12 @@ def align(content):
             p['legacyRestoreOnly']=True
     for p in [
         dict(id='thornhaven_crowns_100',name='100 Crowns',category='crowns',crowns=100,icon='♛',description='Adds 100 crowns to this character. Draft pack; contents and price await approval.'),
-        dict(id='thornhaven_pet_wolf',name='Cinder · Paid Pet',category='pet',petId='dalen',petHealth=68,petClass='warrior',icon='🐺',description='Cinder joins this character, or gains recovery protection if already owned. Paid pets recover after defeat.'),
-        dict(id='thornhaven_pet_dragon',name='Sol · Paid Pet',category='pet',petId='ember_dragon',petHealth=96,petClass='mage',icon='🐉',description='Sol joins this character, or gains recovery protection if already owned. Draft offer; progression requirements await approval.')
+        dict(id='thornhaven_pet_dragon',name='Sol · Paid Pet',category='pet',petId='ember_dragon',petHealth=96,petClass='mage',icon='🐉',description='Draft dragon companion for this character. Sale disabled pending quest-gate and price approval.')
     ]:
         p.update(productType='consumable',gameplayBonus=True,launchStatus='draft',saleEnabled=False,color='#e4bf66')
         products.append(p)
     text=text[:match.start(1)]+json.dumps(products,ensure_ascii=False,separators=(',',':'))+text[match.end(1):]
-    text=text.replace("PREMIUM_PRODUCTS.filter(p=>premiumCategory", "PREMIUM_PRODUCTS.filter(p=>!p.legacyRestoreOnly).filter(p=>premiumCategory")
+    text=text.replace("PREMIUM_PRODUCTS.filter(p=>premiumCategory", "PREMIUM_PRODUCTS.filter(p=>p.saleEnabled!==false).filter(p=>premiumCategory")
     text=text.replace("['xp','builder','levels'].includes(p.category)","['xp','builder','levels','crowns','pet'].includes(p.category)")
     old='saveSlots=slots;townQuestState=next.townQuestState;player.level=next.player.level;'
     assert text.count(old)==1
