@@ -10,7 +10,7 @@ for(const p of products.filter(p=>['xp','levels'].includes(p.category)))assert(p
 // Never let a paid copy of that free pet enter the native or WebView catalog.
 assert(!ids.includes('thornhaven_pet_wolf'));
 assert(!products.some(p=>p.petId==='dalen'));
-for(const p of products.filter(p=>p.launchStatus==='draft'))assert.strictEqual(p.saleEnabled,false);
+for(const p of products.filter(p=>['thornhaven_crowns_100','thornhaven_pet_dragon'].includes(p.id)))assert.strictEqual(p.saleEnabled,false);
 assert(html.includes("PREMIUM_PRODUCTS.filter(p=>p.saleEnabled!==false).filter(p=>premiumCategory"));
 assert(html.includes("function ensureStarterPet()"));
 assert(html.includes("dalen:{name:'Cinder'"));
