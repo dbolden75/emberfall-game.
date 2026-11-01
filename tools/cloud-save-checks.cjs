@@ -74,11 +74,11 @@ const fs=require('node:fs');
 const activity=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/MainActivity.java','utf8');
 const bridge=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/CloudSaveDocuments.java','utf8');
 
-const ioGuards=bridge.match(/if \\(pending != null \\|\\| documentIoActive\\) \\{/g)||[];
+const ioGuards=bridge.match(/if \(pending != null \|\| documentIoActive\) \{/g)||[];
 assert.equal(ioGuards.length,2,'Both native save and load must reject overlapping document I/O');
-assert.match(bridge,/documentIoActive = true;\\s*io\\.execute\\(\\(\\) -> \\{/,
+assert.match(bridge,/documentIoActive = true;\s*io\.execute\(\(\) -> \{/,
  'Keep the document busy after the picker closes and before worker I/O starts');
-assert.match(bridge,/\\} finally \\{\\s*activity\\.runOnUiThread\\(\\(\\) -> documentIoActive = false\\);\\s*\\}/,
+assert.match(bridge,/\} finally \{\s*activity\.runOnUiThread\(\(\) -> documentIoActive = false\);\s*\}/,
  'Release the busy state after success or failure on the UI thread');
 console.log('PASS: Cloud Save serializes picker operations through worker completion.');
 
