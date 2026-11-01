@@ -37,6 +37,7 @@ on:
       - qa/166-stream-native-logcat-on-emulator-loss-20261031
       - qa/166-api34-landscape-isolation-main-20261031
       - fix/cloud-save-io-callback-sequencing
+      - fix/billing-refresh-stale-callbacks-20261101
     paths:
       - 'app/**'
       - 'source-payload/**'
