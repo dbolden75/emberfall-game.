@@ -57,7 +57,7 @@ try {
   check('minimum supported API is allowed',{DEVICE_SDK:'24'},true,'PASS: candidate signer matches');
   check('candidate too new for device is blocked',{CANDIDATE_MIN_SDK:'35'},false,'requires Android API 35');
   check('device API cannot be determined is blocked',{DEVICE_SDK:''},false,'device SDK level is missing');
-  check('multiline device API cannot be reinterpreted',{DEVICE_SDK:'3\\n4'},false,'device SDK level is missing');
+  check('multiline device API cannot be reinterpreted',{DEVICE_SDK:'3\n4'},false,'device SDK level is missing');
   check('candidate missing minimum SDK blocks',{CANDIDATE_MIN_SDK:''},false,'no valid minimum Android SDK');
   console.log('PASS: all eleven read-only preflight checks (mock Android commands; no device)');
 } finally {fs.rmSync(tmp,{recursive:true,force:true});}
