@@ -19,7 +19,11 @@ for executable in "$ADB" "$AAPT" "$APKSIGNER"; do
   command -v "$executable" >/dev/null 2>&1 || { echo "BLOCKED: required command missing: $executable" >&2; exit 2; }
 done
 
-badging() { "$AAPT" dump badging "$1" | grep -m1 '^package: '; }
+badging() {
+  # Consume the whole aapt output: grep -m1 closes the pipe early, which
+  # can SIGPIPE aapt and falsely fail the preflight under set -o pipefail.
+  "$AAPT" dump badging "$1" | awk '/^package: / && !found { print; found=1 } END { if (!found) exit 1 }'
+}
 package_field() {
   local badge=$1 field=$2
   if [[ "$badge" =~ ${field}=\'([^\']+)\' ]]; then printf '%s' "${BASH_REMATCH[1]}"; else return 1; fi
