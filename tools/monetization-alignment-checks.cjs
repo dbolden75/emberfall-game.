@@ -33,4 +33,9 @@ const c={SAVE_SLOTS_KEY:'slots',SAVE_KEY:'cache',ACTIVE_SLOT_KEY:'active',active
 vm.createContext(c);vm.runInContext(commit,c);assert.throws(()=>c.purchaseCommit(crowns));assert.equal(c.player.coins,8);fail=false;c.purchaseCommit(crowns);assert.equal(c.player.coins,108);assert.equal(JSON.parse(saved).slot1.name,'Other');assert.equal(grant('thornhaven_crowns_100',JSON.parse(saved).slot2.state).player.coins,108);
 c.purchaseCommit(grant('thornhaven_pet_dragon'));assert(c.companions[0].purchasedWithRealMoney);
 assert(native.includes('if(!saleEnabled(product))'));
+// Draft/retired product IDs remain eligible for authenticated historical receipt recovery,
+// but the native store must never advertise or check out these blocked IDs.
+assert(native.includes('Arrays.asList(PRODUCT_IDS).contains(p.getProducts().get(0))'));
+assert(native.includes('if(saleEnabled(p.getProductId()))catalog.put(p.getProductId(),p);'));
+assert(native.includes('if(!saleEnabled(p.getProductId()))continue;'));
 console.log('PASS: catalog parity, blocked XP/levels, draft crowns/pets, character-bound delivery, replay/reload, pet protection, save failure and live crown/pet commit.');
