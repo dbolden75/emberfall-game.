@@ -70,7 +70,6 @@ device_sdk=$("$ADB" "${adb_args[@]}" shell getprop ro.build.version.sdk) || {
   echo 'BLOCKED: cannot query the Android device SDK level' >&2; exit 1;
 }
 device_sdk=${device_sdk//$'\r'/}
-device_sdk=${device_sdk//$'\n'/}
 [[ "$device_sdk" =~ ^[0-9]+$ ]] || {
   echo 'BLOCKED: Android device SDK level is missing or invalid' >&2; exit 1;
 }
