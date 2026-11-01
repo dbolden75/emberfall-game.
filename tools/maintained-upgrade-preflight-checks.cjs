@@ -26,7 +26,10 @@ try {
     '#!/bin/bash','set -eu',
     'if [[ "$3" == *installed-base.apk ]]; then',
     'echo "package: name=\'com.vaelbrink.ashvale.newjourney\' versionCode=\'$INSTALLED_CODE\' versionName=\'1.0.57\'"',
-    'else echo "package: name=\'$CANDIDATE_PACKAGE\' versionCode=\'$CANDIDATE_CODE\' versionName=\'1.0.64\'"; fi'
+    'else echo "package: name=\'$CANDIDATE_PACKAGE\' versionCode=\'$CANDIDATE_CODE\' versionName=\'1.0.64\'"; fi',
+    'if [[ "${BADGING_EXTRA_LINES:-0}" -gt 0 ]]; then',
+    "  awk -v n=\"$BADGING_EXTRA_LINES\" 'BEGIN { for(i=0;i<n;i++) print \"application-label-en: Thornhaven\" }'",
+    'fi'
   ]);
   mock('apksigner',[
     '#!/bin/bash','set -eu',
@@ -46,6 +49,7 @@ try {
     console.log('PASS:',label);
   }
   check('maintained signer 159->166',{},true,'PASS: candidate signer matches');
+  check('large aapt dump under pipefail',{BADGING_EXTRA_LINES:'20000'},true,'PASS: candidate signer matches');
   check('Play-signed base blocks sideload',{INSTALLED_CERT:'0'.repeat(64)},false,'different certificate');
   check('equal version blocked',{INSTALLED_CODE:'166'},false,'not newer');
   check('wrong app id blocked',{CANDIDATE_PACKAGE:'org.example.wrong'},false,'candidate package/version wrong');
