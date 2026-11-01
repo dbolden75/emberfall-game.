@@ -35,6 +35,7 @@ on:
       - qa/166-android16-native-controls-20261031
       - qa/166-android14-portrait-side-isolation-20261031
       - qa/166-stream-native-logcat-on-emulator-loss-20261031
+      - qa/166-api34-landscape-isolation-main-20261031
     paths:
       - 'app/**'
       - 'source-payload/**'
@@ -231,10 +232,14 @@ jobs:
         orientation: [portrait, landscape]
         api-level: [34, 36]
         side: [both]
-        # Android 14 portrait repeatedly killed the hosted emulator at the
-        # third settings transition; test two sides in separate fresh WebViews.
+        # Android 14 portrait and landscape combined-side runs have
+        # intermittently lost the hosted emulator during WebView settings
+        # transitions; isolate handedness in fresh disposable instances.
         exclude:
           - orientation: portrait
+            api-level: 34
+            side: both
+          - orientation: landscape
             api-level: 34
             side: both
         include:
@@ -242,6 +247,12 @@ jobs:
             api-level: 34
             side: right
           - orientation: portrait
+            api-level: 34
+            side: left
+          - orientation: landscape
+            api-level: 34
+            side: right
+          - orientation: landscape
             api-level: 34
             side: left
     runs-on: ubuntu-latest

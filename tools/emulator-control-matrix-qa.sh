@@ -17,6 +17,26 @@ mkdir -p reports/control-matrix
 # Android 14 failure, ADB/port 5554 disappears before an on-failure `adb logcat -d`
 # can return guest crash details. Streaming preserves events up to that loss.
 logcat_pid=""
+# The Android 14 emulator has intermittently vanished while the host still
+# reported ample free RAM. Sample its host process *before* failure: a ps
+# snapshot collected only after ADB dies cannot distinguish an emulator exit
+# from a dropped DevTools connection.
+host_watch_pid=""
+stop_host_watchdog () {
+  if [[ -n "$host_watch_pid" ]]; then
+    kill "$host_watch_pid" 2>/dev/null || true
+    wait "$host_watch_pid" 2>/dev/null || true
+    host_watch_pid=""
+  fi
+}
+host_watchdog () {
+  while :; do
+    printf '\n=== %s ===\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    ps -eo pid,ppid,rss,stat,etime,comm,args |
+      awk 'NR==1 || $6 ~ /^(emulator|qemu-system|crashpad_handler)/' || true
+    sleep 3
+  done
+}
 stop_streamed_logcat () {
   if [[ -n "$logcat_pid" ]]; then
     kill "$logcat_pid" 2>/dev/null || true
@@ -33,8 +53,16 @@ failure_report () {
     timeout 8s adb logcat -d -v time > reports/control-matrix/logcat.txt 2>&1 || true
     free -m > reports/control-matrix/host-memory.txt 2>&1 || true
     ps -eo pid,ppid,rss,stat,cmd > reports/control-matrix/host-processes.txt 2>&1 || true
+    # Container memory pressure and kernel OOM kills can terminate the emulator
+    # even if 'free -m' shows plenty of physical host memory.
+    { date -u; for p in /sys/fs/cgroup/memory.events /sys/fs/cgroup/memory.max /proc/pressure/memory; do
+        printf '\n=== %s ===\n' "$p"; cat "$p" 2>&1 || true
+      done; } > reports/control-matrix/host-memory-pressure-after.txt 2>&1
+    timeout 8s sudo -n dmesg -T > reports/control-matrix/host-kernel-dmesg.txt 2>&1 || true
+    timeout 8s sudo -n journalctl -k -n 150 --no-pager > reports/control-matrix/host-kernel-journal.txt 2>&1 || true
   fi
   stop_streamed_logcat
+  stop_host_watchdog
   exit "$rc"
 }
 trap 'failure_report $?' EXIT
@@ -46,6 +74,11 @@ grep -q "package: name='$PKG' versionCode='166' versionName='1.0.64'" reports/co
 # Never uninstall or clear data from a user device. This is a brand-new,
 # ephemeral Android emulator used only for synthetic test characters.
 adb install "$APK" | tee reports/control-matrix/install.txt
+{ date -u; for p in /sys/fs/cgroup/memory.events /sys/fs/cgroup/memory.max /proc/pressure/memory; do
+    printf '\n=== %s ===\n' "$p"; cat "$p" 2>&1 || true
+  done; } > reports/control-matrix/host-memory-pressure-before.txt 2>&1
+host_watchdog > reports/control-matrix/host-emulator-watchdog.txt 2>&1 &
+host_watch_pid=$!
 # Start collection BEFORE Activity launch: logs captured only after the runner
 # notices a disconnect cannot explain an emulator crash/kill. QA emulator only.
 adb logcat -v threadtime -b main -b system -b crash > reports/control-matrix/streamed-logcat.txt 2>&1 &
