@@ -23,6 +23,8 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private volatile String snapshot="{}";
     private String message="Connecting to Google Play…";
     private boolean closed, busy, connecting;
+    // Ignore results from earlier Play sessions after a disconnect or a newer refresh.
+    private int refreshEpoch;
     private static boolean consumable(String id){return id.startsWith("thornhaven_");}
     PlayBillingPreparation(Activity activity){
         this.activity=activity; prefs=activity.getSharedPreferences("verified_play_purchases",0);
@@ -38,23 +40,27 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         connecting=true;
         client.startConnection(new BillingClientStateListener(){
             public void onBillingSetupFinished(BillingResult result){activity.runOnUiThread(()->{
+                if(closed)return;
                 connecting=false;
                 if(result.getResponseCode()==BillingClient.BillingResponseCode.OK)refresh();
                 else {message="Google Play purchases are unavailable. Install the Play test release and retry.";publish();}
             });}
-            public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{connecting=false;catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
+            public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{if(closed)return;refreshEpoch++;connecting=false;catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
         });
     }
     private void refresh(){
         if(closed||!client.isReady())return;
+        final int epoch=++refreshEpoch;
         List<QueryProductDetailsParams.Product> products=new ArrayList<>();
         for(String id:PRODUCT_IDS)products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
+            if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             catalog.clear();
             if(status.getResponseCode()==BillingClient.BillingResponseCode.OK)for(ProductDetails p:result.getProductDetailsList())catalog.put(p.getProductId(),p);
             message=catalog.isEmpty()?"No products are available from Google Play yet.":"Google Play checkout ready. Prices are supplied by Google Play.";publish();
         }));
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
+            if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK)return;
             Set<String> active=new HashSet<>();
             for(Purchase p:purchases){if(valid(p))active.add(hash(p.getPurchaseToken()));accept(p);}
@@ -214,5 +220,5 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         if(result.getResponseCode()==BillingClient.BillingResponseCode.OK)try{r.put("finished",true);persist();}catch(Exception ignored){}
         message=result.getResponseCode()==BillingClient.BillingResponseCode.OK?"Purchase delivered and saved.":"Items saved. Google Play confirmation will retry when you restore purchases.";publish();
     }
-    void close(){closed=true;catalog.clear();client.endConnection();}
+    void close(){closed=true;refreshEpoch++;catalog.clear();client.endConnection();}
 }
