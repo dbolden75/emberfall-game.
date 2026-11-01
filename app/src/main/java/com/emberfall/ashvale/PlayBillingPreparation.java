@@ -50,7 +50,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private void refresh(){
         if(closed||!client.isReady())return;
         List<QueryProductDetailsParams.Product> products=new ArrayList<>();
-        for(String id:PRODUCT_IDS)products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
+        for(String id:PRODUCT_IDS)if(saleEnabled(id))products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
             catalog.clear();
             if(status.getResponseCode()==BillingClient.BillingResponseCode.OK)for(ProductDetails p:result.getProductDetailsList())if(saleEnabled(p.getProductId()))catalog.put(p.getProductId(),p);
