@@ -35,6 +35,7 @@ on:
       - qa/166-android16-native-controls-20261031
       - qa/166-android14-portrait-side-isolation-20261031
       - qa/166-stream-native-logcat-on-emulator-loss-20261031
+      - qa/166-api34-landscape-isolation-main-20261031
       - fix/monetization-alignment
     paths:
       - 'app/**'
@@ -92,13 +93,7 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          # Hold the production SHA on main; test the reviewed shop candidate against
-          # its own separately pinned, content-verified HTML on this draft branch.
-          expected_game_sha=237f0f74e47f87fe8f88f54efc4d1d0f1d3779ded3c6b5575ee6bcefd9f95b92
-          if [[ "$GITHUB_REF_NAME" == "fix/monetization-alignment" ]]; then
-            expected_game_sha=da869bd3d0c911a3fa2cb82e214449f20f8bcc063e3a8856d9719e57eec70bce
-          fi
-          printf '%s  %s\n' "$expected_game_sha" 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '237f0f74e47f87fe8f88f54efc4d1d0f1d3779ded3c6b5575ee6bcefd9f95b92' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 166' app/build.gradle
           grep -q "versionName '1.0.64'" app/build.gradle
           # Keep a byte-exact copy of the uninstrumented production-variant
@@ -270,13 +265,7 @@ jobs:
       - name: Restore audited 1.0.64 game HTML
         run: |
           python3 tools/restore-game-source.py
-          # Hold the production SHA on main; test the reviewed shop candidate against
-          # its own separately pinned, content-verified HTML on this draft branch.
-          expected_game_sha=237f0f74e47f87fe8f88f54efc4d1d0f1d3779ded3c6b5575ee6bcefd9f95b92
-          if [[ "$GITHUB_REF_NAME" == "fix/monetization-alignment" ]]; then
-            expected_game_sha=da869bd3d0c911a3fa2cb82e214449f20f8bcc063e3a8856d9719e57eec70bce
-          fi
-          printf '%s  %s\n' "$expected_game_sha" 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '237f0f74e47f87fe8f88f54efc4d1d0f1d3779ded3c6b5575ee6bcefd9f95b92' 'app/src/main/assets/index.html' | sha256sum -c -
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

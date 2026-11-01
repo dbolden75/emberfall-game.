@@ -84,6 +84,22 @@ class SignedPayloadTests(unittest.TestCase):
         self.assertIn('zipalign" -P 16 -f 4', workflow)
         self.assertIn('zipalign" -c -P 16 4', workflow)
 
+    def test_offline_aab_requires_one_matching_certificate(self):
+        spec = importlib.util.spec_from_file_location(
+            'offline_sign', Path(__file__).with_name('sign-ci-payload.py'))
+        signer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(signer)
+        fingerprint = ':'.join(signer.EXPECTED_CERT[i:i+2]
+                               for i in range(0, len(signer.EXPECTED_CERT), 2)).upper()
+        valid = 'Signer #1:\n    SHA256: ' + fingerprint + '\n'
+        signer.verify_aab_signing_identity(valid)
+        for invalid in ('', valid + 'Signer #2:\n',
+                        valid.replace(fingerprint, 'AA' + fingerprint[2:]),
+                        'Signer #1:\n    SHA256: NOT-A-FINGERPRINT\n'):
+            with self.subTest(invalid=invalid[:32]):
+                with self.assertRaisesRegex(RuntimeError, 'AAB maintained-key'):
+                    signer.verify_aab_signing_identity(invalid)
+
     def test_vcs_revision_only_diff_requires_explicit_opt_in(self):
         pair = self.pair(vcs=VCS_B)
         with self.assertRaisesRegex(ValueError, 'version-control-info'):
