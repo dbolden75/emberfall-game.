@@ -26,7 +26,21 @@ combat.updateEnemyCombat(enemy,.2);assert.equal(enemy.recoveryTime,.25);assert.e
 combat.updateEnemyCombat(enemy,.4);assert.equal(enemy.recoveryTime,0);
 console.log('PASS: committed attack resolves once; vampire recovery blocks movement and expires.');
 
+// When cells are discovered inside the 5-second save throttle, keep a dirty
+// flag and flush it once the throttle expires even if the hero stops walking.
+let explorationClock=10000;const explorationSaves=[];
+root.Date={now:()=>explorationClock};
+root.saveGame=()=>explorationSaves.push(JSON.stringify(root.townQuestState._localExploration));
 root.player.x=128;root.player.y=128;root.tick();
+assert.equal(explorationSaves.length,1,'Initial exploration should save');
+root.player.x=640;explorationClock=11000;root.tick();
+assert(root.townQuestState._localExploration.ashvale['10,2']);
+assert.equal(explorationSaves.length,1,'Rapid new terrain should debounce saves');
+explorationClock=15100;root.tick();
+assert.equal(explorationSaves.length,2,'Pending terrain must save while stationary');
+assert(JSON.parse(explorationSaves[1]).ashvale['10,2'],'Deferred save must contain newly revealed terrain');
+root.tick();assert.equal(explorationSaves.length,2,'Unchanged terrain should not repeat the save');
+root.player.x=128;root.tick();
 assert(root.townQuestState._localExploration.ashvale["2,2"]);
 assert(!root.townQuestState._localExploration.ashvale["20,20"]);
 root.mapId="redfen";root.tick();
