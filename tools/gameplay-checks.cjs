@@ -40,3 +40,31 @@ assert.equal(root.window.jarvisPaused,true);assert.equal(nodes.get('localAtlas')
 nodes.get('localAtlasClose').onclick();assert.equal(root.window.jarvisPaused,false);assert.equal(nodes.get('localAtlas').hidden,true);
 root.window.jarvisPaused=true;localButton.onclick();nodes.get('localAtlasClose').onclick();assert.equal(root.window.jarvisPaused,true);
 console.log('PASS: local map opens, renders, closes, and preserves an existing pause state. Canvas calls mocked.');
+
+// Healing a character and consuming their potion must be saved atomically.
+// In the released HTML, useItem() changes both values without calling saveGame().
+// Extract the real functions (not a simplified fake) and verify the runtime fix.
+const useItemLine=html.split(/\r?\n/).find(line=>line.startsWith('function useItem(id){'));
+const itemSavePatch=update.match(/\/\* THORNHAVEN_ITEM_USE_SAVE_BEGIN[\s\S]*?\/\* THORNHAVEN_ITEM_USE_SAVE_END \*\//)?.[0];
+assert(useItemLine&&itemSavePatch,'Healing persistence fix and actual game handler must both exist');
+const itemCounts={potion_25:2,wayfarer_compass:1},healingSaves=[];
+const saved={player:{hp:50,max:100},itemDefs:{potion_25:{heal:25,name:'Healing Potion'}},
+ document:{getElementById:()=>({textContent:''})},
+ bagCount:id=>itemCounts[id]||0,
+ removeItem:id=>{if(!itemCounts[id])return false;itemCounts[id]--;return true},
+ activateWayfarerCompass:()=>{},ui:()=>{},renderInventory:()=>{},
+ saveGame:()=>healingSaves.push({hp:saved.player.hp,potions:itemCounts.potion_25})};
+vm.createContext(saved);
+vm.runInContext(useItemLine+'\n'+itemSavePatch,saved);
+saved.useItem('potion_25');
+assert.deepStrictEqual(healingSaves,[{hp:75,potions:1}],
+ 'A successful heal must persist its new HP and the consumed potion together');
+saved.useItem('wayfarer_compass');
+assert.equal(healingSaves.length,1,'Compass activation must not trigger a healing save');
+saved.useItem('not_an_item');
+assert.equal(healingSaves.length,1,'Unknown item must not trigger a save');
+saved.player.hp=100;
+saved.useItem('potion_25');
+assert.equal(itemCounts.potion_25,1,'Full-health attempt must not consume a potion');
+assert.equal(healingSaves.length,1,'Full-health attempt must not write a save');
+console.log('PASS: healing consumes a potion and immediately persists HP and inventory; no save for unused items. Mocked state, not device testing.');
