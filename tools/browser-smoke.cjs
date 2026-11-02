@@ -8,6 +8,7 @@ const path = require('path');
  await page.waitForTimeout(2500);
  const result=await page.evaluate(()=>({title:document.title,buttons:document.querySelectorAll('button').length,canvas:document.querySelectorAll('canvas').length}));
  await page.screenshot({path:'reports/startup.png'});
+ if(errors.length||!result.buttons||!result.canvas)throw Error(JSON.stringify({errors,result}));
  // Regression: Ashvale and the nearby Wayfarer's Camp must be independently tappable.
  // Normal pointer clicks (not force-clicks) catch overlapping hit boxes.
  await page.setViewportSize({width:390,height:844});
@@ -34,6 +35,5 @@ const path = require('path');
  await page.screenshot({path:'reports/atlas-taps.png'});
  if(errors.length)throw Error(JSON.stringify({errors}));
  await browser.close();
- if(errors.length||!result.buttons||!result.canvas)throw Error(JSON.stringify({errors,result}));
  console.log(JSON.stringify({status:'passed',scope:'Startup and Ashvale/Wayfarer atlas pointer interaction (not native device testing)',...result}));
 })().catch(e=>{console.error(e);process.exit(1)});
