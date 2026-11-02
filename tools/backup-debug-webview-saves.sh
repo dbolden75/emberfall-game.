@@ -66,7 +66,7 @@ if [[ ! -s "$TMP" ]] || ! tar -tf "$TMP" >/dev/null; then
   echo 'BLOCKED: incomplete or invalid archive; no backup was accepted.' >&2
   exit 1
 fi
-if ! tar -tf "$TMP" | grep -q '^app_webview/\(Default/\)\?Local Storage/leveldb/'; then
+if ! tar -tf "$TMP" | awk '/^app_webview\/(Default\/)?Local Storage\/leveldb\// { found=1 } END { exit !found }'; then
   echo 'BLOCKED: WebView LevelDB directory missing from archive.' >&2
   exit 1
 fi
