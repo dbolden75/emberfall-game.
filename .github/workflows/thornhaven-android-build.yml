@@ -76,6 +76,8 @@ jobs:
           java -cp "$TEST_CLASSES" com.emberfall.ashvale.BackupDocumentIntegrityTest
       - name: Verify Play Billing receipt completion after persistence errors
         run: node tools/native-billing-completion-test.cjs
+      - name: Verify Play Billing delivery does not survive failed local receipt commits
+        run: node tools/native-billing-delivery-test.cjs
       - uses: android-actions/setup-android@v3
         with:
           packages: ''
