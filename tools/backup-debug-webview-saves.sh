@@ -66,8 +66,15 @@ if [[ ! -s "$TMP" ]] || ! tar -tf "$TMP" >/dev/null; then
   echo 'BLOCKED: incomplete or invalid archive; no backup was accepted.' >&2
   exit 1
 fi
-if ! tar -tf "$TMP" | awk '/^app_webview\/(Default\/)?Local Storage\/leveldb\// { found=1 } END { exit !found }'; then
-  echo 'BLOCKED: WebView LevelDB directory missing from archive.' >&2
+# A directory entry alone is not a backup. A usable LevelDB store must
+# contain a CURRENT pointer and a MANIFEST file. Reject empty/partial stores
+# rather than falsely encouraging an unsafe uninstall.
+if ! tar -tf "$TMP" | awk '
+  /^app_webview\/(Default\/)?Local Storage\/leveldb\/CURRENT$/ { current=1 }
+  /^app_webview\/(Default\/)?Local Storage\/leveldb\/MANIFEST-[0-9]+$/ { manifest=1 }
+  END { exit !(current && manifest) }
+'; then
+  echo 'BLOCKED: WebView LevelDB snapshot is empty or incomplete (CURRENT/MANIFEST missing).' >&2
   exit 1
 fi
 chmod 600 "$TMP"
