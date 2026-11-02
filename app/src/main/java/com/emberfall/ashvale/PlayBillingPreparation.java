@@ -213,7 +213,19 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     @JavascriptInterface public void delivered(String id){activity.runOnUiThread(()->{
         if(closed)return;
         JSONObject r=receipts.optJSONObject(id);if(r==null||!r.optBoolean("active")||!trustworthySavedReceipt(r))return;
-        try{r.put("delivered",true);if(!persist()){r.put("delivered",false);return;}finish(r);publish();}catch(Exception ignored){}
+        // A failed or throwing commit must not leave this receipt marked as
+        // delivered in memory. Otherwise a future snapshot can suppress
+        // delivery even though the receipt was never durably recorded.
+        boolean wasDelivered=r.optBoolean("delivered");
+        try{
+            r.put("delivered",true);
+            if(persist()){finish(r);publish();return;}
+        }catch(Exception ignored){
+            // Treat preference write exceptions exactly like commit() returning false.
+        }
+        try{r.put("delivered",wasDelivered);}catch(Exception ignored){}
+        message="Purchase receipt could not be saved. Free device storage, then Restore purchases.";
+        publish();
     });}
     private void retryFinishing(){Iterator<String> keys=receipts.keys();while(keys.hasNext()){JSONObject r=receipts.optJSONObject(keys.next());if(r!=null&&r.optBoolean("delivered")&&!r.optBoolean("finished")&&trustworthySavedReceipt(r))finish(r);}}
     private void finish(JSONObject r){
