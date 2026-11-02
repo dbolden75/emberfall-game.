@@ -171,7 +171,7 @@ final class CloudSaveDocuments {
                                 throw new IOException("Backup exceeds 8 MB");
                             output.write(buffer, 0, read);
                         }
-                        text = new String(output.toByteArray(), StandardCharsets.UTF_8);
+                        text = BackupDocumentIntegrity.decodeUtf8(output.toByteArray());
                     }
                     finishDocument(request, true, null, text);
                 }
