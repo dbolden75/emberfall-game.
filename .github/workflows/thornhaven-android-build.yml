@@ -74,6 +74,8 @@ jobs:
             app/src/main/java/com/emberfall/ashvale/BackupDocumentIntegrity.java \
             tools/BackupDocumentIntegrityTest.java
           java -cp "$TEST_CLASSES" com.emberfall.ashvale.BackupDocumentIntegrityTest
+      - name: Verify Play Billing receipt completion after persistence errors
+        run: node tools/native-billing-completion-test.cjs
       - uses: android-actions/setup-android@v3
         with:
           packages: ''
