@@ -14,6 +14,10 @@ import org.json.*;
 final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private static final String PUBLIC_KEY="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtdx3DqRc7RNNs/qsOnPSrSSy7MEW1dAIfBu78KLdMpAkOOQ2G/aNfpOf4AHkvzHpyq+FVRWsZqejqA62A59SkBpz0IyQBnSgdKq6S1f9sHD97+E33ovzWiykkp1Iy+j9UboiSjLBtVnvrt+30J59jDPYkdUFkMI3Xtyl/P2zHZxJHijQn0x1pCabxa2foD3POJ0uqXL35sl1FIpsywatFOmrKPz5UhYk3ES6+U4d4gJS/CfB52mIMEnBVzBXDNcQMpl/UnoneG5VjE0bEDG5OT0YAfIXwJK5GCFaYL45vJO083ZuLKnXeNMkqAhl089L+8Jc4khi5ZK9MxObfeO8SQIDAQAB";
     static final String[] PRODUCT_IDS={"emberfall_aura_embers","emberfall_aura_frost","emberfall_aura_arcane","emberfall_trail_embers","emberfall_trail_stars","emberfall_trail_leaves","emberfall_title_emberborn","emberfall_title_wayfarer","emberfall_title_champion","emberfall_bundle_founder","thornhaven_xp_boost_25_15m","thornhaven_builder_contract_25_15m","thornhaven_levels_1","thornhaven_levels_5","thornhaven_levels_10"};
+    // Legacy entitlements remain valid for Play restore and completion, but these
+    // progression purchases are retired and must never open a new checkout.
+    private static final Set<String> RETIRED_SALE_IDS=Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "thornhaven_xp_boost_25_15m", "thornhaven_levels_1", "thornhaven_levels_5", "thornhaven_levels_10")));
     private final Activity activity;
     private final BillingClient client;
     private final SharedPreferences prefs;
@@ -56,7 +60,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         if(closed||!client.isReady())return;
         final int epoch=++refreshEpoch;
         List<QueryProductDetailsParams.Product> products=new ArrayList<>();
-        for(String id:PRODUCT_IDS)products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
+        for(String id:PRODUCT_IDS)if(!RETIRED_SALE_IDS.contains(id))products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             catalog.clear();
@@ -189,6 +193,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     @JavascriptInterface public void restore(){activity.runOnUiThread(this::connect);}
     @JavascriptInterface public void buy(String product,String profile){activity.runOnUiThread(()->{
         if(closed)return;
+        if(RETIRED_SALE_IDS.contains(product)){
+            message="XP and level packs are no longer sold. Previously purchased items can still be restored.";
+            publish();return;
+        }
         if(busy){message="A Google Play checkout is already open.";publish();return;}
         if(!client.isReady()){message="Reconnecting to Google Play. Retry when the item price appears.";publish();connect();return;}
         if(profile==null||!profile.matches("[a-f0-9]{64}")){message="Load and save your character before purchasing.";publish();return;}
