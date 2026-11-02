@@ -41,6 +41,7 @@ on:
       - fix/billing-finish-retry-session-20261101
       - fix/cloud-restore-utf8-integrity-20261101
       - fix/billing-finish-receipt-atomicity-20261101
+      - fix/billing-delivery-commit-rollback-20261102
     paths:
       - 'app/**'
       - 'source-payload/**'
