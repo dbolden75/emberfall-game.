@@ -42,6 +42,7 @@ on:
       - fix/cloud-restore-utf8-integrity-20261101
       - fix/billing-finish-receipt-atomicity-20261101
       - fix/billing-delivery-commit-rollback-20261102
+      - fix/billing-stale-receipt-finish-20261102
     paths:
       - 'app/**'
       - 'source-payload/**'
