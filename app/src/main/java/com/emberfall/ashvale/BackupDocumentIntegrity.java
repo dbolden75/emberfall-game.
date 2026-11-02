@@ -2,6 +2,10 @@ package com.emberfall.ashvale;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 /** Confirms that a document provider retained every backup byte before success. */
 final class BackupDocumentIntegrity {
@@ -28,5 +32,18 @@ final class BackupDocumentIntegrity {
             offset += count;
         }
         if (offset != expected.length) throw new IOException("Backup document was truncated");
+    }
+
+    /** Reject damaged UTF-8 rather than silently altering saved names or JSON values. */
+    static String decodeUtf8(byte[] bytes) throws IOException {
+        if (bytes == null) throw new IOException("Cannot decode backup document");
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes)).toString();
+        } catch (CharacterCodingException invalid) {
+            throw new IOException("Backup document is not valid UTF-8", invalid);
+        }
     }
 }
