@@ -82,6 +82,20 @@ def check_orientation(browser, assets: Path, output: Path, orientation: str, wid
     page.evaluate("id => document.querySelector('.atlasNode[data-travel-to=\"' + id + '\"]')?.click()", node_id)
     after = atlas.inner_text()
     assert after != before and len(after) > 15, "World map region tap did not reveal details"
+
+    # Nearby Ashvale/Camp atlas pins overlap at their original dimensions.
+    # Use real pointer clicks: DOM element.click() bypasses the interception bug.
+    for atlas_mode in ("detail", "fit"):
+        if atlas_mode == "fit":
+            page.locator("#atlasFit").click()
+        for destination, expected_prefix in (("ashvale", "Ashvale"),
+                                             ("wayfarers_camp", "Wayfarer")):
+            page.locator(f'.atlasNode[data-travel-to="{destination}"]').click(timeout=9000)
+            selection = atlas.inner_text()
+            assert selection.startswith(expected_prefix), (
+                f"{atlas_mode}: tapping {destination} selected {selection!r}")
+            assert page.evaluate("mapId") == "wayfarers_camp", (
+                f"{atlas_mode}: inspecting {destination} unexpectedly moved the player")
     assert not errors, f"Uncaught game JavaScript errors: {errors[:5]}"
     output.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(output / (orientation + "-world-map-detail.png")), timeout=20000)

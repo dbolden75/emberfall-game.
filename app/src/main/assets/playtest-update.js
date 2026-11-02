@@ -191,3 +191,24 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
   };
 })();
 /* THORNHAVEN_ITEM_USE_SAVE_END */
+
+/* THORNHAVEN_ATLAS_CAMP_TAP_FIX_BEGIN
+ * Wayfarer's Camp is plotted just southeast of Ashvale. Full-sized markers
+ * overlap, so tapping Ashvale selects Camp instead. Keep Camp clickable in
+ * both atlas modes, but confine its pointer hit box to its smaller map pin.
+ * Labels remain readable without stealing taps from nearby destinations.
+ */
+(function allowSeparateCampAndAshvaleAtlasTaps(){
+  'use strict';
+  const style=document.createElement('style');
+  style.id='thornhavenAtlasCampTapFix';
+  style.textContent=`
+#travelScreen .atlasNode[data-travel-to="wayfarers_camp"]{width:4%!important;height:4%!important;min-height:0!important;max-width:44px!important;max-height:44px!important;padding:0!important;z-index:5}
+#travelScreen .atlasNode[data-travel-to="wayfarers_camp"] .atlasStamp{width:100%!important;height:100%!important;pointer-events:none!important}
+#travelScreen .atlasNode[data-travel-to="wayfarers_camp"] .mapLocationArt{width:100%!important;height:100%!important;pointer-events:none!important}
+#travelScreen .atlasNode[data-travel-to="wayfarers_camp"] .mapName{position:absolute;left:100%;top:0;pointer-events:none!important;white-space:nowrap}
+#travelScreen .atlasNode[data-travel-to="wayfarers_camp"] .mapKind{display:none}
+`;
+  document.head.appendChild(style);
+})();
+/* THORNHAVEN_ATLAS_CAMP_TAP_FIX_END */
