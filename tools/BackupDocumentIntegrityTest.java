@@ -22,6 +22,20 @@ public final class BackupDocumentIntegrityTest {
         }
     }
 
+    private static void decodePass(String text) throws Exception {
+        if (!text.equals(BackupDocumentIntegrity.decodeUtf8(text.getBytes(StandardCharsets.UTF_8))))
+            throw new AssertionError("UTF-8 document text changed");
+        passed++;
+    }
+    private static void decodeFail(byte[] bytes) throws Exception {
+        try {
+            BackupDocumentIntegrity.decodeUtf8(bytes);
+            throw new AssertionError("Accepted a malformed UTF-8 backup");
+        } catch (IOException expected) {
+            passed++;
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         byte[] backup = "{\"format\":\"thornhaven-save\",\"name\":\"Éowyn\"}".getBytes(StandardCharsets.UTF_8);
         pass(new ByteArrayInputStream(backup), backup);
@@ -56,6 +70,16 @@ public final class BackupDocumentIntegrityTest {
             @Override public int read() { return 0; }
             @Override public int read(byte[] b, int off, int len) { return 0; }
         }, backup);
-        System.out.println("PASS: " + passed + " document round-trip checks, including truncation, changed bytes, extra bytes, read failure, chunked reads, and zero-byte provider reads.");
+        // Corrupt UTF-8 must not silently replace name or other JSON characters
+        // with U+FFFD and risk a valid-looking but altered player backup.
+        decodePass("{\"name\":\"Éowyn 🐉\",\"save\":true}");
+        decodePass("");
+        decodeFail(new byte[]{(byte)0x80}); // Lone continuation.
+        decodeFail(new byte[]{(byte)0xC0, (byte)0xAF}); // Overlong slash.
+        decodeFail(new byte[]{(byte)0xE2, (byte)0x82}); // Truncated sequence.
+        decodeFail(new byte[]{(byte)0xED, (byte)0xA0, (byte)0x80}); // Encoded surrogate.
+        decodeFail(new byte[]{(byte)0xF0, (byte)0x9F, (byte)0x90}); // Truncated emoji.
+        decodeFail(null);
+        System.out.println("PASS: " + passed + " document integrity / strict UTF-8 checks; malformed imports are rejected before changing character saves.");
     }
 }
