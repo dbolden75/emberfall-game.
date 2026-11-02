@@ -39,6 +39,7 @@ on:
       - fix/cloud-save-io-callback-sequencing
       - fix/billing-refresh-stale-callbacks-20261101
       - fix/billing-finish-retry-session-20261101
+      - fix/cloud-restore-utf8-integrity-20261101
     paths:
       - 'app/**'
       - 'source-payload/**'
