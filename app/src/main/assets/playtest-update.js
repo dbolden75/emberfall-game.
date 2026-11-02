@@ -174,3 +174,20 @@ setInterval(()=>{reveal();if(lastMap!==mapId){lastMap=mapId;panX=panY=0;}paint()
   const petKey=p?p.id:'none';if(pet.dataset.portraitKey!==petKey||!pet.querySelector('span')){pet.dataset.portraitKey=petKey;pet.innerHTML=p?'<img src="assets/pets/'+petArtwork[p.id]+'-v2.webp" alt=""><span>PET</span>':'<span style="font-size:28px;line-height:42px">+</span><span>PET</span>';}
  };ui();
 })();
+
+/* THORNHAVEN_ITEM_USE_SAVE_BEGIN
+ * A healing item changes two pieces of character state (HP and inventory).
+ * Commit them together immediately instead of waiting for the next autosave.
+ * Leave the compass, full-health attempts, and failed uses unchanged.
+ */
+(function persistHealingItemUse(){
+  'use strict';
+  if(typeof useItem!=='function'||typeof bagCount!=='function'||typeof saveGame!=='function')return;
+  const originalUseItem=useItem;
+  useItem=function(id){
+    const beforeCount=bagCount(id),beforeHp=player.hp;
+    originalUseItem(id);
+    if(itemDefs[id]?.heal>0&&bagCount(id)<beforeCount&&player.hp>beforeHp)saveGame();
+  };
+})();
+/* THORNHAVEN_ITEM_USE_SAVE_END */
