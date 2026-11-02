@@ -8,6 +8,12 @@ try{
  const bin=path.join(tmp,'bin'),data=path.join(tmp,'fixture'),dest=path.join(tmp,'backup.tar'),trace=path.join(tmp,'calls');
  fs.mkdirSync(bin);fs.mkdirSync(path.join(data,'app_webview','Local Storage','leveldb'),{recursive:true});
  fs.writeFileSync(path.join(data,'app_webview','Local Storage','leveldb','000003.log'),'synthetic snapshot');
+ fs.writeFileSync(path.join(data,'app_webview','Local Storage','leveldb','CURRENT'),'MANIFEST-000001\n');
+ fs.writeFileSync(path.join(data,'app_webview','Local Storage','leveldb','MANIFEST-000001'),'synthetic manifest bytes');
+ const empty=path.join(tmp,'empty-fixture'),partial=path.join(tmp,'partial-fixture');
+ fs.mkdirSync(path.join(empty,'app_webview','Local Storage','leveldb'),{recursive:true});
+ fs.mkdirSync(path.join(partial,'app_webview','Local Storage','leveldb'),{recursive:true});
+ fs.writeFileSync(path.join(partial,'app_webview','Local Storage','leveldb','CURRENT'),'MANIFEST-000001\n');
  const adb=path.join(bin,'adb');
  fs.writeFileSync(adb,[
   '#!/usr/bin/env bash','set -eu','echo "$*" >> "$TRACE"',
@@ -39,6 +45,12 @@ try{
  r=run({DEBUGGABLE:'0'});assert.notEqual(r.result.status,0);assert.match(r.result.stderr,/not debuggable/);
  r=run({TWO:'1'});assert.notEqual(r.result.status,0);assert.match(r.result.stderr,/exactly one/);
  r=run({BROKEN:'1'});assert.notEqual(r.result.status,0);assert.match(r.result.stderr,/invalid archive/);
+ r=run({FIXTURE:empty});assert.notEqual(r.result.status,0);
+ assert.match(r.result.stderr,/empty or incomplete/);
+ assert(!fs.existsSync(dest),'Empty LevelDB directory cannot produce an accepted backup');
+ r=run({FIXTURE:partial});assert.notEqual(r.result.status,0);
+ assert.match(r.result.stderr,/empty or incomplete/);
+ assert(!fs.existsSync(dest),'Missing LevelDB manifest cannot produce an accepted backup');
  assert(!fs.existsSync(dest));
- console.log('PASS: non-debuggable, ambiguous device and corrupt transfer all block safely');
+ console.log('PASS: non-debuggable, ambiguous device, corrupt, empty and partial LevelDB backups blocked');
 } finally {fs.rmSync(tmp,{recursive:true,force:true});}
