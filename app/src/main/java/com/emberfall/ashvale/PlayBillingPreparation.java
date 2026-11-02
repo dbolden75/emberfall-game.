@@ -239,6 +239,17 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         // finishing set is cleared so Restore can retry the valid receipt.
         if(closed||finishSession!=billingSessionEpoch)return;
         finishing.remove(r.optString("id"));
+        // A purchase can be refreshed, revoked, or its damaged receipt replaced
+        // while Google Play is processing consume/ack. Never mark a detached or
+        // no-longer-verified record "saved": persist() writes the live ledger,
+        // not this stale JSONObject captured by the original callback.
+        String id=r.optString("id");
+        if(receipts.optJSONObject(id)!=r || !r.optBoolean("active")
+                || !r.optBoolean("delivered") || !trustworthySavedReceipt(r)){
+            message="Purchase receipt changed while Google Play was confirming it. Restore purchases to verify delivery.";
+            publish();
+            return;
+        }
         boolean playConfirmed=result.getResponseCode()==BillingClient.BillingResponseCode.OK;
         boolean savedConfirmation=false;
         if(playConfirmed){
