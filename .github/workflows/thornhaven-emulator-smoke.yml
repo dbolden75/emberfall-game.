@@ -44,6 +44,7 @@ on:
       - fix/billing-delivery-commit-rollback-20261102
       - fix/billing-stale-receipt-finish-20261102
       - fix/healing-item-save-20261102
+      - fix/retire-level-xp-sales-keep-restoration-20261102
     paths:
       - 'app/**'
       - 'source-payload/**'

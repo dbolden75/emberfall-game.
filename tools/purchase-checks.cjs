@@ -23,3 +23,17 @@ failMain=false;failCache=true;context.purchaseCommit(paid);assert.equal(context.
 // Crash/reload uses the authoritative slot state, so a callback replay cannot add levels.
 assert.equal(reward(disk.slot2.state,receipt,products).player.level,22);
 console.log('PASS: levels preserve XP; duplicate/reload protection; wrong character; invalid SKU/receipt; boost credits; cosmetic restore; storage failure and atomic reward ledger.');
+
+// Release gate: deprecated progression SKUs must not be newly sold, but valid
+// legacy Play receipts must remain recognized and restorable.
+const retiredNative=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/PlayBillingPreparation.java','utf8');
+const retiredClient=fs.readFileSync('app/src/main/assets/purchase-api.js','utf8');
+for(const id of ["thornhaven_xp_boost_25_15m","thornhaven_levels_1","thornhaven_levels_5","thornhaven_levels_10"]){
+ assert(retiredNative.includes('"'+id+'"'),'Native must retain valid historical receipt SKU '+id);
+ assert(retiredClient.includes("'"+id+"'")||retiredClient.includes('"'+id+'"'),'Client must identify off-sale SKU '+id);
+}
+assert(retiredNative.includes('if(!RETIRED_SALE_IDS.contains(id))products.add('),'Native Play catalog must not offer retired SKUs');
+assert(retiredNative.includes('if(RETIRED_SALE_IDS.contains(product))'),'Native checkout must block retired SKUs');
+assert(retiredClient.includes('if(retiredSaleIds.has(id))return show('),'Client checkout must block retired SKUs');
+assert(retiredClient.includes('Previously purchased credit · no new sales'),'Existing XP credits remain usable');
+console.log('PASS: XP and level packs retired from new sales; legacy Play receipt verification and purchased credit use remain available.');

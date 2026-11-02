@@ -14,6 +14,8 @@ from playwright.sync_api import sync_playwright
 SCRIPT_TAG = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>')
 PRODUCT = 'thornhaven_levels_1'
 STYLE = 'emberfall_aura_embers'
+# New checkout uses an existing cosmetic; PRODUCT remains a legacy restore fixture.
+CHECKOUT_PRODUCT = STYLE
 
 
 def make_html(assets, seed=None):
@@ -65,7 +67,7 @@ def check(browser, assets, evidence, name, width, height):
         page.set_content(make_html(assets), wait_until='domcontentloaded',timeout=60000)
         assert page.evaluate("ThornhavenMonetization.mode") == 'google-play'
         assert page.evaluate("ThornhavenMonetization===EmberfallMonetization")
-        unavailable=page.evaluate(f"() => ThornhavenMonetization.purchase('{PRODUCT}')")
+        unavailable=page.evaluate(f"() => ThornhavenMonetization.purchase('{CHECKOUT_PRODUCT}')")
         assert unavailable['status']=='unavailable' and not page.evaluate('window.__qaBilling.buys'),unavailable
         page.get_by_role('button',name=re.compile('Start New Game')).click()
         page.get_by_role('button',name='Tap to Continue').click()
@@ -74,9 +76,15 @@ def check(browser, assets, evidence, name, width, height):
         before=page.evaluate("({level:player.level,paid:townQuestState._paidStyles||{}})")
         assert before['level']==1 and before['paid']=={},before
         page.evaluate('pollPlayStore()')
-        requested=page.evaluate(f"() => ThornhavenMonetization.purchase('{PRODUCT}')")
+        # Retired SKUs remain restorable below, but must never start a new sale.
+        for retired in ['thornhaven_xp_boost_25_15m','thornhaven_levels_1','thornhaven_levels_5','thornhaven_levels_10']:
+            rejected=page.evaluate("id => ThornhavenMonetization.purchase(id)",retired)
+            assert rejected['status']=='unavailable' and 'retired' in rejected['message'],rejected
+        assert not page.evaluate('window.__qaBilling.buys'),'Retired product contacted Play'
+        assert not page.evaluate("() => ThornhavenMonetization.getCatalog().some(p=>/^(thornhaven_xp_boost_|thornhaven_levels_)/.test(p.id))")
+        requested=page.evaluate(f"() => ThornhavenMonetization.purchase('{CHECKOUT_PRODUCT}')")
         buys=page.evaluate('window.__qaBilling.buys')
-        assert requested['status']=='requested' and len(buys)==1 and buys[0]['product']==PRODUCT,(requested,buys)
+        assert requested['status']=='requested' and len(buys)==1 and buys[0]['product']==CHECKOUT_PRODUCT,(requested,buys)
         profile=buys[0]['profile'];assert re.fullmatch('[a-f0-9]{64}',profile),profile
         stored=page.evaluate("JSON.parse(localStorage.getItem('emberfall_character_slots_v1'))")
         assert any(item['state']['townQuestState'].get('_purchaseProfile')==profile for item in stored.values())
