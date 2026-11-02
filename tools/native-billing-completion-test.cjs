@@ -36,11 +36,15 @@ public class BillingCompletionHarness {
     final Map<String,Object> values=new HashMap<>();
     JSONObject put(String key,Object value){values.put(key,value);return this;}
     String optString(String key){return String.valueOf(values.getOrDefault(key,""));}
+    JSONObject optJSONObject(String key){Object v=values.get(key);return v instanceof JSONObject?(JSONObject)v:null;}
     boolean optBoolean(String key){return Boolean.TRUE.equals(values.get(key));}
   }
   boolean closed;
   int billingSessionEpoch=7;
   Set<String> finishing=new HashSet<>();
+  final JSONObject receipts=new JSONObject();
+  boolean trustworthy=true;
+  boolean trustworthySavedReceipt(JSONObject r){return trustworthy;}
   String message="";
   boolean storageAccepts=true, storageThrows;
   int persistenceCalls, published;
@@ -55,48 +59,74 @@ public class BillingCompletionHarness {
     if(!condition)throw new AssertionError(name);
   }
   static JSONObject receipt(){
-    return new JSONObject().put("id","paid-token").put("delivered",true).put("finished",false);
+    return new JSONObject().put("id","paid-token").put("active",true).put("delivered",true).put("finished",false);
   }
-  static BillingCompletionHarness active(){
+  static BillingCompletionHarness active(JSONObject r){
     BillingCompletionHarness h=new BillingCompletionHarness();
     h.finishing.add("paid-token");
+    h.receipts.put("paid-token",r);
     return h;
   }
   public static void main(String[] args){
-    JSONObject r=receipt();BillingCompletionHarness h=active();
+    JSONObject r=receipt();BillingCompletionHarness h=active(r);
     h.complete(r,new BillingResult(0),7);
     check(r.optBoolean("finished"),"Successful commit must mark receipt finished");
     check(r.optBoolean("delivered"),"Successful commit must preserve reward");
     check(h.persistenceCalls==1 && h.published==1 && h.finishing.isEmpty(),"Successful callback sequence");
     check(h.message.contains("delivered and saved"),"Successful receipt message");
 
-    r=receipt();h=active();h.storageAccepts=false;
+    r=receipt();h=active(r);h.storageAccepts=false;
     h.complete(r,new BillingResult(0),7);
     check(!r.optBoolean("finished"),"Failed commit must restore retryable receipt");
     check(r.optBoolean("delivered"),"Failed commit must not regrant paid reward");
     check(h.finishing.isEmpty() && h.persistenceCalls==1 && h.published==1,"Failed commit callback sequence");
     check(h.message.contains("storage failed"),"Failed commit must not claim to be saved");
 
-    r=receipt();h=active();h.storageThrows=true;
+    r=receipt();h=active(r);h.storageThrows=true;
     h.complete(r,new BillingResult(0),7);
     check(!r.optBoolean("finished") && r.optBoolean("delivered"),"Thrown persistence must roll back in-memory finish");
     check(h.message.contains("storage failed"),"Thrown persistence message");
 
-    r=receipt();h=active();
+    r=receipt();h=active(r);
     h.complete(r,new BillingResult(3),7);
     check(!r.optBoolean("finished") && h.persistenceCalls==0,"Failed Play result must not mark confirmation");
     check(h.message.contains("retry"),"Failed Play response message");
 
-    r=receipt();h=active();
+    r=receipt();h=active(r);
     h.complete(r,new BillingResult(0),6);
     check(!r.optBoolean("finished") && h.persistenceCalls==0 && h.published==0 && h.finishing.size()==1,
           "Stale Play session cannot affect current ledger");
 
-    r=receipt();h=active();h.closed=true;
+    r=receipt();h=active(r);h.closed=true;
     h.complete(r,new BillingResult(0),7);
     check(!r.optBoolean("finished") && h.persistenceCalls==0 && h.published==0,
           "Activity teardown must reject delayed completion");
-    System.out.println("PASS: 6 native completion cases: saved, commit-failed, exception, Play error, stale session, teardown");
+    // Google Play may return after a new signed receipt replaces the object
+    // previously submitted for acknowledgement. The old detached record must
+    // never be reported as durably persisted.
+    r=receipt();h=active(r);h.receipts.put("paid-token",receipt());
+    h.complete(r,new BillingResult(0),7);
+    check(!r.optBoolean("finished") && h.persistenceCalls==0,
+          "Detached old receipt must not be called saved");
+    check(h.message.contains("receipt changed") && h.finishing.isEmpty(),
+          "Detached receipt must request a fresh restore");
+
+    r=receipt();h=active(r);h.receipts.put("paid-token",null);
+    h.complete(r,new BillingResult(0),7);
+    check(!r.optBoolean("finished") && h.persistenceCalls==0,
+          "Deleted receipt must not be confirmed");
+
+    r=receipt();h=active(r);r.put("active",false);
+    h.complete(r,new BillingResult(0),7);
+    check(!r.optBoolean("finished") && h.persistenceCalls==0,
+          "Revoked receipt must not be confirmed");
+
+    r=receipt();h=active(r);h.trustworthy=false;
+    h.complete(r,new BillingResult(0),7);
+    check(!r.optBoolean("finished") && h.persistenceCalls==0,
+          "Unverified receipt must not be confirmed");
+
+    System.out.println("PASS: 10 native completion cases including detached, deleted, revoked and unverified receipts");
   }
 }
 `;
