@@ -227,8 +227,25 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         // finishing set is cleared so Restore can retry the valid receipt.
         if(closed||finishSession!=billingSessionEpoch)return;
         finishing.remove(r.optString("id"));
-        if(result.getResponseCode()==BillingClient.BillingResponseCode.OK)try{r.put("finished",true);persist();}catch(Exception ignored){}
-        message=result.getResponseCode()==BillingClient.BillingResponseCode.OK?"Purchase delivered and saved.":"Items saved. Google Play confirmation will retry when you restore purchases.";publish();
+        boolean playConfirmed=result.getResponseCode()==BillingClient.BillingResponseCode.OK;
+        boolean savedConfirmation=false;
+        if(playConfirmed){
+            try{
+                r.put("finished",true);
+                savedConfirmation=persist();
+            }catch(Exception ignored){
+                // A failed preference write must not look like a durable receipt.
+            }
+            if(!savedConfirmation)try{
+                // Keep the already delivered reward, but allow Restore to retry
+                // the unrecorded completion instead of suppressing it in memory.
+                r.put("finished",false);
+            }catch(Exception ignored){}
+        }
+        message=playConfirmed
+            ?(savedConfirmation?"Purchase delivered and saved.":"Google Play confirmed delivery, but receipt storage failed. Free device space, then Restore purchases.")
+            :"Items saved. Google Play confirmation will retry when you restore purchases.";
+        publish();
     }
     void close(){closed=true;refreshEpoch++;billingSessionEpoch++;finishing.clear();busy=false;catalog.clear();client.endConnection();}
 }
