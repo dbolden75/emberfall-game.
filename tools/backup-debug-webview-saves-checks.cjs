@@ -55,7 +55,7 @@ try{
  r=run({TWO:'1'});assert.notEqual(r.result.status,0);assert.match(r.result.stderr,/exactly one/);
  r=run({BROKEN:'1'});assert.notEqual(r.result.status,0);assert.match(r.result.stderr,/invalid archive/);
  r=run({FIXTURE:empty});assert.notEqual(r.result.status,0);
- assert.match(r.result.stderr,/empty or incomplete/);
+ assert.match(r.result.stderr,/CURRENT pointer is missing/);
  assert(!fs.existsSync(dest),'Empty LevelDB directory cannot produce an accepted backup');
  r=run({FIXTURE:partial});assert.notEqual(r.result.status,0);
  assert.match(r.result.stderr,/empty or incomplete/);
