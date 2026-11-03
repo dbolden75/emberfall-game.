@@ -27,6 +27,9 @@
  });
  window.EmberfallMonetization=api;
  window.ThornhavenMonetization=api;
+ // The Android menu opens genuine Google Play checkout; web builds remain previews.
+ const shopEntry=document.getElementById('premiumShopButton');
+ if(shopEntry)shopEntry.textContent=api.mode==='google-play'?'PREMIUM SHOP · GOOGLE PLAY':'PREMIUM SHOP · PREVIEW';
  buyPlayProduct=id=>api.purchase(id);
  document.getElementById('restorePurchasesButton').onclick=()=>api.restorePurchases();
  // Keep old receipt SKU definitions for restore and previously paid credits,
