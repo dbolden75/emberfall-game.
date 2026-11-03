@@ -48,6 +48,17 @@ assert(finishMethod.includes('final int finishSession=billingSessionEpoch;'),
        'Finish requests must capture the Play session identity');
 assert.equal(finishMethod.split('complete(r,result,finishSession)').length-1,2,
        'Consumption and acknowledgement callbacks must preserve their session identity');
+assert(finishMethod.includes('}catch(RuntimeException dispatchFailure){'),
+       'Thrown Play consume/ack API calls must be guarded without crashing the Activity');
+const onFailure=finishMethod.slice(finishMethod.indexOf('}catch(RuntimeException dispatchFailure){'));
+assert(onFailure.includes('finishing.remove(id);'),
+       'Thrown Play finish dispatch must clear its retry-blocking in-flight token');
+assert(onFailure.includes('Restore purchases')&&onFailure.includes('publish();'),
+       'A thrown Play finish dispatch must tell the player how to retry');
+assert(finishMethod.indexOf('try{') < finishMethod.indexOf('client.consumeAsync('),
+       'Consume API dispatch must be protected by the recovery guard');
+assert(finishMethod.indexOf('try{') < finishMethod.indexOf('client.acknowledgePurchase('),
+       'Acknowledgement API dispatch must be protected by the recovery guard');
 const completeMethod=body('private void complete(JSONObject r','void close(){');
 assert(completeMethod.indexOf('if(closed||finishSession!=billingSessionEpoch)return;')>=0,
        'End-of-session responses must not persist stale receipts');
