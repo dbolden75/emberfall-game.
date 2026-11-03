@@ -91,6 +91,27 @@ if [[ ! "$manifest" =~ ^MANIFEST-[0-9]+$ ]] ||
   echo 'BLOCKED: WebView LevelDB snapshot is empty or incomplete (CURRENT target or data files missing).' >&2
   exit 1
 fi
+# Empty LevelDB logs/tables cannot prove that a character snapshot exists.
+# A valid-looking CURRENT/MANIFEST plus a zero-byte .log was previously
+# accepted. Require at least one nonempty data file without extracting it
+# onto disk or altering the app. The pipeline fails closed on tar read errors.
+data_files=$(printf '%s\n' "$entries" | grep -E -- "^\${base}/[0-9]+\\.(log|ldb|sst)$" || true)
+has_data=0
+while IFS= read -r entry; do
+  [[ -n "$entry" ]] || continue
+  if ! bytes=$(tar -xOf "$TMP" "$entry" | wc -c); then
+    echo 'BLOCKED: WebView LevelDB data could not be read from the archive.' >&2
+    exit 1
+  fi
+  if (( bytes > 0 )); then
+    has_data=1
+    break
+  fi
+done <<< "$data_files"
+if (( ! has_data )); then
+  echo 'BLOCKED: WebView LevelDB snapshot lacks nonempty data files.' >&2
+  exit 1
+fi
 chmod 600 "$TMP"
 mv -n -- "$TMP" "$DEST"
 # Some mv implementations return success even when -n skips an existing target.
