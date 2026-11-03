@@ -284,8 +284,16 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private void finish(JSONObject r){
         String id=r.optString("id");if(closed||!client.isReady()||r.optBoolean("finished")||!finishing.add(id))return;
         final int finishSession=billingSessionEpoch;
-        if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->complete(r,result,finishSession)));
-        else client.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(r.optString("token")).build(),result->activity.runOnUiThread(()->complete(r,result,finishSession)));
+        try{
+            if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->complete(r,result,finishSession)));
+            else client.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(r.optString("token")).build(),result->activity.runOnUiThread(()->complete(r,result,finishSession)));
+        }catch(RuntimeException dispatchFailure){
+            // A thrown Play API call is not a confirmation. Keep the already
+            // delivered receipt and allow Restore to retry without reconnecting.
+            finishing.remove(id);
+            message="Google Play could not confirm the saved purchase. Tap Restore purchases to retry.";
+            publish();
+        }
     }
     private void complete(JSONObject r,BillingResult result,int finishSession){
         // Ignore callbacks from an ended connection. After disconnect the
