@@ -76,6 +76,38 @@ def check(browser, assets, evidence, name, width, height):
         before=page.evaluate("({level:player.level,paid:townQuestState._paidStyles||{}})")
         assert before['level']==1 and before['paid']=={},before
         page.evaluate('pollPlayStore()')
+        # A callable billing API is not enough: the player must have a usable
+        # checkout control with Google's price. Exercise the real shop UI.
+        page.evaluate('openPremiumShop()')
+        card = page.locator('.premiumCard').filter(
+            has=page.locator(f'[data-preview-product="{CHECKOUT_PRODUCT}"]'))
+        assert card.locator('.premiumPrice').inner_text() == '$1.99'
+        card.get_by_role('button', name='Buy · $1.99').click()
+        ui_buys = page.evaluate('window.__qaBilling.buys')
+        assert len(ui_buys)==1 and ui_buys[0]['product']==CHECKOUT_PRODUCT,ui_buys
+        assert re.fullmatch('[a-f0-9]{64}',ui_buys[0]['profile']),ui_buys
+        # No confirmed Play product => no live checkout. Never use the draft
+        # price or a cosmetic preview as authority to enable purchases.
+        page.evaluate("""() => {
+            window.__qaBilling.buys=[];
+            window.__qaBilling.products={};
+            pollPlayStore();renderPremiumShop();
+        }""")
+        card = page.locator('.premiumCard').filter(
+            has=page.locator(f'[data-preview-product="{CHECKOUT_PRODUCT}"]'))
+        assert card.locator('.premiumPrice').inner_text()=='Not currently available on Google Play'
+        assert card.get_by_role('button', name='Unavailable').is_disabled()
+        assert not page.evaluate('window.__qaBilling.buys')
+        # Restore the fake catalog for legacy receipt and API simulations.
+        page.evaluate("""() => {
+            window.__qaBilling.products={
+                'thornhaven_levels_1':{price:'$0.99'},
+                'emberfall_aura_embers':{price:'$1.99'}
+            };
+            pollPlayStore();renderPremiumShop();
+        }""")
+        assert page.locator('[data-preview-product="thornhaven_levels_1"]').count()==0, 'Retired level purchase remains visible'
+
         # Retired SKUs remain restorable below, but must never start a new sale.
         for retired in ['thornhaven_xp_boost_25_15m','thornhaven_levels_1','thornhaven_levels_5','thornhaven_levels_10']:
             rejected=page.evaluate("id => ThornhavenMonetization.purchase(id)",retired)
