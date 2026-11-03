@@ -144,22 +144,55 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    // A pagehide save writes WebView localStorage synchronously in JavaScript,
+    // but evaluateJavascript itself runs asynchronously. Pausing the WebView in
+    // the same onPause call can prevent that save from ever running. Let the
+    // JavaScript completion callback pause the WebView; a bounded fallback
+    // still pauses it when WebView does not report completion.
+    private int pauseEpoch;
+    private boolean lifecyclePaused;
+
     @Override
     protected void onPause() {
-        if (game != null) game.evaluateJavascript("window.dispatchEvent(new Event('pagehide'))", null);
-        if (game != null) { game.onPause(); game.pauseTimers(); }
+        lifecyclePaused = true;
+        final WebView pausedView = game;
+        final int epoch = ++pauseEpoch;
+        if (pausedView != null) {
+            final Runnable finishPause = new Runnable() {
+                private boolean completed;
+                @Override public void run() {
+                    if (completed || !lifecyclePaused || pauseEpoch != epoch || game != pausedView) return;
+                    completed = true;
+                    pausedView.onPause();
+                    pausedView.pauseTimers();
+                }
+            };
+            try {
+                pausedView.evaluateJavascript("window.dispatchEvent(new Event('pagehide'))",
+                        ignored -> finishPause.run());
+            } catch (RuntimeException evaluateFailed) {
+                finishPause.run();
+            }
+            // If Android never invokes the JS callback, do not leave background
+            // animations running. Resumes and activity destruction invalidate it.
+            pausedView.postDelayed(finishPause, 1000);
+        }
         super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        lifecyclePaused = false;
+        ++pauseEpoch;
         if (game != null) { game.onResume(); game.resumeTimers(); }
         if (billing != null) billing.connect();
     }
 
     @Override
     protected void onDestroy() {
+        lifecyclePaused = false;
+        ++pauseEpoch;
         if (playtest != null) playtest.close();
         if (cloudSave != null) cloudSave.close();
         if (billing != null) billing.close();
