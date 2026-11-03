@@ -49,6 +49,7 @@ on:
       - fix/healing-item-save-20261102
       - fix/retire-level-xp-sales-keep-restoration-20261102
       - fix/164-atomic-character-save-mirror-20261103
+      - fix/legacy-save-migration-quota-20261103
     paths:
       - 'app/**'
       - 'source-payload/**'
