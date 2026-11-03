@@ -95,7 +95,7 @@ fi
 # A valid-looking CURRENT/MANIFEST plus a zero-byte .log was previously
 # accepted. Require at least one nonempty data file without extracting it
 # onto disk or altering the app. The pipeline fails closed on tar read errors.
-data_files=$(printf '%s\n' "$entries" | grep -E -- "^\${base}/[0-9]+\\.(log|ldb|sst)$" || true)
+data_files=$(printf '%s\n' "$entries" | grep -E -- "^${base}/[0-9]+\.(log|ldb|sst)$" || true)
 has_data=0
 while IFS= read -r entry; do
   [[ -n "$entry" ]] || continue
