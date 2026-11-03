@@ -65,7 +65,7 @@ public class BillingLaunchHarness {
   public static void main(String[] args){
     BillingLaunchHarness h=valid();h.client.throwOnLaunch=true;h.buy("cosmetic",PROFILE);
     check(!h.busy,"Thrown Play checkout must clear busy");
-    check(h.client.launchCalls==1 && h.message.contains("could not open") && h.published==2,"Thrown launch must display actionable error and not crash");
+    check(h.client.launchCalls==1 && h.message.contains("check payment status") && h.published==2,"Thrown launch must display actionable error and not crash");
     h=valid();h.client.responseCode=6;h.buy("cosmetic",PROFILE);
     check(!h.busy && h.client.launchCalls==1 && h.message.contains("could not start"),"Failed BillingResult must reset busy");
     h=valid();h.buy("cosmetic",PROFILE);
