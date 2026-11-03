@@ -242,9 +242,17 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         ProductDetails.OneTimePurchaseOfferDetails o=offer(p);
         if(o==null){message="No eligible purchase option is available for this item.";publish();return;}
         busy=true;message="Opening Google Play checkout…";publish();
-        BillingFlowParams.ProductDetailsParams params=BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(p).setOfferToken(o.getOfferToken()).build();
-        BillingResult result=client.launchBillingFlow(activity,BillingFlowParams.newBuilder().setProductDetailsParamsList(Collections.singletonList(params)).setObfuscatedProfileId(profile).build());
-        if(result.getResponseCode()!=BillingClient.BillingResponseCode.OK){busy=false;message="Checkout could not start. No new purchase was delivered. Restore purchases and retry.";publish();}
+        try{
+            BillingFlowParams.ProductDetailsParams params=BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(p).setOfferToken(o.getOfferToken()).build();
+            BillingResult result=client.launchBillingFlow(activity,BillingFlowParams.newBuilder().setProductDetailsParamsList(Collections.singletonList(params)).setObfuscatedProfileId(profile).build());
+            if(result.getResponseCode()!=BillingClient.BillingResponseCode.OK){busy=false;message="Checkout could not start. No new purchase was delivered. Restore purchases and retry.";publish();}
+        }catch(RuntimeException launchFailed){
+            // A stale offer, disconnected Play service, or other client-side
+            // launch failure must not crash the Activity or wedge the shop busy.
+            busy=false;
+            message="Google Play checkout could not open. No payment was started. Restore purchases and try again.";
+            publish();
+        }
     });}
     @Override public void onPurchasesUpdated(BillingResult result,List<Purchase> purchases){activity.runOnUiThread(()->{
         if(closed)return;
