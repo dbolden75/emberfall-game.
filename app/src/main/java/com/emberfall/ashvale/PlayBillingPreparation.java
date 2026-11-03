@@ -64,12 +64,27 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             catalog.clear();
-            if(status.getResponseCode()==BillingClient.BillingResponseCode.OK)for(ProductDetails p:result.getProductDetailsList())catalog.put(p.getProductId(),p);
-            message=catalog.isEmpty()?"No products are available from Google Play yet.":"Google Play checkout ready. Prices are supplied by Google Play.";publish();
+            if(status.getResponseCode()==BillingClient.BillingResponseCode.OK){
+                for(ProductDetails p:result.getProductDetailsList())catalog.put(p.getProductId(),p);
+                message=catalog.isEmpty()
+                    ?"Google Play returned no available products for this account. Check Play Console product activation and tester access, then Restore purchases."
+                    :"Google Play checkout ready. Prices are supplied by Google Play.";
+            }else{
+                // An unavailable Play service is not the same as an empty product catalog.
+                // Do not offer a stale price or imply that product activation alone fixes it.
+                message="Google Play could not load prices (code "+status.getResponseCode()+"). Check your connection and Play tester access, then Restore purchases.";
+            }
+            publish();
         }));
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
-            if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK)return;
+            if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK){
+                // Leave cached verified receipts untouched; a failed Play query
+                // must not revoke ownership or silently look like a completed restore.
+                message="Google Play could not restore purchases (code "+status.getResponseCode()+"). Retry Restore purchases when Google Play is available.";
+                publish();
+                return;
+            }
             Set<String> active=new HashSet<>();
             for(Purchase p:purchases){if(valid(p))active.add(hash(p.getPurchaseToken()));accept(p);}
             // A successful owned-purchases query is authoritative for durable ownership.
