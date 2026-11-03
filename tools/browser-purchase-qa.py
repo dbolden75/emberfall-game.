@@ -135,15 +135,25 @@ def check(browser, assets, evidence, name, width, height):
         assert page.evaluate('window.__qaBilling.acks')==[rec],'Wrong profile was acknowledged'
         # The authoritative slot write must succeed BEFORE native delivery is confirmed.
         page.evaluate("""() => {
+          // Keep the storage fault active through the Python assertions.
+          // Otherwise a background animation tick may retry the pending
+          // purchase after this evaluate() returns and incorrectly ack it.
           const prior=localStorage.setItem.bind(localStorage);
+          window.__qaOriginalSetItem=prior;
           localStorage.setItem=(key,value)=>{if(key===SAVE_SLOTS_KEY)throw Error('QA no storage');return prior(key,value)};
           window.__qaBilling.deliveries=[{id:'"""+'c'*64+"""',product:'thornhaven_levels_1',profile:townQuestState._purchaseProfile}];
-          pollPlayStore(); localStorage.setItem=prior;
+          pollPlayStore();
         }""")
         assert page.evaluate('player.level')==lvl,'Storage failure granted uncommitted reward'
         assert page.evaluate('window.__qaBilling.acks')==[rec],'Storage failure acknowledged receipt'
+        # Remove the artificial failure only after both checks pass. A
+        # background poll must not acknowledge a delivery during the fault.
+        page.evaluate("""() => {
+          localStorage.setItem=window.__qaOriginalSetItem;
+          delete window.__qaOriginalSetItem;
+          pollPlayStore();
+        }""")
         # A valid new native delivery can retry after storage recovers.
-        page.evaluate('pollPlayStore()')
         assert page.evaluate('player.level')==lvl+1
         assert page.evaluate('window.__qaBilling.acks')==[rec,'c'*64]
         # Cosmetic ownership is from native state, not a preview alone.

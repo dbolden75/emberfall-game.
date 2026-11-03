@@ -115,6 +115,17 @@ assert content.count(old) == 1, 'Expected exactly one historical saveGame commit
 content = content.replace(old, new, 1)
 assert hashlib.sha256(content).hexdigest() == '2022c73b1af65cc98290d29d5e61e73fb4508b4ff4ad2f27ab88dd4460e440a8', 'Atomic character save compatibility patch hash mismatch'
 
+
+# Historical single-character saves predate the authoritative four-slot store.
+# If a WebView quota failure prevents that first migration write, still load
+# the existing legacy character in memory instead of silently showing a fresh
+# start. The original SAVE_KEY bytes are never deleted; later saves can retry.
+legacy_migration = (b"saveSlots.slot1={id:'slot1',name:legacySave.player?.name||'Hero',class:legacySave.player?.class||'warrior',level:legacySave.player?.level||1,updated:Date.now(),state:legacySave};localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(saveSlots))")
+quota_safe_migration = (b"saveSlots.slot1={id:'slot1',name:legacySave.player?.name||'Hero',class:legacySave.player?.class||'warrior',level:legacySave.player?.level||1,updated:Date.now(),state:legacySave};try{localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(saveSlots))}catch(error){console.warn('Legacy character migration not yet persisted; original legacy save retained:',error.name)}")
+assert content.count(legacy_migration) == 1, 'Expected one legacy single-slot migration write'
+content = content.replace(legacy_migration, quota_safe_migration, 1)
+assert hashlib.sha256(content).hexdigest() == 'd558dd52e56a29bfd3de72f630046362d3d92eb982fd51bd784fc3b0251c8416', 'Quota-safe legacy save migration hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
