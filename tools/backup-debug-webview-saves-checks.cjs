@@ -14,6 +14,15 @@ try{
  fs.mkdirSync(path.join(empty,'app_webview','Local Storage','leveldb'),{recursive:true});
  fs.mkdirSync(path.join(partial,'app_webview','Local Storage','leveldb'),{recursive:true});
  fs.writeFileSync(path.join(partial,'app_webview','Local Storage','leveldb','CURRENT'),'MANIFEST-000001\n');
+ const mismatch=path.join(tmp,'mismatch-fixture'),noData=path.join(tmp,'metadata-only-fixture');
+ for(const fixture of [mismatch,noData]){
+  const leveldb=path.join(fixture,'app_webview','Local Storage','leveldb');
+  fs.mkdirSync(leveldb,{recursive:true});
+  fs.writeFileSync(path.join(leveldb,'MANIFEST-000001'),'synthetic manifest bytes');
+ }
+ fs.writeFileSync(path.join(mismatch,'app_webview','Local Storage','leveldb','CURRENT'),'MANIFEST-000099\n');
+ fs.writeFileSync(path.join(mismatch,'app_webview','Local Storage','leveldb','000003.log'),'synthetic snapshot');
+ fs.writeFileSync(path.join(noData,'app_webview','Local Storage','leveldb','CURRENT'),'MANIFEST-000001\n');
  const adb=path.join(bin,'adb');
  fs.writeFileSync(adb,[
   '#!/usr/bin/env bash','set -eu','echo "$*" >> "$TRACE"',
@@ -46,11 +55,17 @@ try{
  r=run({TWO:'1'});assert.notEqual(r.result.status,0);assert.match(r.result.stderr,/exactly one/);
  r=run({BROKEN:'1'});assert.notEqual(r.result.status,0);assert.match(r.result.stderr,/invalid archive/);
  r=run({FIXTURE:empty});assert.notEqual(r.result.status,0);
- assert.match(r.result.stderr,/empty or incomplete/);
+ assert.match(r.result.stderr,/CURRENT pointer is missing/);
  assert(!fs.existsSync(dest),'Empty LevelDB directory cannot produce an accepted backup');
  r=run({FIXTURE:partial});assert.notEqual(r.result.status,0);
  assert.match(r.result.stderr,/empty or incomplete/);
  assert(!fs.existsSync(dest),'Missing LevelDB manifest cannot produce an accepted backup');
+ r=run({FIXTURE:mismatch});assert.notEqual(r.result.status,0);
+ assert.match(r.result.stderr,/CURRENT target or data files missing/);
+ assert(!fs.existsSync(dest),'A mismatched CURRENT pointer cannot produce an accepted backup');
+ r=run({FIXTURE:noData});assert.notEqual(r.result.status,0);
+ assert.match(r.result.stderr,/CURRENT target or data files missing/);
+ assert(!fs.existsSync(dest),'A metadata-only LevelDB directory cannot produce an accepted backup');
  assert(!fs.existsSync(dest));
- console.log('PASS: non-debuggable, ambiguous device, corrupt, empty and partial LevelDB backups blocked');
+ console.log('PASS: non-debuggable, ambiguous device, corrupt, empty, partial, mismatched and metadata-only LevelDB backups blocked');
 } finally {fs.rmSync(tmp,{recursive:true,force:true});}

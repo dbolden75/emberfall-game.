@@ -66,15 +66,29 @@ if [[ ! -s "$TMP" ]] || ! tar -tf "$TMP" >/dev/null; then
   echo 'BLOCKED: incomplete or invalid archive; no backup was accepted.' >&2
   exit 1
 fi
-# A directory entry alone is not a backup. A usable LevelDB store must
-# contain a CURRENT pointer and a MANIFEST file. Reject empty/partial stores
-# rather than falsely encouraging an unsafe uninstall.
-if ! tar -tf "$TMP" | awk '
-  /^app_webview\/(Default\/)?Local Storage\/leveldb\/CURRENT$/ { current=1 }
-  /^app_webview\/(Default\/)?Local Storage\/leveldb\/MANIFEST-[0-9]+$/ { manifest=1 }
-  END { exit !(current && manifest) }
-'; then
-  echo 'BLOCKED: WebView LevelDB snapshot is empty or incomplete (CURRENT/MANIFEST missing).' >&2
+# A directory entry alone is not a backup. Even the presence of a random
+# MANIFEST file is insufficient: CURRENT must reference that exact manifest,
+# and at least one LevelDB data/log table must be in the archive. Inspect only
+# the private local archive; never alter or extract data back onto the phone.
+entries=$(tar -tf "$TMP") || {
+  echo 'BLOCKED: WebView archive listing failed.' >&2
+  exit 1
+}
+current=$(printf '%s\n' "$entries" | awk '/^app_webview\/(Default\/)?Local Storage\/leveldb\/CURRENT$/ { print; exit }')
+if [[ -z "$current" ]]; then
+  echo 'BLOCKED: WebView LevelDB CURRENT pointer is missing.' >&2
+  exit 1
+fi
+manifest=$(tar -xOf "$TMP" "$current") || {
+  echo 'BLOCKED: WebView LevelDB CURRENT pointer could not be read.' >&2
+  exit 1
+}
+manifest=${manifest%$'\r'}
+base=${current%/CURRENT}
+if [[ ! "$manifest" =~ ^MANIFEST-[0-9]+$ ]] ||
+   ! grep -Fxq -- "$base/$manifest" <<< "$entries" ||
+   ! grep -Eq -- "^${base}/[0-9]+\.(log|ldb|sst)$" <<< "$entries"; then
+  echo 'BLOCKED: WebView LevelDB snapshot is empty or incomplete (CURRENT target or data files missing).' >&2
   exit 1
 fi
 chmod 600 "$TMP"
