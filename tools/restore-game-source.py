@@ -102,6 +102,19 @@ assert hashlib.sha256(content).hexdigest() == '0519ec8b8cc5ed8d83311fa36feb0c81a
 assert content.count(b'</body>') == 1
 content = content.replace(b'</body>', b'<script src="purchase-api.js"></script>\n</body>', 1)
 
+
+# Character slots are the authoritative save on startup. In the historical
+# saveGame path, the legacy cache was written *first*. If the much larger
+# slots JSON then hit WebView's quota, the cache looked newer than the
+# authoritative slot and progress appeared to roll back on restart.
+# Commit one complete next-slots snapshot first, then best-effort mirrors.
+# In-memory slots must change only after the authoritative storage succeeds.
+old = (b"const data=snapshotGameState();localStorage.setItem(SAVE_KEY,JSON.stringify(data));saveSlots[activeSlotId]={id:activeSlotId,name:player.name,class:player.class,level:player.level,updated:Date.now(),state:data};localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(saveSlots));localStorage.setItem(ACTIVE_SLOT_KEY,activeSlotId)")
+new = (b"const data=snapshotGameState();const nextSlots={...saveSlots,[activeSlotId]:{id:activeSlotId,name:player.name,class:player.class,level:player.level,updated:Date.now(),state:data}};// Commit the authoritative save in one localStorage write, before caches.\nlocalStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(nextSlots));saveSlots=nextSlots;// A full legacy mirror can hit WebView quota after the slot succeeds.\n// Treat mirror/slot-preference failures as secondary, never as lost progress.\ntry{localStorage.setItem(SAVE_KEY,JSON.stringify(data))}catch(error){console.warn('Legacy save mirror unavailable; character slot committed:',error.name)}try{localStorage.setItem(ACTIVE_SLOT_KEY,activeSlotId)}catch(error){console.warn('Active slot preference unavailable; character slot committed:',error.name)}")
+assert content.count(old) == 1, 'Expected exactly one historical saveGame commit sequence'
+content = content.replace(old, new, 1)
+assert hashlib.sha256(content).hexdigest() == '2022c73b1af65cc98290d29d5e61e73fb4508b4ff4ad2f27ab88dd4460e440a8', 'Atomic character save compatibility patch hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
