@@ -100,6 +100,41 @@ class SignedPayloadTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'AAB maintained-key'):
                     signer.verify_aab_signing_identity(invalid)
 
+    def test_offline_signer_compares_every_game_asset(self):
+        # In-memory miniature APK/AAB archives: no keystore or device involved.
+        spec = importlib.util.spec_from_file_location(
+            'offline_sign_asset_parity', Path(__file__).with_name('sign-ci-payload.py'))
+        signer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(signer)
+
+        assets = {'index.html': b'game',
+                  'purchase-api.js': b'checkout bridge',
+                  'art/map.webp': b'map pixels'}
+
+        def verify(label, apk_assets, aab_assets, *, baseline=False):
+            apk_path = self.dir / (label + '-apk.zip')
+            aab_path = self.dir / (label + '-aab.zip')
+            with zipfile.ZipFile(apk_path, 'w') as archive:
+                for name, data in apk_assets.items():
+                    archive.writestr('assets/' + name, data)
+                if baseline:
+                    archive.writestr('assets/dexopt/baseline.prof', b'android metadata')
+            with zipfile.ZipFile(aab_path, 'w') as archive:
+                for name, data in aab_assets.items():
+                    archive.writestr('base/assets/' + name, data)
+            with zipfile.ZipFile(apk_path) as apk, zipfile.ZipFile(aab_path) as aab:
+                return signer.verify_cross_package_assets(apk, aab)
+
+        self.assertEqual(verify('matching', assets, assets, baseline=True), 3)
+        with self.assertRaisesRegex(RuntimeError, 'content mismatch: purchase-api.js'):
+            verify('tampered-js', assets, {**assets, 'purchase-api.js': b'stale checkout bridge'})
+        with self.assertRaisesRegex(RuntimeError, 'manifest mismatch'):
+            verify('missing-art', assets, {k: v for k, v in assets.items() if k != 'art/map.webp'})
+        with self.assertRaisesRegex(RuntimeError, 'manifest mismatch'):
+            verify('extra-aab-asset', assets, {**assets, 'art/unknown.webp': b'extra'})
+        with self.assertRaisesRegex(RuntimeError, 'missing index.html'):
+            verify('missing-index', {k: v for k, v in assets.items() if k != 'index.html'}, assets)
+
     def test_vcs_revision_only_diff_requires_explicit_opt_in(self):
         pair = self.pair(vcs=VCS_B)
         with self.assertRaisesRegex(ValueError, 'version-control-info'):
