@@ -87,11 +87,33 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             }
             Set<String> active=new HashSet<>();
             for(Purchase p:purchases){if(valid(p))active.add(hash(p.getPurchaseToken()));accept(p);}
-            // A successful owned-purchases query is authoritative for durable ownership.
-            Iterator<String> keys=receipts.keys();
-            while(keys.hasNext()){JSONObject r=receipts.optJSONObject(keys.next());if(r!=null&&!consumable(r.optString("product")))try{r.put("active",active.contains(r.optString("id")));}catch(Exception ignored){}}
-            persist(); publish(); retryFinishing();
+            // Apply a successful Play ownership query atomically. A failed
+            // SharedPreferences commit must not revoke a saved entitlement
+            // only in memory while its previous receipt remains on disk.
+            reconcileActiveOwnedPurchases(active); publish(); retryFinishing();
         }));
+    }
+    // Only a successful Play query may revoke ownership. Keep the original
+    // in-memory flags if persistent storage refuses the new state, so a
+    // temporary full disk does not hide previously verified purchased titles.
+    private void reconcileActiveOwnedPurchases(Set<String> active){
+        Map<String,Boolean> previous=new HashMap<>();
+        try{
+            Iterator<String> keys=receipts.keys();
+            while(keys.hasNext()){
+                String key=keys.next();
+                JSONObject r=receipts.optJSONObject(key);
+                if(r==null||consumable(r.optString("product")))continue;
+                previous.put(key,r.optBoolean("active"));
+                r.put("active",active.contains(r.optString("id")));
+            }
+            if(persist())return;
+        }catch(Exception ignored){}
+        for(Map.Entry<String,Boolean> entry:previous.entrySet()){
+            JSONObject r=receipts.optJSONObject(entry.getKey());
+            if(r!=null)try{r.put("active",entry.getValue());}catch(Exception ignored){}
+        }
+        message="Restored purchase ownership could not be saved. Free device storage, then tap Restore purchases.";
     }
     private static String hash(String value){try{byte[] bytes=MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));StringBuilder out=new StringBuilder();for(byte b:bytes)out.append(String.format(Locale.ROOT,"%02x",b&255));return out.toString();}catch(Exception e){throw new IllegalStateException(e);}}
     private boolean valid(Purchase p){
