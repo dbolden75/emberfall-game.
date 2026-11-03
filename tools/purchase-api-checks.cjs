@@ -3,17 +3,18 @@ const source=fs.readFileSync('app/src/main/assets/purchase-api.js','utf8');
 const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
 assert(html.includes('<script src="purchase-api.js"></script>'));
 function setup({native=true,test=false,available=true}={}){
- const calls=[],elements={premiumSummary:{},restorePurchasesButton:{}};
+ const calls=[],elements={premiumSummary:{},restorePurchasesButton:{},premiumShopButton:{textContent:'PREMIUM SHOP · PREVIEW'}};
  const bridge={buy:(...args)=>calls.push(['buy',...args]),restore:()=>calls.push(['restore'])};
  const c={window:native?{ThornhavenPlayPurchases:bridge}:{},document:{getElementById:id=>elements[id],querySelectorAll:()=>[],querySelector:()=>null},renderPremiumShop:()=>{elements.renderCount=(elements.renderCount||0)+1},premiumCategory:'all',townQuestState:{},PREMIUM_PRODUCTS:[{id:'halo'},...['thornhaven_xp_boost_25_15m','thornhaven_levels_1','thornhaven_levels_5','thornhaven_levels_10'].map(id=>({id}))],premiumProduct:id=>id==='halo'?{id}:null,hasStarted:true,titleMenuActive:false,switchingCharacter:false,danTesting:()=>test,pollPlayStore:()=>{},playStore:{products:available?{halo:{price:'$0.99'}}:{},busy:false},ensurePurchaseProfile:()=>'a'.repeat(64),buyPlayProduct:()=>{}};
  vm.createContext(c);vm.runInContext(source,c);return {c,calls,api:c.window.ThornhavenMonetization,elements};
 }
 (async()=>{
  let t=setup();assert.strictEqual(t.api,t.c.window.EmberfallMonetization);
+ assert.equal(t.elements.premiumShopButton.textContent,'PREMIUM SHOP · GOOGLE PLAY','Android entry must not falsely say Preview');
  assert.equal((await t.c.buyPlayProduct('halo')).status,'requested');assert.deepEqual(t.calls,[['buy','halo','a'.repeat(64)]]);
  assert.equal((await t.elements.restorePurchasesButton.onclick()).status,'requested');assert.equal(t.calls[1][0],'restore');
  t=setup({test:true});assert.equal((await t.api.purchase('halo')).status,'test-character');assert.equal(t.calls.length,0);
- t=setup({native:false});assert.equal((await t.api.purchase('halo')).status,'unavailable');assert.equal((await t.api.restorePurchases()).status,'unavailable');
+ t=setup({native:false});assert.equal(t.elements.premiumShopButton.textContent,'PREMIUM SHOP · PREVIEW','Non-Play web builds must not promise checkout');assert.equal((await t.api.purchase('halo')).status,'unavailable');assert.equal((await t.api.restorePurchases()).status,'unavailable');
  t=setup({available:false});assert.equal((await t.api.purchase('halo')).status,'unavailable');assert.deepEqual(t.calls,[['restore']]);
  t=setup();t.c.playStore.busy=true;assert.equal((await t.api.purchase('halo')).status,'busy');assert.equal(t.calls.length,0);
  t=setup();t.c.ensurePurchaseProfile=()=>{throw Error('disk full')};assert.equal((await t.api.purchase('halo')).status,'error');assert.equal(t.calls.length,0);
@@ -28,5 +29,5 @@ function setup({native=true,test=false,available=true}={}){
  t.c.premiumCategory='xp';t.c.renderPremiumShop();assert.equal(t.c.premiumCategory,'all');assert.equal(t.elements.renderCount,1);
  t.c.premiumCategory='levels';t.c.renderPremiumShop();assert.equal(t.c.premiumCategory,'all');assert.equal(t.elements.renderCount,2);
  console.log('PASS: retired sale catalog and checkout are blocked; shop wrapper delegates without offering retired categories.');
- console.log('PASS: public APIs and Buy/Restore route to native billing; test character, unavailable product, missing bridge, busy checkout, storage failure and unloaded character do not start payment.');
+ console.log('PASS: premium menu distinguishes Android Google Play from web preview; public Buy/Restore routes remain gated by native billing and character storage.');
 })().catch(e=>{console.error(e);process.exitCode=1});
