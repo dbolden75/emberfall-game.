@@ -250,7 +250,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             // A stale offer, disconnected Play service, or other client-side
             // launch failure must not crash the Activity or wedge the shop busy.
             busy=false;
-            message="Google Play checkout could not open. No payment was started. Restore purchases and try again.";
+            message="Google Play checkout could not be confirmed. Restore purchases to check payment status before trying again.";
             publish();
         }
     });}
