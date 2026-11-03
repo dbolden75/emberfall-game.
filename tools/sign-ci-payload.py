@@ -51,6 +51,34 @@ def verify_aab_signing_identity(certificate_output: str) -> None:
         raise RuntimeError('AAB maintained-key signing certificate mismatch')
 
 
+
+def verify_cross_package_assets(apk_zip: zipfile.ZipFile, aab_zip: zipfile.ZipFile) -> int:
+    """Require every packaged game asset to agree between APK and Play bundle.
+
+    Android may add APK-only dexopt baseline-profile metadata, which is not
+    game content. This is an additional gate; it does not replace the signed
+    versus unsigned native-code parity or certificate checks.
+    """
+    apk_entries = [name[len('assets/'):] for name in apk_zip.namelist()
+                   if name.startswith('assets/') and not name.endswith('/')
+                   and not name.startswith('assets/dexopt/')]
+    aab_entries = [name[len('base/assets/'):] for name in aab_zip.namelist()
+                   if name.startswith('base/assets/') and not name.endswith('/')]
+    if len(apk_entries) != len(set(apk_entries)) or len(aab_entries) != len(set(aab_entries)):
+        raise RuntimeError('APK/AAB game asset manifest contains duplicate paths')
+    apk_names, aab_names = set(apk_entries), set(aab_entries)
+    if 'index.html' not in apk_names or 'index.html' not in aab_names:
+        raise RuntimeError('APK/AAB game asset manifest missing index.html')
+    if apk_names != aab_names:
+        raise RuntimeError('APK/AAB game asset manifest mismatch: '
+                           f'only in APK={sorted(apk_names - aab_names)[:8]}, '
+                           f'only in AAB={sorted(aab_names - apk_names)[:8]}')
+    for name in sorted(apk_names):
+        if apk_zip.read('assets/' + name) != aab_zip.read('base/assets/' + name):
+            raise RuntimeError(f'APK/AAB game asset content mismatch: {name}')
+    return len(apk_names)
+
+
 def extract_selected(zip_path: Path, folder: Path, names: tuple[str, ...]) -> None:
     with zipfile.ZipFile(zip_path) as z:
         if z.testzip() is not None:
@@ -139,9 +167,8 @@ def main() -> None:
         with zipfile.ZipFile(apk) as apk_zip, zipfile.ZipFile(aab) as aab_zip:
             if apk_zip.testzip() is not None or aab_zip.testzip() is not None:
                 raise RuntimeError('APK or AAB ZIP integrity failed')
-            for name in ('index.html', 'playtest-update.js'):
-                if apk_zip.read('assets/' + name) != aab_zip.read('base/assets/' + name):
-                    raise RuntimeError(f'APK/AAB asset disagreement: {name}')
+            asset_count = verify_cross_package_assets(apk_zip, aab_zip)
+            print(f'PASS: all {asset_count} APK/AAB game assets are byte-identical')
 
         opts.output.mkdir(parents=True, exist_ok=True)
         target_apk = opts.output / f'Thornhaven-{version}-maintained-key.apk'
