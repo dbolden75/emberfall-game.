@@ -135,7 +135,13 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             for(Purchase p:purchases){
                 if(p==null){incomplete=true;continue;}
                 if(valid(p))active.add(hash(p.getPurchaseToken()));
-                accept(p);
+                else {
+                    // A malformed/invalid Play row cannot prove any previously
+                    // verified permanent purchase was revoked. Do not grant
+                    // this row, and defer revocation until a clean restore.
+                    incomplete=true;
+                }
+                accept(p); // Pending purchases are reported, not delivered.
             }
             if(incomplete){
                 // An incomplete Play list is not authoritative proof that an
