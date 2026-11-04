@@ -294,7 +294,20 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         try{
             JSONObject result=new JSONObject().put("message",message).put("busy",busy);
             JSONObject items=new JSONObject();
-            for(ProductDetails p:catalog.values()){ProductDetails.OneTimePurchaseOfferDetails o=offer(p);if(o!=null)items.put(p.getProductId(),new JSONObject().put("price",o.getFormattedPrice()));}
+            for(ProductDetails p:catalog.values()){
+                if(p==null)continue;
+                try{
+                    ProductDetails.OneTimePurchaseOfferDetails o=offer(p);
+                    if(o==null)continue;
+                    String price=o.getFormattedPrice();
+                    String id=p.getProductId();
+                    if(id!=null&&!id.isEmpty()&&price!=null&&!price.trim().isEmpty())
+                        items.put(id,new JSONObject().put("price",price));
+                }catch(Exception invalidPlayOffer){
+                    // A malformed Play price/offer must not hide verified purchases
+                    // or valid prices for unrelated items in the same snapshot.
+                }
+            }
             JSONArray deliveries=new JSONArray(),owned=new JSONArray();
             Iterator<String> keys=receipts.keys();
             while(keys.hasNext()){
