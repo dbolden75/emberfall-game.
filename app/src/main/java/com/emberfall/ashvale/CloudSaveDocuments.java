@@ -126,6 +126,14 @@ final class CloudSaveDocuments {
     boolean onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode != CREATE_DOCUMENT_REQUEST && requestCode != OPEN_DOCUMENT_REQUEST) return false;
         Pending request = pending;
+        if (request != null) {
+            // Android can deliver an older picker result after a newer backup
+            // request has opened. Never let a stale OPEN response consume a
+            // pending CREATE (or vice versa), potentially writing the wrong file.
+            int expectedCode = "save".equals(request.action)
+                ? CREATE_DOCUMENT_REQUEST : OPEN_DOCUMENT_REQUEST;
+            if (requestCode != expectedCode) return true;
+        }
         pending = null;
         if (request == null || closed) return true;
         if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null) {
