@@ -78,10 +78,13 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         }));
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
-            if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK){
-                // Leave cached verified receipts untouched; a failed Play query
-                // must not revoke ownership or silently look like a completed restore.
-                message="Google Play could not restore purchases (code "+status.getResponseCode()+"). Retry Restore purchases when Google Play is available.";
+            if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null){
+                // Even an OK status is unusable if Play supplies no list object.
+                // A null list is not an empty verified ownership list: treating
+                // it as empty would revoke every permanent entitlement.
+                message=purchases==null && status.getResponseCode()==BillingClient.BillingResponseCode.OK
+                    ?"Google Play returned an incomplete purchase restore. Existing purchases are preserved; tap Restore purchases to retry."
+                    :"Google Play could not restore purchases (code "+status.getResponseCode()+"). Retry Restore purchases when Google Play is available.";
                 publish();
                 return;
             }
