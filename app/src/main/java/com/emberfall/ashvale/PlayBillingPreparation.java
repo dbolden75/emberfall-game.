@@ -72,7 +72,15 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                 if(details==null){
                     message="Google Play returned an incomplete product catalog. No item prices are verified. Tap Restore purchases to retry.";
                 }else{
-                    for(ProductDetails p:details)if(p!=null)catalog.put(p.getProductId(),p);
+                    // Only show registered, currently-for-sale products. An unexpected
+                    // Play SDK response must never expose checkout for an unknown or
+                    // retired SKU that valid(Purchase) cannot safely deliver.
+                    for(ProductDetails p:details){
+                        if(p==null)continue;
+                        String id=p.getProductId();
+                        if(id!=null && Arrays.asList(PRODUCT_IDS).contains(id)
+                                && !RETIRED_SALE_IDS.contains(id))catalog.put(id,p);
+                    }
                     String missingDetails=unfetchedProductStatus(result);
                     message=catalog.isEmpty()
                         ?"Google Play returned no available products for this account. Check Play Console product activation and tester access, then Restore purchases."+missingDetails
