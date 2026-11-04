@@ -145,6 +145,7 @@ public class RestoreListHarness {
     check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==2
         && h.retryCalls==1 && h.message.contains("incomplete"),
       "Invalid signed purchase row must not revoke owned items; valid rows still process");
+    h.refresh(); // A genuinely new, clean Play restore may reconcile ownership.
     h.client.purchasesCallback.complete(new Status(0),Collections.emptyList());
     check(!h.previouslyOwned && h.reconcileCalls==1,
       "A later clean empty Play response may still reconcile revoked ownership");
