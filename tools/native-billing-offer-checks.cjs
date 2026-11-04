@@ -25,7 +25,7 @@ const beginRefresh=src.indexOf('private void refresh()');
 const endRefresh=src.indexOf('private static String hash(',beginRefresh);
 assert(beginRefresh>=0&&endRefresh>beginRefresh,'Play Billing refresh method not found');
 const refresh=src.slice(beginRefresh,endRefresh);
-assert(refresh.includes('if(status.getResponseCode()==BillingClient.BillingResponseCode.OK){'),
+assert(refresh.includes('if(status!=null&&status.getResponseCode()==BillingClient.BillingResponseCode.OK){'),
        'Do not classify a Play product query error as a valid empty catalog');
 for(const text of [
  'Google Play returned no available products for this account.',
@@ -33,7 +33,7 @@ for(const text of [
  'Google Play could not restore purchases (code ',
  'Leave cached verified receipts untouched',
 ])assert(refresh.includes(text),'Missing billing diagnostic or safe restore path: '+text);
-const restoreGuard=refresh.indexOf('if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null)');
+const restoreGuard=refresh.indexOf('if(status==null||status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null)');
 const reconciliation=refresh.indexOf('Set<String> active=new HashSet<>()');
 assert(restoreGuard>=0 && reconciliation>restoreGuard &&
        refresh.slice(restoreGuard,reconciliation).includes('return;'),
