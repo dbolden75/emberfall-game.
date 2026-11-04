@@ -52,10 +52,13 @@ public class BillingLaunchHarness {
   final BillingClient client=new BillingClient();
   final Map<String,ProductDetails> catalog=new HashMap<>();
   final Set<String> RETIRED_SALE_IDS=new HashSet<>(Arrays.asList("thornhaven_levels_1"));
-  boolean busy,closed,offerAvailable=true;
+  boolean busy,closed,offerAvailable=true,offerThrows;
   String message="";
   int published,connections;
-  ProductDetails.OneTimePurchaseOfferDetails offer(ProductDetails p){return offerAvailable?new ProductDetails.OneTimePurchaseOfferDetails():null;}
+  ProductDetails.OneTimePurchaseOfferDetails offer(ProductDetails p){
+    if(offerThrows)throw new IllegalStateException("malformed Play offer");
+    return offerAvailable?new ProductDetails.OneTimePurchaseOfferDetails():null;
+  }
   void publish(){published++;}
   void connect(){connections++;}
   ${method}
@@ -82,9 +85,15 @@ public class BillingLaunchHarness {
     check(h.client.launchCalls==0 && !h.busy,"Unknown product must not start checkout");
     h=valid();h.offerAvailable=false;h.buy("cosmetic",PROFILE);
     check(h.client.launchCalls==0 && !h.busy,"Offer without token must not start checkout");
+    h=valid();h.offerThrows=true;h.buy("cosmetic",PROFILE);
+    check(h.client.launchCalls==0 && !h.busy && h.message.contains("invalid purchase option") && h.published==1,
+      "Malformed Play offer getter must not crash checkout or leave shop busy");
+    h.offerThrows=false;h.buy("cosmetic",PROFILE);
+    check(h.client.launchCalls==1 && h.busy,
+      "A restored eligible Play offer can be purchased after an invalid one");
     h=valid();h.closed=true;h.buy("cosmetic",PROFILE);
     check(h.client.launchCalls==0 && h.published==0,"Destroyed Activity must not open checkout");
-    System.out.println("PASS: 10 native billing launch scenarios including thrown Play exception; no live checkout was performed");
+    System.out.println("PASS: 12 native billing launch scenarios including malformed Play offers and recovery; no live checkout was performed");
   }
 }
 `;

@@ -345,7 +345,13 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         if(profile==null||!profile.matches("[a-f0-9]{64}")){message="Load and save your character before purchasing.";publish();return;}
         ProductDetails p=catalog.get(product);
         if(p==null){message="This item is unavailable from Google Play. Tap Restore purchases to refresh.";publish();return;}
-        ProductDetails.OneTimePurchaseOfferDetails o=offer(p);
+        ProductDetails.OneTimePurchaseOfferDetails o;
+        try{o=offer(p);}catch(RuntimeException invalidOffer){
+            // A stale or malformed Play product row can throw while reading
+            // its offers. Reject this checkout without crashing the Activity.
+            message="Google Play returned an invalid purchase option. Tap Restore purchases to refresh.";
+            publish();return;
+        }
         if(o==null){message="No eligible purchase option is available for this item.";publish();return;}
         busy=true;message="Opening Google Play checkout…";publish();
         try{
