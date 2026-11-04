@@ -33,8 +33,12 @@ for(const text of [
  'Google Play could not restore purchases (code ',
  'Leave cached verified receipts untouched',
 ])assert(refresh.includes(text),'Missing billing diagnostic or safe restore path: '+text);
-assert(refresh.indexOf('message="Google Play could not restore purchases') <
-       refresh.indexOf('Set<String> active=new HashSet<>()'),
-       'A failed owned-purchase query must never process revocations');
+const restoreGuard=refresh.indexOf('if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null)');
+const reconciliation=refresh.indexOf('Set<String> active=new HashSet<>()');
+assert(restoreGuard>=0 && reconciliation>restoreGuard &&
+       refresh.slice(restoreGuard,reconciliation).includes('return;'),
+       'Failed or null Play restore results must never process ownership revocations');
+assert(refresh.includes('Existing purchases are preserved; tap Restore purchases to retry.'),
+       'Null purchases must be reported as an incomplete restore, not as an empty ownership list');
 console.log('PASS (static): Play Billing prefers non-rental standard buy options, falls back to eligible non-rental/non-preorder offers, and uses the selected offer token. Live Play eligibility not tested.');
 console.log('PASS (static): price-query errors, zero active SKUs, and restore errors have distinct messaging without revoking saved receipts on failed queries.');
