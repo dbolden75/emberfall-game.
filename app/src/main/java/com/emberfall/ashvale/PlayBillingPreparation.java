@@ -72,7 +72,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             catalog.clear();
-            if(status.getResponseCode()==BillingClient.BillingResponseCode.OK){
+            if(status!=null&&status.getResponseCode()==BillingClient.BillingResponseCode.OK){
                 // Play can report OK while supplying an incomplete catalog. A
                 // null result is NOT a verified empty product list: never
                 // dereference it or imply that Play has no active products.
@@ -97,25 +97,42 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             }else{
                 // An unavailable Play service is not the same as an empty product catalog.
                 // Do not offer a stale price or imply that product activation alone fixes it.
-                message="Google Play could not load prices (code "+status.getResponseCode()+"). Check your connection and Play tester access, then Restore purchases.";
+                message=status==null
+                    ?"Google Play returned no product-query status. No item prices are verified. Tap Restore purchases to retry."
+                    :"Google Play could not load prices (code "+status.getResponseCode()+"). Check your connection and Play tester access, then Restore purchases.";
             }
             publish();
         }));
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
-            if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null){
+            if(status==null||status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null){
                 // Leave cached verified receipts untouched when the Play query fails.
                 // Even an OK status is unusable if Play supplies no list object.
                 // A null list is not an empty verified ownership list: treating
                 // it as empty would revoke every permanent entitlement.
-                message=purchases==null && status.getResponseCode()==BillingClient.BillingResponseCode.OK
+                message=status==null
+                    ?"Google Play returned no purchase-restore status. Existing purchases are preserved; tap Restore purchases to retry."
+                    :purchases==null && status.getResponseCode()==BillingClient.BillingResponseCode.OK
                     ?"Google Play returned an incomplete purchase restore. Existing purchases are preserved; tap Restore purchases to retry."
                     :"Google Play could not restore purchases (code "+status.getResponseCode()+"). Retry Restore purchases when Google Play is available.";
                 publish();
                 return;
             }
             Set<String> active=new HashSet<>();
-            for(Purchase p:purchases){if(valid(p))active.add(hash(p.getPurchaseToken()));accept(p);}
+            boolean incomplete=false;
+            for(Purchase p:purchases){
+                if(p==null){incomplete=true;continue;}
+                if(valid(p))active.add(hash(p.getPurchaseToken()));
+                accept(p);
+            }
+            if(incomplete){
+                // An incomplete Play list is not authoritative proof that an
+                // existing non-consumable purchase was revoked. Process any
+                // present receipts but leave old ownership untouched until a
+                // complete successful query allows reconciliation.
+                message="Google Play returned an incomplete purchase list. Existing purchases were preserved; tap Restore purchases to retry.";
+                publish();retryFinishing();return;
+            }
             // Apply a successful Play ownership query atomically. A failed
             // SharedPreferences commit must not revoke a saved entitlement
             // only in memory while its previous receipt remains on disk.

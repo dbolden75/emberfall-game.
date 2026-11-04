@@ -115,6 +115,21 @@ public class RestoreListHarness {
       "Null list must explain retry without confirming a restore");
 
     h=ready();
+    h.client.purchasesCallback.complete(null,Collections.emptyList());
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==0 && h.message.contains("status"),
+      "Missing Play status cannot revoke ownership or crash the restore callback");
+
+    h=ready();
+    h.client.purchasesCallback.complete(new Status(0),Arrays.asList((Purchase)null));
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==0 && h.message.contains("incomplete"),
+      "Null Play row must neither crash nor revoke previously verified purchases");
+
+    h=ready();
+    h.client.purchasesCallback.complete(new Status(0),Arrays.asList(null,new Purchase("newly_paid")));
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==1 && h.retryCalls==1,
+      "Partial Play list may accept valid receipts but cannot revoke prior ownership");
+
+    h=ready();
     h.client.purchasesCallback.complete(new Status(0),Collections.emptyList());
     check(!h.previouslyOwned && h.reconcileCalls==1 && h.retryCalls==1,
       "A real empty list may revoke ownership after a successful Play query");
@@ -157,6 +172,12 @@ public class RestoreListHarness {
     h.client.detailsCallback.complete(new Status(0),null);
     check(h.catalog.isEmpty() && h.message.contains("incomplete") && h.publishCalls==1,
       "Null OK product result must clear stale prices and explain an incomplete query");
+
+    h=ready();
+    h.catalog.put("stale",new ProductDetails("stale"));
+    h.client.detailsCallback.complete(null,new Details(Arrays.asList(new ProductDetails("item_a"))));
+    check(h.catalog.isEmpty() && h.message.contains("status") && h.publishCalls==1,
+      "Missing product-query status must not display stale or unverifiable prices");
 
     h=ready();
     h.client.detailsCallback.complete(new Status(0),new Details(null));
@@ -209,8 +230,8 @@ public class RestoreListHarness {
     check(h.client.detailsCallback==null,
       "Offline Play must not request product details");
 
-    System.out.println("PASS: nine actual Java refresh() catalog scenarios (incomplete result/list, empty, valid, failed, stale, closed, offline)");
-    System.out.println("PASS: seven actual Java refresh() scenarios for null, empty, valid, failed, stale, closed and offline Play results");
+    System.out.println("PASS: 10 production Java refresh() catalog scenarios, including missing Play status (no live checkout)");
+    System.out.println("PASS: 10 production Java restore scenarios, including missing status, null rows and partial ownership (no live restore)");
     System.out.println("NOT VERIFIED: real Google Play service, products, payment or restore on a phone.");
   }
 }
