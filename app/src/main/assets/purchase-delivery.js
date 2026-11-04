@@ -4,6 +4,10 @@ function reward(state,receipt,products){
  const product=products.find(p=>p.id===receipt.product);
  if(!product||!receipt.id||!/^[a-f0-9]{64}$/.test(receipt.id))throw Error('Invalid purchase');
  const next=JSON.parse(JSON.stringify(state)),q=next.townQuestState||(next.townQuestState={});
+ // A truthy malformed quest state (string, number, array) silently swallows
+ // receipt/ownership writes in non-strict JavaScript. Never acknowledge a
+ // payment whose durable ledger cannot be saved to the character.
+ if(!q||typeof q!=='object'||Array.isArray(q))throw Error('Invalid town quest state');
  if(product.productType==='consumable'&&(!q._purchaseProfile||receipt.profile!==q._purchaseProfile))throw Error('Purchase belongs to another character');
  // Never acknowledge a paid receipt against a malformed ledger: duplicate
  // callbacks could otherwise re-grant the same consumable indefinitely.
