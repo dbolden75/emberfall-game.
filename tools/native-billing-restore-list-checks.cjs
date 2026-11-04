@@ -78,8 +78,8 @@ public class RestoreListHarness {
   final Activity activity=new Activity();
   final BillingClient client=new BillingClient();
   final Map<String,ProductDetails> catalog=new HashMap<>();
-  final String[] PRODUCT_IDS={"item_a","item_b"};
-  final Set<String> RETIRED_SALE_IDS=Collections.emptySet();
+  final String[] PRODUCT_IDS={"item_a","item_b","item_retired"};
+  final Set<String> RETIRED_SALE_IDS=Collections.singleton("item_retired");
   int refreshEpoch,publishCalls,acceptCalls,reconcileCalls,retryCalls;
   boolean closed;
   String message="untouched";
@@ -175,6 +175,14 @@ public class RestoreListHarness {
       "Only verified non-null product details may appear as buyable");
 
     h=ready();
+    h.client.detailsCallback.complete(new Status(0),new Details(Arrays.asList(
+      new ProductDetails("item_a"),new ProductDetails("item_not_registered"),
+      new ProductDetails("item_retired"),new ProductDetails(null))));
+    check(h.catalog.size()==1 && h.catalog.containsKey("item_a")
+        && !h.catalog.containsKey("item_not_registered") && !h.catalog.containsKey("item_retired"),
+      "Unexpected, retired and null-ID Play products must never be offered for sale");
+
+    h=ready();
     h.client.detailsCallback.complete(new Status(6),null);
     check(h.catalog.isEmpty() && h.message.contains("code 6"),
       "Play product-query errors must not be mistaken for an empty catalog");
@@ -201,7 +209,7 @@ public class RestoreListHarness {
     check(h.client.detailsCallback==null,
       "Offline Play must not request product details");
 
-    System.out.println("PASS: eight actual Java refresh() catalog scenarios (incomplete result/list, empty, valid, failed, stale, closed, offline)");
+    System.out.println("PASS: nine actual Java refresh() catalog scenarios (incomplete result/list, empty, valid, failed, stale, closed, offline)");
     System.out.println("PASS: seven actual Java refresh() scenarios for null, empty, valid, failed, stale, closed and offline Play results");
     System.out.println("NOT VERIFIED: real Google Play service, products, payment or restore on a phone.");
   }
