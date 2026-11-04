@@ -46,15 +46,23 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         if(closed||connecting)return;
         if(client.isReady()){refresh();return;}
         connecting=true;
-        client.startConnection(new BillingClientStateListener(){
-            public void onBillingSetupFinished(BillingResult result){activity.runOnUiThread(()->{
-                if(closed)return;
-                connecting=false;
-                if(result.getResponseCode()==BillingClient.BillingResponseCode.OK)refresh();
-                else {message="Google Play purchases are unavailable. Install the Play test release and retry.";publish();}
-            });}
-            public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{if(closed)return;refreshEpoch++;billingSessionEpoch++;connecting=false;busy=false;finishing.clear();catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
-        });
+        try{
+            client.startConnection(new BillingClientStateListener(){
+                public void onBillingSetupFinished(BillingResult result){activity.runOnUiThread(()->{
+                    if(closed)return;
+                    connecting=false;
+                    if(result!=null&&result.getResponseCode()==BillingClient.BillingResponseCode.OK)refresh();
+                    else {message="Google Play purchases are unavailable. Install the Play test release and retry.";publish();}
+                });}
+                public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{if(closed)return;refreshEpoch++;billingSessionEpoch++;connecting=false;busy=false;finishing.clear();catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
+            });
+        }catch(RuntimeException unavailable){
+            // A Play service/BillingClient startup failure must not prevent the
+            // offline game from launching or permanently block Restore retries.
+            connecting=false;
+            message="Google Play purchases could not start. Game play remains available. Tap Restore purchases to retry.";
+            publish();
+        }
     }
     private void refresh(){
         if(closed||!client.isReady())return;
