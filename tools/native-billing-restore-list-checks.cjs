@@ -33,10 +33,16 @@ public class RestoreListHarness {
     interface PurchasesCb {void complete(Status status,List<Purchase> purchases);}
     DetailsCb detailsCallback;
     PurchasesCb purchasesCallback;
-    boolean ready=true;
+    boolean ready=true,throwDetails,throwPurchases;
     boolean isReady(){return ready;}
-    void queryProductDetailsAsync(QueryProductDetailsParams params,DetailsCb cb){detailsCallback=cb;}
-    void queryPurchasesAsync(QueryPurchasesParams params,PurchasesCb cb){purchasesCallback=cb;}
+    void queryProductDetailsAsync(QueryProductDetailsParams params,DetailsCb cb){
+      if(throwDetails)throw new IllegalStateException("Play product service disconnected");
+      detailsCallback=cb;
+    }
+    void queryPurchasesAsync(QueryPurchasesParams params,PurchasesCb cb){
+      if(throwPurchases)throw new IllegalStateException("Play purchase service disconnected");
+      purchasesCallback=cb;
+    }
   }
   static class QueryProductDetailsParams {
     static Builder newBuilder(){return new Builder();}
@@ -230,6 +236,38 @@ public class RestoreListHarness {
     check(h.client.detailsCallback==null,
       "Offline Play must not request product details");
 
+    // These cases execute the actual production refresh() and catch blocks.
+    h=new RestoreListHarness();
+    h.catalog.put("stale",new ProductDetails("stale"));
+    h.client.throwDetails=true;
+    h.refresh();
+    check(h.catalog.isEmpty() && h.client.purchasesCallback!=null && h.message.contains("item prices"),
+      "Thrown catalog dispatch clears stale prices and still checks ownership");
+    check(h.previouslyOwned && h.reconcileCalls==0,
+      "Thrown catalog dispatch cannot revoke saved entitlements");
+
+    h=new RestoreListHarness();
+    h.client.throwPurchases=true;
+    h.refresh();
+    check(h.client.detailsCallback!=null && h.previouslyOwned && h.reconcileCalls==0,
+      "Thrown ownership dispatch does not prevent catalog query or revoke purchases");
+    check(h.message.contains("restoration") && h.publishCalls==1,
+      "Thrown ownership dispatch reports a retriable failure");
+
+    h=new RestoreListHarness();
+    h.client.throwDetails=true;h.client.throwPurchases=true;
+    h.refresh();
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.publishCalls==2,
+      "Both query dispatches throwing cannot break offline game or revoke purchases");
+    h.client.throwDetails=false;h.client.throwPurchases=false;
+    h.refresh();
+    check(h.client.detailsCallback!=null && h.client.purchasesCallback!=null,
+      "After Play recovers Restore can request both catalog and purchases");
+    h.client.purchasesCallback.complete(new Status(0),Arrays.asList(new Purchase("previously_owned")));
+    check(h.previouslyOwned && h.reconcileCalls==1,
+      "A later verified Play response restores normal reconciliation");
+
+    System.out.println("PASS: 4 synchronous query-dispatch failure/recovery scenarios");
     System.out.println("PASS: 10 production Java refresh() catalog scenarios, including missing Play status (no live checkout)");
     System.out.println("PASS: 10 production Java restore scenarios, including missing status, null rows and partial ownership (no live restore)");
     System.out.println("NOT VERIFIED: real Google Play service, products, payment or restore on a phone.");
