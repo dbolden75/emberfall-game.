@@ -14,6 +14,15 @@ function reward(state,receipt,products){
  // reward while its native receipt is marked delivered and consumed.
  if(Object.prototype.hasOwnProperty.call(ledger,receipt.id)){
   if(ledger[receipt.id]!==product.id)throw Error('Conflicting purchase receipt ledger entry');
+  // Durable styles can be restored idempotently. A damaged/legacy save may
+  // retain the verified receipt but lose its separate cosmetic ownership flag.
+  // Do not acknowledge this receipt again without repairing that flag.
+  if(product.productType==='non_consumable'){
+   const owned=q._paidStyles==null?(q._paidStyles={}):q._paidStyles;
+   if(typeof owned!=='object'||Array.isArray(owned))throw Error('Invalid purchased style ledger');
+   owned[product.id]=true;
+  }
+  // Credits and levels may have been used already. Never replay those grants.
   return next;
  }
  if(product.category==='levels'){
