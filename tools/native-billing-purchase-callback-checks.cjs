@@ -13,7 +13,8 @@ for(let i=brace;i<src.length;i++){
   else if(src[i]==='}'&&--depth===0){end=i+1;break;}
 }
 assert(end>brace,'Unbalanced purchase callback');
-const method=src.slice(start,end);
+// Only the @Override annotation is omitted: the Java harness has no Android listener interface.
+const method=src.slice(start,end).replace(/^@Override\s+/, '');
 const java=`
 import java.util.*;
 public class BillingPurchaseCallbackHarness {
