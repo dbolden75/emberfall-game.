@@ -359,6 +359,17 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             publish();return;
         }
         if(o==null){message="No eligible purchase option is available for this item.";publish();return;}
+        // A Play offer token alone does not establish a user-visible price.
+        // Never open a checkout for a SKU the game could not price in its shop.
+        String verifiedPrice;
+        try{verifiedPrice=o.getFormattedPrice();}catch(RuntimeException invalidPrice){
+            message="Google Play could not verify this item's price. Tap Restore purchases to refresh.";
+            publish();return;
+        }
+        if(verifiedPrice==null||verifiedPrice.trim().isEmpty()){
+            message="Google Play could not verify this item's price. Tap Restore purchases to refresh.";
+            publish();return;
+        }
         busy=true;message="Opening Google Play checkout…";publish();
         try{
             BillingFlowParams.ProductDetailsParams params=BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(p).setOfferToken(o.getOfferToken()).build();

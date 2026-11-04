@@ -30,7 +30,12 @@ public class BillingLaunchHarness {
     }
   }
   static class ProductDetails{
-    static class OneTimePurchaseOfferDetails {String getOfferToken(){return "token";}}
+    static class OneTimePurchaseOfferDetails {
+      final String price;final boolean throwOnPrice;
+      OneTimePurchaseOfferDetails(String price,boolean throwOnPrice){this.price=price;this.throwOnPrice=throwOnPrice;}
+      String getOfferToken(){return "token";}
+      String getFormattedPrice(){if(throwOnPrice)throw new IllegalStateException("invalid Play price");return price;}
+    }
   }
   static class BillingFlowParams{
     static Builder newBuilder(){return new Builder();}
@@ -52,12 +57,12 @@ public class BillingLaunchHarness {
   final BillingClient client=new BillingClient();
   final Map<String,ProductDetails> catalog=new HashMap<>();
   final Set<String> RETIRED_SALE_IDS=new HashSet<>(Arrays.asList("thornhaven_levels_1"));
-  boolean busy,closed,offerAvailable=true,offerThrows;
-  String message="";
+  boolean busy,closed,offerAvailable=true,offerThrows,throwOnPrice;
+  String offerPrice="$2.49",message="";
   int published,connections;
   ProductDetails.OneTimePurchaseOfferDetails offer(ProductDetails p){
     if(offerThrows)throw new IllegalStateException("malformed Play offer");
-    return offerAvailable?new ProductDetails.OneTimePurchaseOfferDetails():null;
+    return offerAvailable?new ProductDetails.OneTimePurchaseOfferDetails(offerPrice,throwOnPrice):null;
   }
   void publish(){published++;}
   void connect(){connections++;}
@@ -91,9 +96,21 @@ public class BillingLaunchHarness {
     h.offerThrows=false;h.buy("cosmetic",PROFILE);
     check(h.client.launchCalls==1 && h.busy,
       "A restored eligible Play offer can be purchased after an invalid one");
+    h=valid();h.offerPrice="  ";h.buy("cosmetic",PROFILE);
+    check(h.client.launchCalls==0 && !h.busy && h.message.contains("price"),
+      "Blank Google Play price must block checkout rather than opening an undisclosed-price purchase");
+    h=valid();h.offerPrice=null;h.buy("cosmetic",PROFILE);
+    check(h.client.launchCalls==0 && !h.busy && h.message.contains("price"),
+      "Null Google Play price must block checkout");
+    h=valid();h.throwOnPrice=true;h.buy("cosmetic",PROFILE);
+    check(h.client.launchCalls==0 && !h.busy && h.message.contains("price"),
+      "Throwing Google Play price getter must not launch checkout or crash");
+    h.throwOnPrice=false;h.buy("cosmetic",PROFILE);
+    check(h.client.launchCalls==1 && h.busy,
+      "Valid verified price must allow recovery after a malformed price");
     h=valid();h.closed=true;h.buy("cosmetic",PROFILE);
     check(h.client.launchCalls==0 && h.published==0,"Destroyed Activity must not open checkout");
-    System.out.println("PASS: 12 native billing launch scenarios including malformed Play offers and recovery; no live checkout was performed");
+    System.out.println("PASS: 16 native billing launch scenarios including missing/invalid Play prices, malformed offers and recovery; no live checkout was performed");
   }
 }
 `;
