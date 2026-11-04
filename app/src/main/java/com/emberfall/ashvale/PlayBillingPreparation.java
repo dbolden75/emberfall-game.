@@ -65,10 +65,18 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             catalog.clear();
             if(status.getResponseCode()==BillingClient.BillingResponseCode.OK){
-                for(ProductDetails p:result.getProductDetailsList())catalog.put(p.getProductId(),p);
-                message=catalog.isEmpty()
-                    ?"Google Play returned no available products for this account. Check Play Console product activation and tester access, then Restore purchases."
-                    :"Google Play checkout ready. Prices are supplied by Google Play.";
+                // Play can report OK while supplying an incomplete catalog. A
+                // null result is NOT a verified empty product list: never
+                // dereference it or imply that Play has no active products.
+                List<ProductDetails> details=result==null?null:result.getProductDetailsList();
+                if(details==null){
+                    message="Google Play returned an incomplete product catalog. No item prices are verified. Tap Restore purchases to retry.";
+                }else{
+                    for(ProductDetails p:details)if(p!=null)catalog.put(p.getProductId(),p);
+                    message=catalog.isEmpty()
+                        ?"Google Play returned no available products for this account. Check Play Console product activation and tester access, then Restore purchases."
+                        :"Google Play checkout ready. Prices are supplied by Google Play.";
+                }
             }else{
                 // An unavailable Play service is not the same as an empty product catalog.
                 // Do not offer a stale price or imply that product activation alone fixes it.
