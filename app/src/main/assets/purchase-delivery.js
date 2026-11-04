@@ -9,7 +9,13 @@ function reward(state,receipt,products){
  // callbacks could otherwise re-grant the same consumable indefinitely.
  const ledger=q._playReceipts==null?(q._playReceipts={}):q._playReceipts;
  if(typeof ledger!=='object'||Array.isArray(ledger))throw Error('Invalid purchase receipt ledger');
- if(Object.prototype.hasOwnProperty.call(ledger,receipt.id))return next;
+ // The presence of a receipt ID alone does not prove this particular item
+ // was delivered: a damaged/migrated entry could otherwise suppress a real
+ // reward while its native receipt is marked delivered and consumed.
+ if(Object.prototype.hasOwnProperty.call(ledger,receipt.id)){
+  if(ledger[receipt.id]!==product.id)throw Error('Conflicting purchase receipt ledger entry');
+  return next;
+ }
  if(product.category==='levels'){
   if(![1,5,10].includes(product.levels)||!Number.isSafeInteger(next.player.level)||next.player.level<1||!Number.isSafeInteger(next.player.level+product.levels))throw Error('Invalid level grant');
   next.player.level+=product.levels;
