@@ -73,9 +73,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                     message="Google Play returned an incomplete product catalog. No item prices are verified. Tap Restore purchases to retry.";
                 }else{
                     for(ProductDetails p:details)if(p!=null)catalog.put(p.getProductId(),p);
+                    String missingDetails=unfetchedProductStatus(result);
                     message=catalog.isEmpty()
-                        ?"Google Play returned no available products for this account. Check Play Console product activation and tester access, then Restore purchases."
-                        :"Google Play checkout ready. Prices are supplied by Google Play.";
+                        ?"Google Play returned no available products for this account. Check Play Console product activation and tester access, then Restore purchases."+missingDetails
+                        :"Google Play checkout ready. Prices are supplied by Google Play."+missingDetails;
                 }
             }else{
                 // An unavailable Play service is not the same as an empty product catalog.
@@ -126,6 +127,25 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             if(r!=null)try{r.put("active",entry.getValue());}catch(Exception ignored){}
         }
         message="Restored purchase ownership could not be saved. Free device storage, then tap Restore purchases.";
+    }
+    // Billing 9 reports why individual products cannot be fetched, even when
+    // the overall query succeeds. Aggregate reasons help testers distinguish
+    // missing Play SKUs from offers their account cannot buy.
+    // No account IDs, tokens or purchase data are included.
+    private static String unfetchedProductStatus(QueryProductDetailsResult result){
+        if(result==null)return "";
+        List<UnfetchedProduct> rows=result.getUnfetchedProductList();
+        if(rows==null)return "";
+        int missing=0,notFound=0,noOffer=0,other=0;
+        for(UnfetchedProduct row:rows){
+            if(row==null)continue;
+            missing++;
+            if(row.getStatusCode()==UnfetchedProduct.StatusCode.PRODUCT_NOT_FOUND)notFound++;
+            else if(row.getStatusCode()==UnfetchedProduct.StatusCode.NO_ELIGIBLE_OFFER)noOffer++;
+            else other++;
+        }
+        if(missing==0)return "";
+        return " "+missing+" Play item(s) unavailable: "+notFound+" not found, "+noOffer+" with no eligible offer, "+other+" other. Check Play Console products and tester eligibility.";
     }
     private static String hash(String value){try{byte[] bytes=MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));StringBuilder out=new StringBuilder();for(byte b:bytes)out.append(String.format(Locale.ROOT,"%02x",b&255));return out.toString();}catch(Exception e){throw new IllegalStateException(e);}}
     private boolean valid(Purchase p){
