@@ -305,9 +305,25 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     @Override public void onPurchasesUpdated(BillingResult result,List<Purchase> purchases){activity.runOnUiThread(()->{
         if(closed)return;
         busy=false;
-        if(result.getResponseCode()==BillingClient.BillingResponseCode.OK&&purchases!=null)for(Purchase p:purchases)accept(p);
-        else if(result.getResponseCode()==BillingClient.BillingResponseCode.USER_CANCELED)message="Purchase cancelled. No items were granted.";
-        else message="Purchase not completed. Restore purchases to check its status.";
+        if(result==null){
+            // An incomplete Play callback is not proof of payment or cancellation.
+            // Reset checkout state and let an explicit restore verify ownership.
+            message="Google Play returned no checkout status. Restore purchases to check payment status.";
+        }else if(result.getResponseCode()==BillingClient.BillingResponseCode.OK){
+            if(purchases==null||purchases.isEmpty()){
+                message="Google Play returned no purchase details. Restore purchases to check payment status.";
+            }else{
+                boolean receivedPurchase=false;
+                for(Purchase p:purchases){
+                    if(p==null)continue;
+                    receivedPurchase=true;
+                    accept(p); // accept() independently verifies signature and package.
+                }
+                if(!receivedPurchase)message="Google Play returned incomplete purchase details. Restore purchases to retry.";
+            }
+        }else if(result.getResponseCode()==BillingClient.BillingResponseCode.USER_CANCELED){
+            message="Purchase cancelled. No items were granted.";
+        }else message="Purchase not completed. Restore purchases to check its status.";
         publish();
     });}
     // Called only after the game has atomically committed both reward and receipt ID.
@@ -359,7 +375,9 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             publish();
             return;
         }
-        boolean playConfirmed=result.getResponseCode()==BillingClient.BillingResponseCode.OK;
+        // A null callback cannot confirm consume/acknowledge. Keep the delivered
+        // receipt retryable instead of throwing on the UI thread.
+        boolean playConfirmed=result!=null&&result.getResponseCode()==BillingClient.BillingResponseCode.OK;
         boolean savedConfirmation=false;
         if(playConfirmed){
             try{
