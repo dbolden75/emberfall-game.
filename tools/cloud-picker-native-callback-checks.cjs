@@ -9,6 +9,8 @@ const os=require('node:os');
 const path=require('node:path');
 const cp=require('node:child_process');
 const source=fs.readFileSync('app/src/main/java/com/emberfall/ashvale/CloudSaveDocuments.java','utf8');
+assert.equal((source.match(/startActivityForResult\(intent, pending\.requestCode\);/g)||[]).length,2,
+  'Both Android document-picker launches must use the unique pending request code');
 const marker='boolean onActivityResult(int requestCode, int resultCode, Intent data)';
 const start=source.indexOf(marker);
 assert(start>=0,'Production Android document-picker callback is missing');
@@ -26,6 +28,7 @@ import java.util.Arrays;
 
 public final class CloudPickerCallbackHarness {
   static final int CREATE_DOCUMENT_REQUEST=7193,OPEN_DOCUMENT_REQUEST=7194;
+  static final int REQUEST_CODE_GENERATIONS=12000;
   static final int MAX_BYTES=8*1024*1024;
   static class Uri {}
   static class Intent {
@@ -73,7 +76,13 @@ public final class CloudPickerCallbackHarness {
   static class Pending {
     final String id,action;
     final byte[] bytes;
-    Pending(String id,String action,byte[] bytes){this.id=id;this.action=action;this.bytes=bytes;}
+    final int requestCode;
+    Pending(String id,String action,byte[] bytes){
+      this(id,action,bytes,"save".equals(action)?CREATE_DOCUMENT_REQUEST:OPEN_DOCUMENT_REQUEST);
+    }
+    Pending(String id,String action,byte[] bytes,int requestCode){
+      this.id=id;this.action=action;this.bytes=bytes;this.requestCode=requestCode;
+    }
   }
   final Activity activity=new Activity();
   final Worker io=new Worker();
@@ -130,6 +139,21 @@ public final class CloudPickerCallbackHarness {
     check(Arrays.equals(h.activity.resolver.stored,active.bytes),
         "Exported document must contain exact backup UTF-8 bytes");
 
+    // Older CREATE responses must not overwrite the document for another SAVE.
+    h=saving();
+    active=new Pending("export_2","save","fresh save".getBytes(StandardCharsets.UTF_8),
+        CREATE_DOCUMENT_REQUEST+2);
+    h.pending=active;
+    check(h.onActivityResult(CREATE_DOCUMENT_REQUEST,Activity.RESULT_OK,selected()),
+        "Old SAVE result should be consumed as stale");
+    check(h.pending==active&&h.io.submissions==0&&h.callbackCount==0,
+        "Old SAVE may not consume another SAVE");
+    check(h.onActivityResult(CREATE_DOCUMENT_REQUEST+2,Activity.RESULT_OK,selected()),
+        "New-generation SAVE must be handled");
+    h.io.finish();
+    check(h.callbackOk&&Arrays.equals(h.activity.resolver.stored,active.bytes),
+        "New-generation SAVE writes its selected data");
+
     h=loading();active=h.pending;
     check(h.onActivityResult(CREATE_DOCUMENT_REQUEST,Activity.RESULT_OK,selected()),
         "Stale CREATE result should be handled without affecting LOAD");
@@ -142,6 +166,21 @@ public final class CloudPickerCallbackHarness {
     h.io.finish();
     check(h.callbackOk&&!h.callbackCancelled&&h.callbackText.equals("{\\"name\\":\\"Sylvi\\"}"),
         "A selected UTF-8 document must be returned without altering its content");
+
+    // Older OPEN responses must not import the wrong file for another LOAD.
+    h=loading();
+    active=new Pending("import_2","load",null,OPEN_DOCUMENT_REQUEST+2);
+    h.pending=active;
+    check(h.onActivityResult(OPEN_DOCUMENT_REQUEST,Activity.RESULT_OK,selected()),
+        "Old LOAD result should be consumed as stale");
+    check(h.pending==active&&h.io.submissions==0&&h.callbackCount==0,
+        "Old LOAD may not consume another LOAD");
+    h.activity.resolver.stored="fresh load".getBytes(StandardCharsets.UTF_8);
+    check(h.onActivityResult(OPEN_DOCUMENT_REQUEST+2,Activity.RESULT_OK,selected()),
+        "New-generation LOAD must be handled");
+    h.io.finish();
+    check(h.callbackOk&&"fresh load".equals(h.callbackText),
+        "New-generation LOAD must return only its selected document");
 
     h=saving();active=h.pending;
     check(h.onActivityResult(CREATE_DOCUMENT_REQUEST,0,null),"Cancelled SAVE should be handled");
@@ -188,7 +227,7 @@ public final class CloudPickerCallbackHarness {
     check(h.io.submissions==0&&h.callbackCount==0,
         "Destroyed Activity may not schedule a document write");
 
-    System.out.println("PASS: production Android picker callback: 11 stale, cancelled, save, load, damaged, oversize, rejected-worker and closed scenarios");
+    System.out.println("PASS: production Android picker callback: 13 stale, cancelled, save, load, damaged, oversize, rejected-worker and closed scenarios");
     System.out.println("NOT VERIFIED: real Android out-of-order provider delivery, physical Samsung phone, or Play-signing update");
   }
 }

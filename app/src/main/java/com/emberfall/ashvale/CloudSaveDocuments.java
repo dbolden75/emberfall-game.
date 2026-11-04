@@ -25,12 +25,16 @@ import java.util.concurrent.Executors;
 final class CloudSaveDocuments {
     static final int CREATE_DOCUMENT_REQUEST = 7193;
     static final int OPEN_DOCUMENT_REQUEST = 7194;
+    // Give each picker a unique request code within an Activity lifetime.
+    // Even a duplicate late SAVE callback must not consume a newer SAVE.
+    private static final int REQUEST_CODE_GENERATIONS = 12000;
     private static final int MAX_BYTES = 8 * 1024 * 1024;
 
     private final Activity activity;
     private final WebView webView;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private Pending pending;
+    private int requestCodeGeneration;
     // This flag stays set until the document worker has finished. The picker
     // may close before an export has been written or an import has been read.
     // Access it on the UI thread, just like pending.
@@ -41,10 +45,12 @@ final class CloudSaveDocuments {
         final String id;
         final String action;
         final byte[] bytes;
-        Pending(String id, String action, byte[] bytes) {
+        final int requestCode;
+        Pending(String id, String action, byte[] bytes, int requestCode) {
             this.id = id;
             this.action = action;
             this.bytes = bytes;
+            this.requestCode = requestCode;
         }
     }
 
@@ -71,6 +77,13 @@ final class CloudSaveDocuments {
         return id != null && id.matches("[a-z0-9_]{1,80}");
     }
 
+    // UI-thread only. Codes remain below Android's 16-bit request-code limit.
+    private int allocateRequestCode(int baseCode) {
+        int code = baseCode + 2 * requestCodeGeneration;
+        requestCodeGeneration = (requestCodeGeneration + 1) % REQUEST_CODE_GENERATIONS;
+        return code;
+    }
+
     private void beginSave(String id, String json) {
         if (closed || !validRequest(id)) return;
         if (pending != null || documentIoActive) {
@@ -86,7 +99,7 @@ final class CloudSaveDocuments {
             result(id, "save", false, false, "Backup exceeds 8 MB.", null);
             return;
         }
-        pending = new Pending(id, "save", bytes);
+        pending = new Pending(id, "save", bytes, allocateRequestCode(CREATE_DOCUMENT_REQUEST));
         try {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -94,7 +107,7 @@ final class CloudSaveDocuments {
             String date = new SimpleDateFormat("yyyy-MM-dd-HHmmss", Locale.US).format(new Date());
             intent.putExtra(Intent.EXTRA_TITLE, "Thornhaven-" + date + ".json");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            activity.startActivityForResult(intent, CREATE_DOCUMENT_REQUEST);
+            activity.startActivityForResult(intent, pending.requestCode);
         } catch (Exception e) {
             pending = null;
             result(id, "save", false, false, "No document provider is available. Local saves are unchanged.", null);
@@ -107,7 +120,7 @@ final class CloudSaveDocuments {
             result(id, "load", false, false, "Finish the current backup first.", null);
             return;
         }
-        pending = new Pending(id, "load", null);
+        pending = new Pending(id, "load", null, allocateRequestCode(OPEN_DOCUMENT_REQUEST));
         try {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -115,7 +128,7 @@ final class CloudSaveDocuments {
             intent.putExtra(Intent.EXTRA_MIME_TYPES,
                 new String[] {"application/json", "text/plain", "application/octet-stream"});
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            activity.startActivityForResult(intent, OPEN_DOCUMENT_REQUEST);
+            activity.startActivityForResult(intent, pending.requestCode);
         } catch (Exception e) {
             pending = null;
             result(id, "load", false, false, "No document provider is available. Local saves are unchanged.", null);
@@ -124,16 +137,12 @@ final class CloudSaveDocuments {
 
     /** Called from MainActivity.onActivityResult on the UI thread. */
     boolean onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode != CREATE_DOCUMENT_REQUEST && requestCode != OPEN_DOCUMENT_REQUEST) return false;
+        // Consume late callbacks from the reserved range, without handing
+        // them to other Activity handlers. Only this picker's code may proceed.
+        if (requestCode < CREATE_DOCUMENT_REQUEST
+                || requestCode > OPEN_DOCUMENT_REQUEST + 2 * (REQUEST_CODE_GENERATIONS - 1)) return false;
         Pending request = pending;
-        if (request != null) {
-            // Android can deliver an older picker result after a newer backup
-            // request has opened. Never let a stale OPEN response consume a
-            // pending CREATE (or vice versa), potentially writing the wrong file.
-            int expectedCode = "save".equals(request.action)
-                ? CREATE_DOCUMENT_REQUEST : OPEN_DOCUMENT_REQUEST;
-            if (requestCode != expectedCode) return true;
-        }
+        if (request != null && requestCode != request.requestCode) return true;
         pending = null;
         if (request == null || closed) return true;
         if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null) {
