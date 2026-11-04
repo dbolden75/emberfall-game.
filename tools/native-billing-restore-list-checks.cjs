@@ -95,6 +95,9 @@ public class RestoreListHarness {
     previouslyOwned=active.contains("previously_owned");
   }
   void retryFinishing(){retryCalls++;}
+  // This harness tests the refresh callback's ownership/price flow. A separate
+  // production-method Java harness exercises Billing 9 unfetched statuses.
+  String unfetchedProductStatus(Details result){return "";}
   ${production}
   static void check(boolean ok,String msg){if(!ok)throw new AssertionError(msg);}
   static RestoreListHarness ready(){
