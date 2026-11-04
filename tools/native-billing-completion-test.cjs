@@ -93,6 +93,12 @@ public class BillingCompletionHarness {
     check(h.message.contains("retry"),"Failed Play response message");
 
     r=receipt();h=active(r);
+    h.complete(r,null,7);
+    check(!r.optBoolean("finished") && r.optBoolean("delivered"),"Null Play result cannot confirm delivery");
+    check(h.persistenceCalls==0 && h.finishing.isEmpty() && h.published==1,"Null callback must allow retry without crashing");
+    check(h.message.contains("retry"),"Null callback gives restore guidance");
+
+    r=receipt();h=active(r);
     h.complete(r,new BillingResult(0),6);
     check(!r.optBoolean("finished") && h.persistenceCalls==0 && h.published==0 && h.finishing.size()==1,
           "Stale Play session cannot affect current ledger");
@@ -126,7 +132,7 @@ public class BillingCompletionHarness {
     check(!r.optBoolean("finished") && h.persistenceCalls==0,
           "Unverified receipt must not be confirmed");
 
-    System.out.println("PASS: 10 native completion cases including detached, deleted, revoked and unverified receipts");
+    System.out.println("PASS: 11 native completion cases including detached, deleted, revoked and unverified receipts");
   }
 }
 `;
