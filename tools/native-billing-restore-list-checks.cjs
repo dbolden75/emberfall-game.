@@ -147,6 +147,58 @@ public class RestoreListHarness {
     h.refresh();
     check(h.client.purchasesCallback==null && h.reconcileCalls==0,
       "Offline Play must not query or revoke");
+    // The same production refresh() also receives Play product details.
+    // OK plus missing data must not throw or incorrectly blame SKU activation.
+    h=ready();
+    h.catalog.put("old",new ProductDetails("old"));
+    h.client.detailsCallback.complete(new Status(0),null);
+    check(h.catalog.isEmpty() && h.message.contains("incomplete") && h.publishCalls==1,
+      "Null OK product result must clear stale prices and explain an incomplete query");
+
+    h=ready();
+    h.client.detailsCallback.complete(new Status(0),new Details(null));
+    check(h.catalog.isEmpty() && h.message.contains("incomplete"),
+      "OK with a null details list must not dereference it or claim no SKUs exist");
+
+    h=ready();
+    h.client.detailsCallback.complete(new Status(0),new Details(Collections.emptyList()));
+    check(h.catalog.isEmpty() && h.message.contains("no available products"),
+      "A verified empty details list must retain the genuine no-products diagnostic");
+
+    h=ready();
+    h.client.detailsCallback.complete(new Status(0),new Details(Arrays.asList(
+      null,new ProductDetails("item_a"))));
+    check(h.catalog.size()==1 && h.catalog.containsKey("item_a") && h.message.contains("checkout ready"),
+      "Only verified non-null product details may appear as buyable");
+
+    h=ready();
+    h.client.detailsCallback.complete(new Status(6),null);
+    check(h.catalog.isEmpty() && h.message.contains("code 6"),
+      "Play product-query errors must not be mistaken for an empty catalog");
+
+    h=ready();
+    BillingClient.DetailsCb staleDetails=h.client.detailsCallback;
+    h.refresh();
+    staleDetails.complete(new Status(0),new Details(Arrays.asList(new ProductDetails("old"))));
+    check(h.catalog.isEmpty() && h.publishCalls==0,
+      "An obsolete product callback cannot publish outdated buyable prices");
+    h.client.detailsCallback.complete(new Status(0),new Details(Arrays.asList(new ProductDetails("item_b"))));
+    check(h.catalog.size()==1 && h.catalog.containsKey("item_b"),
+      "The current catalog callback must still publish valid products");
+
+    h=ready();
+    h.closed=true;
+    h.client.detailsCallback.complete(new Status(0),new Details(Arrays.asList(new ProductDetails("item_a"))));
+    check(h.catalog.isEmpty() && h.publishCalls==0,
+      "Product callback after Activity destruction must be ignored");
+
+    h=new RestoreListHarness();
+    h.client.ready=false;
+    h.refresh();
+    check(h.client.detailsCallback==null,
+      "Offline Play must not request product details");
+
+    System.out.println("PASS: eight actual Java refresh() catalog scenarios (incomplete result/list, empty, valid, failed, stale, closed, offline)");
     System.out.println("PASS: seven actual Java refresh() scenarios for null, empty, valid, failed, stale, closed and offline Play results");
     System.out.println("NOT VERIFIED: real Google Play service, products, payment or restore on a phone.");
   }
