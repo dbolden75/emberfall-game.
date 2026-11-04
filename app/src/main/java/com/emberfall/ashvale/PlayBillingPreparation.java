@@ -266,17 +266,26 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     }
     private boolean persist(){return prefs.edit().putString("receipts",receipts.toString()).commit();}
     private ProductDetails.OneTimePurchaseOfferDetails offer(ProductDetails p){
+        if(p==null)return null;
         List<ProductDetails.OneTimePurchaseOfferDetails> offers=p.getOneTimePurchaseOfferDetailsList();
-        if(offers==null)return null;
+        if(offers==null){
+            // Billing 9 returns a null multi-offer list for ordinary one-time
+            // products. Fall back only in that case, and only to an immediate
+            // purchase with a valid Play offer token.
+            ProductDetails.OneTimePurchaseOfferDetails legacy=p.getOneTimePurchaseOfferDetails();
+            if(legacy==null||legacy.getRentalDetails()!=null||legacy.getPreorderDetails()!=null)return null;
+            String token=legacy.getOfferToken();
+            return token==null||token.isEmpty()?null:legacy;
+        }
         ProductDetails.OneTimePurchaseOfferDetails eligibleOffer=null;
         for(ProductDetails.OneTimePurchaseOfferDetails o:offers){
-            // Gameplay purchases grant permanent or consumed items: never select
-            // a rental or a preorder that cannot deliver an item immediately.
-            if(o.getRentalDetails()!=null||o.getPreorderDetails()!=null)continue;
+            // Null/malformed entries must never crash price publication or checkout.
+            if(o==null||o.getRentalDetails()!=null||o.getPreorderDetails()!=null)continue;
+            String token=o.getOfferToken();
+            if(token==null||token.isEmpty())continue;
             // Prefer the regular buy purchase option, when available.
             if(o.getOfferId()==null)return o;
-            // Some eligible one-time offers are offer-id-specific. Previously
-            // those products were hidden even though Google Play could sell them.
+            // Fall back to an eligible offer with a specific offer ID.
             if(eligibleOffer==null)eligibleOffer=o;
         }
         return eligibleOffer;
