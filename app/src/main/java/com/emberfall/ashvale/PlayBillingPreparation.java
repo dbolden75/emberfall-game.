@@ -79,6 +79,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             if(status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null){
+                // Leave cached verified receipts untouched when the Play query fails.
                 // Even an OK status is unusable if Play supplies no list object.
                 // A null list is not an empty verified ownership list: treating
                 // it as empty would revoke every permanent entitlement.
