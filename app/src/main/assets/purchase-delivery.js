@@ -5,16 +5,26 @@ function reward(state,receipt,products){
  if(!product||!receipt.id||!/^[a-f0-9]{64}$/.test(receipt.id))throw Error('Invalid purchase');
  const next=JSON.parse(JSON.stringify(state)),q=next.townQuestState||(next.townQuestState={});
  if(product.productType==='consumable'&&(!q._purchaseProfile||receipt.profile!==q._purchaseProfile))throw Error('Purchase belongs to another character');
- const ledger=q._playReceipts||(q._playReceipts={});
- if(ledger[receipt.id])return next;
+ // Never acknowledge a paid receipt against a malformed ledger: duplicate
+ // callbacks could otherwise re-grant the same consumable indefinitely.
+ const ledger=q._playReceipts==null?(q._playReceipts={}):q._playReceipts;
+ if(typeof ledger!=='object'||Array.isArray(ledger))throw Error('Invalid purchase receipt ledger');
+ if(Object.prototype.hasOwnProperty.call(ledger,receipt.id))return next;
  if(product.category==='levels'){
   if(![1,5,10].includes(product.levels)||!Number.isSafeInteger(next.player.level)||next.player.level<1||!Number.isSafeInteger(next.player.level+product.levels))throw Error('Invalid level grant');
   next.player.level+=product.levels;
  }else if(product.category==='xp'||product.category==='builder'){
-  const credits=q._purchaseCredits||(q._purchaseCredits={});
-  credits[product.category]=(credits[product.category]||0)+1;
+  // Refuse a malformed or overflowing existing balance instead of recording
+  // a paid receipt whose builder/XP credit was not actually added.
+  const credits=q._purchaseCredits==null?(q._purchaseCredits={}):q._purchaseCredits;
+  if(!credits||typeof credits!=='object'||Array.isArray(credits))throw Error('Invalid purchase credit ledger');
+  const old=Object.prototype.hasOwnProperty.call(credits,product.category)?credits[product.category]:0;
+  if(!Number.isSafeInteger(old)||old<0||old===Number.MAX_SAFE_INTEGER)throw Error('Invalid purchase credit balance');
+  credits[product.category]=old+1;
  }else if(product.productType==='non_consumable'){
-  const owned=q._paidStyles||(q._paidStyles={});owned[product.id]=true;
+  const owned=q._paidStyles==null?(q._paidStyles={}):q._paidStyles;
+  if(typeof owned!=='object'||Array.isArray(owned))throw Error('Invalid purchased style ledger');
+  owned[product.id]=true;
  }else throw Error('Unsupported product');
  ledger[receipt.id]=product.id;
  return next;
