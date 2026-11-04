@@ -69,7 +69,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         final int epoch=++refreshEpoch;
         List<QueryProductDetailsParams.Product> products=new ArrayList<>();
         for(String id:PRODUCT_IDS)if(!RETIRED_SALE_IDS.contains(id))products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
-        client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
+        // Play may disconnect after isReady() and before this query is dispatched.
+        // An exception must not crash the game or suppress a restore attempt.
+        try{
+            client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(),(status,result)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             catalog.clear();
             if(status!=null&&status.getResponseCode()==BillingClient.BillingResponseCode.OK){
@@ -102,8 +105,17 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                     :"Google Play could not load prices (code "+status.getResponseCode()+"). Check your connection and Play tester access, then Restore purchases.";
             }
             publish();
-        }));
-        client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
+            }));
+        }catch(RuntimeException queryFailed){
+            // No price was verified. Old catalog prices cannot be used for checkout.
+            if(!closed && epoch==refreshEpoch){
+                catalog.clear();
+                message="Google Play could not request item prices. Game play remains available; tap Restore purchases to retry.";
+                publish();
+            }
+        }
+        try{
+            client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
             if(status==null||status.getResponseCode()!=BillingClient.BillingResponseCode.OK||purchases==null){
                 // Leave cached verified receipts untouched when the Play query fails.
@@ -137,7 +149,14 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             // SharedPreferences commit must not revoke a saved entitlement
             // only in memory while its previous receipt remains on disk.
             reconcileActiveOwnedPurchases(active); publish(); retryFinishing();
-        }));
+            }));
+        }catch(RuntimeException queryFailed){
+            // A dispatch failure cannot establish that ownership was revoked.
+            if(!closed && epoch==refreshEpoch){
+                message="Google Play could not request purchase restoration. Existing purchases are preserved; tap Restore purchases to retry.";
+                publish();
+            }
+        }
     }
     // Only a successful Play query may revoke ownership. Keep the original
     // in-memory flags if persistent storage refuses the new state, so a
