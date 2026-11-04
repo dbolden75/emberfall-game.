@@ -78,7 +78,9 @@ public class RestoreListHarness {
   }
   static class Purchase {
     String id;
-    Purchase(String id){this.id=id;}
+    boolean authentic;
+    Purchase(String id){this(id,true);}
+    Purchase(String id,boolean authentic){this.id=id;this.authentic=authentic;}
     String getPurchaseToken(){return id;}
   }
   final Activity activity=new Activity();
@@ -92,7 +94,7 @@ public class RestoreListHarness {
   Set<String> lastActive=null;
   boolean previouslyOwned=true;
   void publish(){publishCalls++;}
-  boolean valid(Purchase p){return p!=null;}
+  boolean valid(Purchase p){return p!=null&&p.authentic;}
   String hash(String s){return s;}
   void accept(Purchase p){acceptCalls++;}
   void reconcileActiveOwnedPurchases(Set<String> active){
@@ -134,6 +136,19 @@ public class RestoreListHarness {
     h.client.purchasesCallback.complete(new Status(0),Arrays.asList(null,new Purchase("newly_paid")));
     check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==1 && h.retryCalls==1,
       "Partial Play list may accept valid receipts but cannot revoke prior ownership");
+
+    // An apparently successful Play query with a bad signature must not be
+    // mistaken for a complete owner list and revoke unrelated paid titles.
+    h=ready();
+    h.client.purchasesCallback.complete(new Status(0),Arrays.asList(
+      new Purchase("invalid_signature",false),new Purchase("newly_paid")));
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==2
+        && h.retryCalls==1 && h.message.contains("incomplete"),
+      "Invalid signed purchase row must not revoke owned items; valid rows still process");
+    h.refresh(); // A genuinely new, clean Play restore may reconcile ownership.
+    h.client.purchasesCallback.complete(new Status(0),Collections.emptyList());
+    check(!h.previouslyOwned && h.reconcileCalls==1,
+      "A later clean empty Play response may still reconcile revoked ownership");
 
     h=ready();
     h.client.purchasesCallback.complete(new Status(0),Collections.emptyList());
@@ -269,7 +284,7 @@ public class RestoreListHarness {
 
     System.out.println("PASS: 4 synchronous query-dispatch failure/recovery scenarios");
     System.out.println("PASS: 10 production Java refresh() catalog scenarios, including missing Play status (no live checkout)");
-    System.out.println("PASS: 10 production Java restore scenarios, including missing status, null rows and partial ownership (no live restore)");
+    System.out.println("PASS: 12 production Java restore scenarios, including invalid signature rows, null rows, partial ownership and clean recovery (no live restore)");
     System.out.println("NOT VERIFIED: real Google Play service, products, payment or restore on a phone.");
   }
 }
