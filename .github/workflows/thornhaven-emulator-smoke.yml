@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - fix/play-purchase-silent-storage-20261105
       - fix/character-delete-storage-atomicity-20261105
       - fix/character-load-exception-rollback-20261105
       - fix/atlas-camp-ashvale-tap
