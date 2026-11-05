@@ -26,6 +26,12 @@ function validate(value){
   const p=row?.state?.player;
   if(!IDS.includes(id)||row.id!==id||!p||typeof p.name!=='string'||!p.name.trim()||p.name.length>80||!['warrior','rogue','mage','cleric'].includes(p.class))throw Error('Invalid character in backup.');
   if(!Number.isSafeInteger(row.updated)||row.updated<0||!Number.isSafeInteger(p.level)||p.level<1||!Number.isFinite(p.coins)||p.coins<0)throw Error('Invalid character progress.');
+  // The character selector displays row.name/class/level, while loading uses
+  // row.state.player. A mismatched import can advertise a different hero or
+  // level than the one it actually restores. Older saves may omit row labels.
+  if((row.name!=null&&row.name!==p.name)||
+     (row.class!=null&&row.class!==p.class)||
+     (row.level!=null&&row.level!==p.level))throw Error('Backup character listing does not match its saved progress.');
   if(!row.state.mapId||typeof row.state.mapId!=='string'||!Array.isArray(row.state.companions)||
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
