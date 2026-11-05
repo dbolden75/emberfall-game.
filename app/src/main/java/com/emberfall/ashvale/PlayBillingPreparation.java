@@ -33,6 +33,9 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     // or the activity is destroyed. A finishing response must belong to
     // the same billing session that started the request.
     private int billingSessionEpoch;
+    // A new verified receipt can arrive while an earlier asynchronous Play
+    // ownership query is in flight. Never let that stale query revoke it.
+    private int acceptedReceiptEpoch;
     private static boolean consumable(String id){return id.startsWith("thornhaven_");}
     PlayBillingPreparation(Activity activity){
         this.activity=activity; prefs=activity.getSharedPreferences("verified_play_purchases",0);
@@ -114,6 +117,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                 publish();
             }
         }
+        final int receiptsAtQuery=acceptedReceiptEpoch;
         try{
             client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),(status,purchases)->activity.runOnUiThread(()->{
             if(closed||!client.isReady()||epoch!=refreshEpoch)return;
@@ -130,6 +134,9 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                 publish();
                 return;
             }
+            // A purchase callback may have committed a receipt after this
+            // query was dispatched but before its possibly older result arrived.
+            final boolean staleOwnership=receiptsAtQuery!=acceptedReceiptEpoch;
             Set<String> active=new HashSet<>();
             boolean incomplete=false;
             for(Purchase p:purchases){
@@ -149,6 +156,13 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
                 // present receipts but leave old ownership untouched until a
                 // complete successful query allows reconciliation.
                 message="Google Play returned an incomplete purchase list. Existing purchases were preserved; tap Restore purchases to retry.";
+                publish();retryFinishing();return;
+            }
+            if(staleOwnership){
+                // The query cannot prove that a freshly purchased title or
+                // cosmetic was revoked. Keep verified receipts active until a
+                // new Restore purchases query observes the latest Play state.
+                message="A newer purchase arrived during restoration. Existing ownership was preserved; tap Restore purchases to verify.";
                 publish();retryFinishing();return;
             }
             // Apply a successful Play ownership query atomically. A failed
@@ -251,7 +265,9 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             if(consumable(product)&&(profile==null||!profile.matches("[a-f0-9]{64}"))){message="Purchase has no matching character. It has not been consumed or acknowledged.";publish();return;}
             if(profile==null)profile="";
             JSONObject existing=receipts.optJSONObject(id);
-            if(!trustworthySavedReceipt(existing,p)){
+            boolean trusted=trustworthySavedReceipt(existing,p);
+            boolean newlyActive=!trusted||!existing.optBoolean("active");
+            if(!trusted){
                 // A corrupt old record must never permanently hide a real Play
                 // purchase. Character save receipt IDs still prevent replay.
                 existing=new JSONObject().put("id",id).put("product",product).put("profile",profile).put("token",p.getPurchaseToken()).put("json",p.getOriginalJson()).put("signature",p.getSignature()).put("delivered",false).put("finished",false);
@@ -263,7 +279,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             existing.put("active",true);
             if(!consumable(product)&&p.isAcknowledged())existing.put("finished",true);
             if(!persist()){receipts=previous;message="Cannot save purchase receipt. Free device storage and restore purchases.";}
-            else message="Verified purchase ready for delivery.";
+            else {
+                if(newlyActive)acceptedReceiptEpoch++;
+                message="Verified purchase ready for delivery.";
+            }
             publish();
         }catch(Exception e){
             if(previous!=null)receipts=previous;
