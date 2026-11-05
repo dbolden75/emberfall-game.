@@ -44,13 +44,13 @@ function validate(value){
 // applySavedGame() coerces saved hero vitals with Number(...), replacing
 // malformed values with full health, default movement speed or town arrival.
 // An import must not silently heal the character or move them to another spot.
-// Historical snapshots may omit optional vitals; only reject malformed values
-// that were explicitly saved. A zero-hp defeated hero remains compatible.
+// Historical snapshots may omit optional vitals; an explicitly saved null
+// is corrupt (and would reset HP or teleport to map origin). Zero HP is valid.
 function safeHeroVitals(player){
  if(!player||typeof player!=='object'||Array.isArray(player))return false;
  for(const key of ['hp','max','speed','x','y']){
+  if(!Object.prototype.hasOwnProperty.call(player,key))continue;
   const value=player[key];
-  if(value==null)continue;
   if(typeof value!=='number'||!Number.isFinite(value))return false;
   if((key==='max'||key==='speed')&&value<=0)return false;
   if(key==='hp'&&value<0)return false;
