@@ -62,6 +62,8 @@
 // Ordinary saves, not only purchases/exits, must detect silent WebView storage failures.
 // This runs after the original saveGame() and preserves its historical save keys/format.
 (() => {
+ // Unit-test previews may load purchase-api.js without initializing the game.
+ if(typeof saveGame!=='function')return;
  const saveWithoutReadback=saveGame;
  saveGame=function(...args){
   if(!hasStarted||titleMenuActive||switchingCharacter)return saveWithoutReadback(...args);
