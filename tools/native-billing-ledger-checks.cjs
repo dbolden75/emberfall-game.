@@ -20,7 +20,10 @@ for(const must of [
  'profile.equals(savedProfile)'
 ])assert(verify.includes(must),'Stored receipt missing identity guard: '+must);
 const accept=body('private void accept(Purchase p){','private boolean persist(){');
-assert(accept.includes('if(!trustworthySavedReceipt(existing,p)){'));
+assert(accept.includes('if(!trustworthySavedReceipt(existing,p)){') ||
+  (accept.includes('boolean trusted=trustworthySavedReceipt(existing,p);') &&
+   accept.includes('if(!trusted){')),
+  'Stored receipt replacement must remain gated by signature and identity verification');
 assert(accept.includes('.put("delivered",false).put("finished",false)'),
        'Rebuilt receipts must not inherit stale paid-item acknowledgements');
 assert(accept.includes('existing.put("json",p.getOriginalJson()).put("signature",p.getSignature())'),
