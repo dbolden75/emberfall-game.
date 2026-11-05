@@ -171,6 +171,31 @@ function safeVampireStory(story){
  }
  return true;
 }
+// Human companions are stored in quest state, separate from pet snapshots.
+// A truthy but malformed party bypasses humanParty()'s default and the live
+// companion menu then dereferences an absent roster, or silently drops an
+// active companion. Refuse that backup *before* replacing existing saves.
+function safeHumanParty(party){
+ if(party==null)return true; // Backward-compatible with saves before companions.
+ if(typeof party!=='object'||Array.isArray(party))return false;
+ const roster=party.roster,known=['dalen','sylvi','corin','eryn'];
+ if(!roster||typeof roster!=='object'||Array.isArray(roster))return false;
+ if(party.active!=null&&(!known.includes(party.active)||
+  !Object.prototype.hasOwnProperty.call(roster,party.active)))return false;
+ for(const [id,c] of Object.entries(roster)){
+  if(!known.includes(id)||!c||typeof c!=='object'||Array.isArray(c)||c.id!==id)return false;
+  if(typeof c.hp!=='number'||!Number.isFinite(c.hp)||c.hp<0||
+   typeof c.max!=='number'||!Number.isFinite(c.max)||c.max<=0||c.hp>c.max)return false;
+  if(c.level!=null&&(!Number.isSafeInteger(c.level)||c.level<1))return false;
+  if(c.class!=null&&!['warrior','rogue','mage','cleric'].includes(c.class))return false;
+  if(c.name!=null&&(typeof c.name!=='string'||!c.name.trim()))return false;
+  if(c.active!=null&&typeof c.active!=='boolean')return false;
+  if(c.human!=null&&c.human!==true)return false;
+  for(const key of ['x','y','faceX','faceY','cool','skillCool'])
+   if(c[key]!=null&&(typeof c[key]!=='number'||!Number.isFinite(c[key])))return false;
+ }
+ return true;
+}
 // Quest handlers test accepted/claimed/rescued as truthy values. Strings such
 // as 'false' skip conversations and permanently withhold one-time rewards.
 // The record is nested (e.g. slayer contracts); validate explicitly supplied
@@ -208,6 +233,7 @@ function safeTownQuestFlags(quests){
  // exploration; an arbitrary truthy plan can skip preparing her escape.
  // Older backups may omit either field. Keep only the two plans the game writes
  // and the three unique clue ids its objects can actually produce.
+ if(!safeHumanParty(quests._humanParty))return false;
  if(!safeSettlementProgress(quests._settlement))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
  if(!safeVampireStory(quests._vampire))return false;
