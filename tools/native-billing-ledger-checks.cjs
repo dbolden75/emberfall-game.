@@ -39,6 +39,8 @@ assert(delivered.includes('!trustworthySavedReceipt(r)'),
 const finish=body('private void retryFinishing()','private void finish(JSONObject r)');
 assert(finish.includes('trustworthySavedReceipt(r)'),
        'Restored receipts must not finish corrupted purchase tokens');
+assert(finish.includes('r.optBoolean("active")'),
+       'A revoked Play purchase must never be retried for acknowledgement or consumption');
 // A lost BillingClient connection can discard consume/ack callbacks. Clear
 // the in-flight token set and reject callbacks from that ended Play session,
 // otherwise Restore permanently skips an otherwise valid receipt.
@@ -49,6 +51,8 @@ for(const guard of ['billingSessionEpoch++','finishing.clear()','busy=false','ca
 const finishMethod=body('private void finish(JSONObject r)','private void complete(JSONObject r');
 assert(finishMethod.includes('final int finishSession=billingSessionEpoch;'),
        'Finish requests must capture the Play session identity');
+assert(finishMethod.includes('!r.optBoolean("active")')&&finishMethod.includes('!trustworthySavedReceipt(r)'),
+       'Play consume/ack dispatch must reject revoked or unverified receipts directly');
 assert.equal(finishMethod.split('complete(r,result,finishSession)').length-1,2,
        'Consumption and acknowledgement callbacks must preserve their session identity');
 assert(finishMethod.includes('}catch(RuntimeException dispatchFailure){'),
