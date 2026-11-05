@@ -88,7 +88,7 @@ public class RestoreListHarness {
   final Map<String,ProductDetails> catalog=new HashMap<>();
   final String[] PRODUCT_IDS={"item_a","item_b","item_retired"};
   final Set<String> RETIRED_SALE_IDS=Collections.singleton("item_retired");
-  int refreshEpoch,publishCalls,acceptCalls,reconcileCalls,retryCalls;
+  int refreshEpoch,acceptedReceiptEpoch,publishCalls,acceptCalls,reconcileCalls,retryCalls;
   boolean closed;
   String message="untouched";
   Set<String> lastActive=null;
@@ -96,7 +96,7 @@ public class RestoreListHarness {
   void publish(){publishCalls++;}
   boolean valid(Purchase p){return p!=null&&p.authentic;}
   String hash(String s){return s;}
-  void accept(Purchase p){acceptCalls++;}
+  void accept(Purchase p){acceptCalls++;acceptedReceiptEpoch++;}
   void reconcileActiveOwnedPurchases(Set<String> active){
     reconcileCalls++;
     lastActive=new HashSet<>(active);
@@ -155,6 +155,25 @@ public class RestoreListHarness {
     check(!h.previouslyOwned && h.reconcileCalls==1 && h.retryCalls==1,
       "A real empty list may revoke ownership after a successful Play query");
     check(h.lastActive.isEmpty(),"Empty query must reconcile with an empty set");
+
+    // A checkout can complete before a previously started restore returns.
+    // That old empty list must not revoke the newly verified purchase.
+    h=ready();
+    h.accept(new Purchase("just_purchased")); // onPurchasesUpdated() landed after query dispatch
+    h.client.purchasesCallback.complete(new Status(0),Collections.emptyList());
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.retryCalls==1 &&
+        h.message.contains("newer purchase"),
+      "Stale empty restore must not revoke a purchase accepted after query dispatch");
+    h.refresh();
+    h.client.purchasesCallback.complete(new Status(0),Collections.emptyList());
+    check(!h.previouslyOwned && h.reconcileCalls==1,
+      "A fresh authoritative empty Play restore may still reconcile after the race");
+
+    h=ready();
+    h.accept(new Purchase("just_purchased"));
+    h.client.purchasesCallback.complete(new Status(0),Arrays.asList(new Purchase("older_purchase")));
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==2 && h.retryCalls==1,
+      "Stale nonempty restore must process its valid purchases but not revoke newly active ownership");
 
     h=ready();
     h.client.purchasesCallback.complete(new Status(0),Arrays.asList(new Purchase("previously_owned")));
@@ -284,7 +303,7 @@ public class RestoreListHarness {
 
     System.out.println("PASS: 4 synchronous query-dispatch failure/recovery scenarios");
     System.out.println("PASS: 10 production Java refresh() catalog scenarios, including missing Play status (no live checkout)");
-    System.out.println("PASS: 12 production Java restore scenarios, including invalid signature rows, null rows, partial ownership and clean recovery (no live restore)");
+    System.out.println("PASS: 14 production Java restore scenarios, including invalid signature rows, null rows, partial ownership and clean recovery (no live restore)");
     System.out.println("NOT VERIFIED: real Google Play service, products, payment or restore on a phone.");
   }
 }
