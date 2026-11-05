@@ -126,6 +126,38 @@ assert content.count(legacy_migration) == 1, 'Expected one legacy single-slot mi
 content = content.replace(legacy_migration, quota_safe_migration, 1)
 assert hashlib.sha256(content).hexdigest() == 'd558dd52e56a29bfd3de72f630046362d3d92eb982fd51bd784fc3b0251c8416', 'Quota-safe legacy save migration hash mismatch'
 
+# Prevent an active character's unsaved progress from being abandoned when
+# the user selects a different slot. saveGame() swallows storage quota errors;
+# verify the authoritative slot bytes before applying the replacement hero.
+# A failed or silently discarded storage write leaves the current game open.
+old = (
+    b"function selectSaveSlot(id){\n"
+    b" if(!SAVE_SLOT_IDS.includes(id)||switchingCharacter)return;\n"
+    b" if(id===activeSlotId&&hasStarted){saveGame();saveFilesReturnToGame=true;closePanel('saveFilesScreen');return}\n"
+    b" saveGame();switchingCharacter=true;"
+)
+new = (
+    b"// Never abandon an active character when its latest slot data cannot be verified.\n"
+    b"// saveGame() catches quota errors, and some storage backends silently reject writes.\n"
+    b"function confirmSaveBeforeSlotSwitch(){\n"
+    b" if(!hasStarted||titleMenuActive)return true;\n"
+    b" saveGame();\n"
+    b" try{\n"
+    b"  const persisted=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');\n"
+    b"  const row=persisted&&persisted[activeSlotId];\n"
+    b"  return !!row&&JSON.stringify(row.state)===JSON.stringify(snapshotGameState());\n"
+    b" }catch(_){return false}\n"
+    b"}\n"
+    b"function selectSaveSlot(id){\n"
+    b" if(!SAVE_SLOT_IDS.includes(id)||switchingCharacter)return;\n"
+    b" if(!confirmSaveBeforeSlotSwitch()){say('Character progress could not be saved. Free storage and retry before switching characters.');return}\n"
+    b" if(id===activeSlotId&&hasStarted){saveFilesReturnToGame=true;closePanel('saveFilesScreen');return}\n"
+    b" switchingCharacter=true;"
+)
+assert content.count(old) == 1, 'Expected exactly one vulnerable character-switch sequence'
+content = content.replace(old, new, 1)
+assert hashlib.sha256(content).hexdigest() == '9f85fb2b6ac55977fa80d86893367e1b1605451f4dcd52736285b69dbaca4eee', 'Character-switch save-guard hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
