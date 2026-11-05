@@ -171,6 +171,36 @@ function safeSlayerLedger(ledger){
  }
  return true;
 }
+// Cloud backups include Google Play purchase receipts and unspent credits. The
+// live delivery reducer refuses malformed receipt/credit ledgers; importing
+// them would therefore leave a legitimate payment pending indefinitely (or
+// lose already-paid boosts). Reject explicitly corrupt purchase state before
+// replacing local characters. Historical saves without purchases still work.
+function safePurchaseEntitlements(quests){
+ const credits=quests._purchaseCredits;
+ if(credits!=null){
+  if(typeof credits!=='object'||Array.isArray(credits))return false;
+  for(const id of ['xp','builder']){
+   if(Object.prototype.hasOwnProperty.call(credits,id)&&
+    (!Number.isSafeInteger(credits[id])||credits[id]<0))return false;
+  }
+ }
+ const receipts=quests._playReceipts;
+ if(receipts!=null){
+  if(typeof receipts!=='object'||Array.isArray(receipts))return false;
+  if(!Object.entries(receipts).every(([id,product])=>
+   /^[a-f0-9]{64}$/.test(id)&&typeof product==='string'&&!!product))return false;
+ }
+ const styles=quests._paidStyles;
+ if(styles!=null){
+  if(typeof styles!=='object'||Array.isArray(styles))return false;
+  if(!Object.values(styles).every(flag=>typeof flag==='boolean'))return false;
+ }
+ if(quests._purchaseProfile!=null&&
+  (typeof quests._purchaseProfile!=='string'||
+   !/^[a-f0-9]{64}$/.test(quests._purchaseProfile)))return false;
+ return true;
+}
 // The Night Visitor reads quest flags as truthy values and increments hunts
 // with `(s.hunts||0)+1`. A restored string hunts:'4' jumps to 6 kills
 // after only one kill; text turned:'false' grants vampire combat effects.
@@ -256,6 +286,7 @@ function safeTownQuestFlags(quests){
  // exploration; an arbitrary truthy plan can skip preparing her escape.
  // Older backups may omit either field. Keep only the two plans the game writes
  // and the three unique clue ids its objects can actually produce.
+ if(!safePurchaseEntitlements(quests))return false;
  if(!safeHumanParty(quests._humanParty))return false;
  if(!safeSettlementProgress(quests._settlement))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
