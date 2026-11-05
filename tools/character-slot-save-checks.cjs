@@ -19,6 +19,7 @@ function scenario(mode, requested='slot2', started=true){
   ['emberfall_active_character_slot_v1','slot1']
  ]);
  const alerts=[],switched=[];
+ let reloads=0;
  const nodes=new Map(['characterSetup','gameView','controlRow','characterName'].map(id=>[id,{hidden:false,value:'',setCustomValidity(){}}]));
  const c={
   SAVE_SLOT_IDS:['slot1','slot2','slot3','slot4'],
@@ -27,6 +28,7 @@ function scenario(mode, requested='slot2', started=true){
   activeSlotId:'slot1',switchingCharacter:false,titleMenuActive:!started,hasStarted:started,
   saveSlots:structuredClone(previous),saveFilesReturnToGame:false,
   freshCharacterState:{coins:0},player:{name:'Ava',cool:0,attack:0},
+  window:{location:{reload(){reloads++}}},
   activeMap:{name:'Ashvale'},keys:{clear(){}},attackHeld:false,
   saveFilesScreen:{hidden:false},
   localStorage:{
@@ -46,8 +48,8 @@ function scenario(mode, requested='slot2', started=true){
    try{c.localStorage.setItem(c.SAVE_SLOTS_KEY,JSON.stringify(next));c.saveSlots=next;}
    catch(_){/* game catches quota errors and reports them through UI */}
   },
-  applySavedGame(row){switched.push(row);},
-  preparePanel(){},refreshPanelState(){},ui(){},
+  applySavedGame(row){switched.push(row);if(mode==='apply-throws')throw Error('Corrupt saved hero');},
+  preparePanel(){},refreshPanelState(){},ui(){if(mode==='ui-throws')throw Error('Character panel failed')},
   document:{getElementById(id){return nodes.get(id)||{hidden:false,value:''};}},
   closePanel(id){alerts.push('closed:'+id);},
   say(msg){alerts.push(msg);}
@@ -55,7 +57,7 @@ function scenario(mode, requested='slot2', started=true){
  vm.createContext(c);
  vm.runInContext(implementation,c,{timeout:1000});
  vm.runInContext('selectSaveSlot('+JSON.stringify(requested)+')',c,{timeout:1000});
- return {c,alerts,switched,storage};
+ return {c,alerts,switched,storage,reloads};
 }
 for(const mode of ['quota','silent']){
  const r=scenario(mode);
@@ -94,4 +96,14 @@ for (const mode of ['pref-quota','pref-silent']){
  assert.equal(r.c.activeSlotId,'slot1','Fresh character selection cannot proceed with unpersisted preference');
  assert.equal(r.switched.length,0);
 }
-console.log('PASS: eight real HTML slot cases: save quota, silent save refusal, normal switch, same slot, fresh start, preference quota, preference silent refusal, fresh-start preference refusal.');
+// A persisted preference can be valid even when the new character cannot be
+// applied (corrupted save, transient world/UI exception). A failed switch must
+// revert to the last verified character and request a WebView reload.
+for (const mode of ['apply-throws','ui-throws']){
+ const r=scenario(mode);
+ assert.equal(r.storage.get('emberfall_active_character_slot_v1'),'slot1',mode+' must restore prior slot');
+ assert.equal(JSON.parse(r.storage.get('emberfall_character_slots_v1')).slot1.state.coins,30);
+ assert.equal(r.reloads,1,mode+' must reload the verified save');
+ assert(r.alerts.some(msg=>msg.includes('Reloading your previous saved character')));
+}
+console.log('PASS: ten real HTML slot cases including failed character application and UI rendering rollback.');
