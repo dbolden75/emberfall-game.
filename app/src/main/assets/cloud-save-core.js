@@ -30,6 +30,7 @@ function validate(value){
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
   if(!safeExperience(p.xp))throw Error('Invalid character experience.');
+  if(!safeHeroVitals(p))throw Error('Invalid character health, movement or position in backup.');
   if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
   if(!safeCompanions(row.state.companions))throw Error('Invalid saved companion data.');
@@ -39,6 +40,22 @@ function validate(value){
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
+}
+// applySavedGame() coerces saved hero vitals with Number(...), replacing
+// malformed values with full health, default movement speed or town arrival.
+// An import must not silently heal the character or move them to another spot.
+// Historical snapshots may omit optional vitals; only reject malformed values
+// that were explicitly saved. A zero-hp defeated hero remains compatible.
+function safeHeroVitals(player){
+ if(!player||typeof player!=='object'||Array.isArray(player))return false;
+ for(const key of ['hp','max','speed','x','y']){
+  const value=player[key];
+  if(value==null)continue;
+  if(typeof value!=='number'||!Number.isFinite(value))return false;
+  if((key==='max'||key==='speed')&&value<=0)return false;
+  if(key==='hp'&&value<0)return false;
+ }
+ return true;
 }
 // The live grantXp() uses player.xp += amount, so a restored string such
 // as '4' turns a 7-XP reward into '47' instead of 11. Historical missing
@@ -376,7 +393,7 @@ function readableLocalRow(id,row){
   typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeExperience(p.xp)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
+  safeExperience(p.xp)&&safeHeroVitals(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
   safeTownQuestFlags(state.townQuestState);
 }
