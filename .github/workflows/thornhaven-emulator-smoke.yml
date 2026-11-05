@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - fix/character-load-exception-rollback-20261105
       - fix/atlas-camp-ashvale-tap
       - fix/local-atlas-stale-controls-20261102
       - fix/local-exploration-deferred-save-20261102
