@@ -61,6 +61,10 @@ function safeHeroVitals(player){
   if((key==='max'||key==='speed')&&value<=0)return false;
   if(key==='hp'&&value<0)return false;
  }
+ // applySavedGame() clamps HP above the saved maximum, silently turning a
+ // corrupt backup into a fully healed hero. Check only when both fields were
+ // explicitly saved so older partial records remain importable.
+ if(typeof player.hp==='number'&&typeof player.max==='number'&&player.hp>player.max)return false;
  return true;
 }
 // The live grantXp() uses player.xp += amount, so a restored string such

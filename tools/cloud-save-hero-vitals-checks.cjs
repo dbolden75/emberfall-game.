@@ -20,10 +20,19 @@ for(const [key,value] of [['hp','NaN'],['hp',-3],['hp','0'],['max','Infinity'],[
  assert.equal(core.readLocal(JSON.stringify(JSON.parse(json).slots)).unreadable,true,
   `Unsafe local ${key} value must be detected before replacement`);
 }
+// applySavedGame() clamps health above max to a full heal. Treat the excess
+// as corruption rather than claiming the original progress was restored.
+for(const [hp,max] of [[51,50],[500,50],[0.1,0.01]]){
+ const json=payload({hp,max});
+ assert.throws(()=>core.parse(json),/character health/i,`Over-maximum HP ${hp}/${max} must be rejected`);
+ assert.equal(core.readLocal(JSON.stringify(JSON.parse(json).slots)).unreadable,true,
+  'Over-maximum local HP must not be accepted as a healthy character');
+}
+assert.doesNotThrow(()=>core.parse(payload({hp:50,max:50})),'Full health is valid');
 // Prior-version saves can omit optional attributes; a dead hero can have 0 HP.
 assert.doesNotThrow(()=>core.parse(payload({hp:0})),'A defeated hero may have zero HP');
 for(const key of ['hp','max','speed','x','y']){
  const legacy=JSON.parse(payload({}));delete legacy.slots.slot1.state.player[key];
  assert.doesNotThrow(()=>core.parse(JSON.stringify(legacy)),`Historical missing ${key}`);
 }
-console.log('PASS: 13 invalid hero vital snapshots rejected during import and local review; historical/valid values preserved.');
+console.log('PASS: 16 invalid hero vital snapshots rejected during import and local review; historical/valid values preserved.');
