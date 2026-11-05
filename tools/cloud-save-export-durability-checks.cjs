@@ -50,4 +50,21 @@ function scenario(){
  assert(x.dom.has('saveFailureWarning'));
  assert.throws(()=>x.c.verifiedBackupText(),/not safely stored/);
 }
-console.log('PASS: normal Cloud Save export; silent write refusal; quota failure; verified successful retry.');
+{
+ // Loading an older slot can normalize its in-memory object by reference,
+ // without any failed disk write. A title-menu backup must save this valid
+ // current state instead of falsely refusing a safe export.
+ const x=scenario();x.c.saveGame();x.c.titleMenuActive=true;
+ x.hero.inventory[0].count=17;
+ assert.equal(JSON.parse(x.disk.get(x.c.SAVE_SLOTS_KEY)).slot1.state.player.inventory[0].count,2);
+ const text=x.c.verifiedBackupText();
+ assert.equal(JSON.parse(text).slot1.state.player.inventory[0].count,17);
+ assert.equal(JSON.parse(x.disk.get(x.c.SAVE_SLOTS_KEY)).slot1.state.player.inventory[0].count,17);
+ assert.equal(x.c.titleMenuActive,true,'title state must survive verified save');
+}
+{
+ const x=scenario();x.c.saveGame();x.c.titleMenuActive=true;x.c.switchingCharacter=true;
+ assert.throws(()=>x.c.verifiedBackupText(),/Character selection is still changing/);
+ assert.equal(x.c.titleMenuActive,true);
+}
+console.log('PASS: normal Cloud Save export; silent write refusal; quota failure; verified retry; cold-start title normalization; character-switch safety.');
