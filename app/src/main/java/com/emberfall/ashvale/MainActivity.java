@@ -217,7 +217,8 @@ public class MainActivity extends Activity {
             try {
                 pausedView.evaluateJavascript(
                     "(function(){try{window.dispatchEvent(new Event('pagehide'));" +
-                    "if(!hasStarted||titleMenuActive||switchingCharacter)return true;" +
+                    "if(!hasStarted||titleMenuActive)return true;" +
+                    "if(switchingCharacter)return false;" +
                     "var expected=snapshotGameState();" +
                     "var slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');" +
                     "var row=slots&&slots[activeSlotId];" +
