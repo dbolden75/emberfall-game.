@@ -262,6 +262,32 @@ assert content.count(delete_old) == 1, 'Expected one vulnerable character deleti
 content = content.replace(delete_old, delete_new, 1)
 assert hashlib.sha256(content).hexdigest() == '0187ab7907d26f45ecdd32386f308ea26b2991dfc26d427d51ddeb15ea35bfe3', 'Atomic character-deletion hash mismatch'
 
+# Only confirm a paid delivery after its receipt and reward are read back.
+# WebView storage can silently drop setItem despite returning without errors.
+# Acknowledging an undurable receipt loses a real-money purchase on restart.
+purchase_commit_old = b"""function purchaseCommit(next){
+ const slot={id:activeSlotId,name:next.player.name,class:next.player.class,level:next.player.level,updated:Date.now(),state:next};
+ const slots={...saveSlots,[activeSlotId]:slot};
+ // The slot store is authoritative on reload. One atomic write includes reward AND ledger.
+ localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(slots));
+ saveSlots=slots;townQuestState=next.townQuestState;player.level=next.player.level;
+ syncHeroStats();normalizePets();scaleEnemiesForRegion();
+ // Compatibility cache failure must not roll back a committed purchase.
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify(next));localStorage.setItem(ACTIVE_SLOT_KEY,activeSlotId)}catch{}
+}"""
+purchase_commit_new = purchase_commit_old.replace(
+    b" localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(slots));",
+    b""" const serialized=JSON.stringify(slots);
+ localStorage.setItem(SAVE_SLOTS_KEY,serialized);
+ // Some WebView storage backends silently ignore writes. Never acknowledge
+ // Google Play delivery until both the entitlement and receipt are durable.
+ if(localStorage.getItem(SAVE_SLOTS_KEY)!==serialized)throw new Error('Purchase receipt was not saved');""",
+    1)
+assert content.count(purchase_commit_old) == 1, 'Expected one purchase transaction without read-back'
+content = content.replace(purchase_commit_old,purchase_commit_new,1)
+assert hashlib.sha256(content).hexdigest() == 'f57cc406c3c027cf12803d4711d6522c23ad079a217147e3732485404e4a3c6d', 'Purchase durability guard hash mismatch'
+
+
 
 
 target = root / 'app/src/main/assets/index.html'

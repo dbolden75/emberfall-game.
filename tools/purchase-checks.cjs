@@ -16,7 +16,7 @@ const cosmetic=reward(state,{...receipt,product:'emberfall_bundle_founder',profi
 // Execute actual commit function with storage failures, not a copy of its logic.
 const commit=html.slice(html.indexOf('function purchaseCommit('),html.indexOf('function ensurePurchaseProfile('));
 let persisted={},failMain=false,failCache=false;
-const context={SAVE_SLOTS_KEY:'slots',SAVE_KEY:'cache',ACTIVE_SLOT_KEY:'active',activeSlotId:'slot2',saveSlots:{slot1:{name:'Other'}},townQuestState:state.townQuestState,player:{...state.player},Date,JSON,syncHeroStats(){},normalizePets(){},scaleEnemiesForRegion(){},localStorage:{setItem(k,v){if(k==='slots'&&failMain||k!=='slots'&&failCache)throw Error('storage full');persisted[k]=v}}};
+const context={SAVE_SLOTS_KEY:'slots',SAVE_KEY:'cache',ACTIVE_SLOT_KEY:'active',activeSlotId:'slot2',saveSlots:{slot1:{name:'Other'}},townQuestState:state.townQuestState,player:{...state.player},Date,JSON,syncHeroStats(){},normalizePets(){},scaleEnemiesForRegion(){},localStorage:{getItem(k){return Object.prototype.hasOwnProperty.call(persisted,k)?persisted[k]:null},setItem(k,v){if(k==='slots'&&failMain||k!=='slots'&&failCache)throw Error('storage full');persisted[k]=v}}};
 vm.createContext(context);vm.runInContext(commit,context);
 failMain=true;assert.throws(()=>context.purchaseCommit(paid));assert.equal(context.player.level,17);assert.equal(context.townQuestState._playReceipts,undefined);
 failMain=false;failCache=true;context.purchaseCommit(paid);assert.equal(context.player.level,22);const disk=JSON.parse(persisted.slots);assert.equal(disk.slot2.state.player.level,22);assert.equal(disk.slot2.state.townQuestState._playReceipts[id],receipt.product);assert.equal(disk.slot1.name,'Other');
