@@ -444,9 +444,9 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         message="Purchase receipt could not be saved. Free device storage, then Restore purchases.";
         publish();
     });}
-    private void retryFinishing(){Iterator<String> keys=receipts.keys();while(keys.hasNext()){JSONObject r=receipts.optJSONObject(keys.next());if(r!=null&&r.optBoolean("delivered")&&!r.optBoolean("finished")&&trustworthySavedReceipt(r))finish(r);}}
+    private void retryFinishing(){Iterator<String> keys=receipts.keys();while(keys.hasNext()){JSONObject r=receipts.optJSONObject(keys.next());if(r!=null&&r.optBoolean("active")&&r.optBoolean("delivered")&&!r.optBoolean("finished")&&trustworthySavedReceipt(r))finish(r);}}
     private void finish(JSONObject r){
-        String id=r.optString("id");if(closed||!client.isReady()||r.optBoolean("finished")||!finishing.add(id))return;
+        String id=r.optString("id");if(closed||!client.isReady()||!r.optBoolean("active")||!trustworthySavedReceipt(r)||r.optBoolean("finished")||!finishing.add(id))return;
         final int finishSession=billingSessionEpoch;
         try{
             if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->complete(r,result,finishSession)));
