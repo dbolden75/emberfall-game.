@@ -132,9 +132,19 @@ public class MainActivity extends Activity {
         if (hasFocus) applyImmersiveMode();
     }
 
-    // Back exits must wait for the asynchronous WebView pagehide save, or a
-    // bounded fallback if WebView fails to respond. Never finish twice.
+    // Android Back must not destroy a character after a failed/silent localStorage
+    // write. The existing pagehide handler only reports JS completion; it swallows
+    // quota/storage errors inside saveGame(). Verify the authoritative slot bytes.
+    // Title-menu exits need no character write. Keep the WebView open on errors.
     private boolean backExitPending;
+    private void backSaveFailed(WebView view) {
+        if (game != view || isFinishing()) return;
+        backExitPending = false; // A later Back can retry after storage is freed.
+        android.widget.Toast.makeText(this,
+            "Character save could not be confirmed. Thornhaven stayed open; free storage and retry.",
+            android.widget.Toast.LENGTH_LONG).show();
+    }
+
     @Override
     public void onBackPressed() {
         if (game != null && game.canGoBack()) { game.goBack(); return; }
@@ -142,21 +152,32 @@ public class MainActivity extends Activity {
         backExitPending = true;
         final WebView closingView = game;
         if (closingView == null) { finish(); return; }
-        final Runnable finishBackExit = new Runnable() {
-            private boolean completed;
-            @Override public void run() {
-                if (completed || game != closingView) return;
-                completed = true;
-                finish();
-            }
-        };
+        final boolean[] handled = {false};
+        final Runnable failSafe = () -> backSaveFailed(closingView);
         try {
-            closingView.evaluateJavascript("window.dispatchEvent(new Event('pagehide'))",
-                    ignored -> finishBackExit.run());
+            closingView.evaluateJavascript(
+                "(function(){try{if(!hasStarted||titleMenuActive)return true;" +
+                "if(switchingCharacter)return false;" +
+                "var expected=snapshotGameState();saveGame();" +
+                "var slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');" +
+                "var row=slots&&slots[activeSlotId];" +
+                "return !!row&&JSON.stringify(row.state)===JSON.stringify(expected);" +
+                "}catch(_){return false;}})()",
+                result -> {
+                    if (handled[0]) return;
+                    handled[0] = true;
+                    if (game != closingView) return;
+                    if ("true".equals(result)) finish();
+                    else failSafe.run();
+                });
         } catch (RuntimeException saveUnavailable) {
-            finishBackExit.run();
+            if (!handled[0]) { handled[0] = true; failSafe.run(); }
         }
-        closingView.postDelayed(finishBackExit, 1000);
+        // If WebView never answers, do NOT assume the character was saved.
+        // Avoid trapping Back forever: reset pending and show a retry notice.
+        closingView.postDelayed(() -> {
+            if (!handled[0]) { handled[0] = true; failSafe.run(); }
+        }, 1500);
     }
 
     @Override
