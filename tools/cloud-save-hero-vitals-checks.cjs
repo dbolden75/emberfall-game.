@@ -14,13 +14,16 @@ assert.equal(core.parse(valid).slots.slot1.state.player.hp,25);
 assert.equal(core.readLocal(JSON.stringify(JSON.parse(valid).slots)).unreadable,false);
 // Before the fix, each corrupted value was accepted and applySavedGame() would
 // coerce it into full health, default movement speed or town-arrival position.
-for(const [key,value] of [['hp','NaN'],['hp',-3],['hp','0'],['max','Infinity'],['max',0],['speed',false],['x','Infinity'],['y','bad']]){
+for(const [key,value] of [['hp','NaN'],['hp',-3],['hp','0'],['max','Infinity'],['max',0],['speed',false],['x','Infinity'],['y','bad'],['hp',null],['max',null],['speed',null],['x',null],['y',null]]){
  const json=payload({[key]:value});
  assert.throws(()=>core.parse(json),/character health/i,`${key}=${JSON.stringify(value)} must not be imported`);
  assert.equal(core.readLocal(JSON.stringify(JSON.parse(json).slots)).unreadable,true,
   `Unsafe local ${key} value must be detected before replacement`);
 }
 // Prior-version saves can omit optional attributes; a dead hero can have 0 HP.
-for(const [key,value] of [['hp',0],['hp',null],['max',null],['speed',null],['x',null],['y',null]])
- assert.doesNotThrow(()=>core.parse(payload({[key]:value})),`Historical ${key}=${value}`);
-console.log('PASS: 8 invalid hero vital snapshots rejected during import and local review; historical/valid values preserved.');
+assert.doesNotThrow(()=>core.parse(payload({hp:0})),'A defeated hero may have zero HP');
+for(const key of ['hp','max','speed','x','y']){
+ const legacy=JSON.parse(payload({}));delete legacy.slots.slot1.state.player[key];
+ assert.doesNotThrow(()=>core.parse(JSON.stringify(legacy)),`Historical missing ${key}`);
+}
+console.log('PASS: 13 invalid hero vital snapshots rejected during import and local review; historical/valid values preserved.');
