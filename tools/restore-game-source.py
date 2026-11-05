@@ -158,6 +158,38 @@ assert content.count(old) == 1, 'Expected exactly one vulnerable character-switc
 content = content.replace(old, new, 1)
 assert hashlib.sha256(content).hexdigest() == '9f85fb2b6ac55977fa80d86893367e1b1605451f4dcd52736285b69dbaca4eee', 'Character-switch save-guard hash mismatch'
 
+# Save the requested slot preference before replacing the active hero.
+# WebView storage can reject a write with an exception or silently. Without
+# checking, this leaves a different hero loaded than the one chosen on restart.
+# Keep the current hero in memory when preference persistence is unconfirmed.
+slot_pref_old = b""" if(id===activeSlotId&&hasStarted){saveFilesReturnToGame=true;closePanel('saveFilesScreen');return}
+ switchingCharacter=true;
+ try{
+  const record=saveSlots[id];
+  applySavedGame(JSON.parse(JSON.stringify(record?(record.state||record):freshCharacterState)));
+  activeSlotId=id;hasStarted=!!record;saveFilesReturnToGame=hasStarted;
+  localStorage.setItem(ACTIVE_SLOT_KEY,id);
+"""
+slot_pref_new = b""" if(id===activeSlotId&&hasStarted){saveFilesReturnToGame=true;closePanel('saveFilesScreen');return}
+ // Verify the next slot can be remembered BEFORE replacing the current hero.
+ // WebView storage may throw or silently reject the preference write.
+ const record=saveSlots[id];
+ let nextState;
+ try{nextState=JSON.parse(JSON.stringify(record?(record.state||record):freshCharacterState))}
+ catch(_){say('This character save could not be loaded. Your current character remains active.');return}
+ try{
+  localStorage.setItem(ACTIVE_SLOT_KEY,id);
+  if(localStorage.getItem(ACTIVE_SLOT_KEY)!==id)throw new Error('Character slot selection did not persist');
+ }catch(_){say('Character switch could not be saved. Free storage and retry; your current character remains active.');return}
+ switchingCharacter=true;
+ try{
+  applySavedGame(nextState);
+  activeSlotId=id;hasStarted=!!record;saveFilesReturnToGame=hasStarted;
+"""
+assert content.count(slot_pref_old)==1, 'Expected exactly one prior character-switch sequence'
+content=content.replace(slot_pref_old,slot_pref_new,1)
+assert hashlib.sha256(content).hexdigest() == 'c9e67bca38ce0ebfc037e44227ea0e6543387bc95be6d97f1f4a791006f85cd0', 'Slot-preference guard hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
