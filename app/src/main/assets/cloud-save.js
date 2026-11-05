@@ -47,7 +47,17 @@ function startNative(action,text=''){
 // write or silently leave the older slots on disk. Never upload those older
 // bytes as a supposedly current character backup.
 function verifiedBackupText(){
- if(typeof hasStarted!=='undefined'&&hasStarted&&!titleMenuActive&&!switchingCharacter)saveGame();
+ // On cold launch, applySavedGame() can normalize the active hero through
+ // aliases into the cached save slot while the title menu remains visible.
+ // Save that normalized/current hero first; do not confuse the legitimate
+ // cold-load difference with a silently rejected write.
+ if(typeof switchingCharacter!=='undefined'&&switchingCharacter)
+  throw Error('Character selection is still changing. Try the backup again.');
+ if(typeof hasStarted!=='undefined'&&hasStarted){
+  const wasTitle=titleMenuActive;
+  try{if(wasTitle)titleMenuActive=false;saveGame();}
+  finally{if(wasTitle)titleMenuActive=true;}
+ }
  const raw=localStorage.getItem(core.SLOT_KEY),slots=JSON.parse(raw||'{}');
  const unsaved='Latest character progress is not safely stored on this device. Keep Thornhaven open, free storage and retry saving before exporting a backup.';
  if(document.getElementById('saveFailureWarning'))throw Error(unsaved);
