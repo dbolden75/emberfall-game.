@@ -26,7 +26,9 @@ for(const pet of [
  {id:'dalen',petVersion:1,hp:'',max:68,active:true},
  {id:'dalen',petVersion:1,hp:-1,max:68,active:true},
  {id:'dalen',petVersion:1,hp:33,max:'corrupt',active:true},
- {id:'dalen',petVersion:1,hp:20,max:-2,active:true}
+ {id:'dalen',petVersion:1,hp:20,max:-2,active:true},
+ {id:'dalen',petVersion:1,hp:500,max:68,active:true},
+ {id:'dalen',petVersion:1,hp:50,max:0,active:true}
 ]){
  assert.throws(()=>core.parse(backup(pet)),/Invalid saved companion data/);
  assert.equal(core.readLocal(JSON.stringify({slot1:JSON.parse(backup(pet)).slots.slot1})).unreadable,true);
@@ -37,4 +39,5 @@ const restored=loadedHealth(healthy);
 assert(restored.hp>0&&restored.active,'Valid health is preserved by live game normalization');
 assert(core.parse(backup({id:'dalen',petVersion:1,hp:0,max:68,active:false})),'Dead pets remain valid');
 assert(core.parse(backup({id:'dalen'})),'Historical pets without optional health fields remain compatible');
+assert(core.parse(backup({id:'dalen',hp:0,max:0,active:false})),'Historical zero-health dead pet remains compatible');
 console.log('PASS: invalid pet health is rejected before game normalization can silently kill pets.');

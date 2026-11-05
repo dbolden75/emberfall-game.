@@ -314,7 +314,11 @@ function safeCompanions(pets){
    (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0))&&
   // A string like 'false' is truthy in normalizePets(), activating pets
   // that were inactive in the backup. Keep missing historical flags valid.
-  (p.active==null||typeof p.active==='boolean'));
+  (p.active==null||typeof p.active==='boolean')&&
+  // normalizePets() clamps hp/max to a 0..1 ratio. If the saved pet reports
+  // more health than its max, import would silently treat it as fully healed.
+  // Retain compatibility with old saves missing either field and dead zero/zero pets.
+  (p.hp==null||p.max==null||p.hp<=p.max));
 }
 function safeInventory(items){
  return Array.isArray(items)&&items.every(row=>
