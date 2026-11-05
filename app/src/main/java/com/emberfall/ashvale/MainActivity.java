@@ -186,13 +186,17 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    // A pagehide save writes WebView localStorage synchronously in JavaScript,
-    // but evaluateJavascript itself runs asynchronously. Pausing the WebView in
-    // the same onPause call can prevent that save from ever running. Let the
-    // JavaScript completion callback pause the WebView; a bounded fallback
-    // still pauses it when WebView does not report completion.
+    // Confirm the real character-slot bytes after pagehide, not merely JS
+    // event dispatch. saveGame() may swallow localStorage quota exceptions.
+    // Android cannot force the app to remain foreground on Home, so report
+    // an unverified background save when the player returns. Never clear data.
     private int pauseEpoch;
     private boolean lifecyclePaused;
+    private boolean backgroundSaveUnverified;
+    private void backgroundSaveFailed(WebView view, int epoch) {
+        if (game != view || pauseEpoch != epoch) return;
+        backgroundSaveUnverified = true;
+    }
 
     @Override
     protected void onPause() {
@@ -209,15 +213,37 @@ public class MainActivity extends Activity {
                     pausedView.pauseTimers();
                 }
             };
+            final boolean[] answered = {false};
             try {
-                pausedView.evaluateJavascript("window.dispatchEvent(new Event('pagehide'))",
-                        ignored -> finishPause.run());
+                pausedView.evaluateJavascript(
+                    "(function(){try{window.dispatchEvent(new Event('pagehide'));" +
+                    "if(!hasStarted||titleMenuActive||switchingCharacter)return true;" +
+                    "var expected=snapshotGameState();" +
+                    "var slots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');" +
+                    "var row=slots&&slots[activeSlotId];" +
+                    "return !!row&&JSON.stringify(row.state)===JSON.stringify(expected);" +
+                    "}catch(_){return false;}})()",
+                    result -> {
+                        if (!answered[0]) {
+                            answered[0] = true;
+                            if (!"true".equals(result)) backgroundSaveFailed(pausedView, epoch);
+                        }
+                        finishPause.run();
+                    });
             } catch (RuntimeException evaluateFailed) {
+                answered[0] = true;
+                backgroundSaveFailed(pausedView, epoch);
                 finishPause.run();
             }
-            // If Android never invokes the JS callback, do not leave background
-            // animations running. Resumes and activity destruction invalidate it.
-            pausedView.postDelayed(finishPause, 1000);
+            // If WebView never returns, pause it but do not claim a save.
+            // A late callback cannot override a failure or stop resumed play.
+            pausedView.postDelayed(() -> {
+                if (!answered[0]) {
+                    answered[0] = true;
+                    backgroundSaveFailed(pausedView, epoch);
+                }
+                finishPause.run();
+            }, 1000);
         }
         super.onPause();
     }
@@ -228,6 +254,12 @@ public class MainActivity extends Activity {
         lifecyclePaused = false;
         ++pauseEpoch;
         if (game != null) { game.onResume(); game.resumeTimers(); }
+        if (backgroundSaveUnverified) {
+            backgroundSaveUnverified = false;
+            android.widget.Toast.makeText(this,
+                "Previous character save could not be confirmed. Check your character and free storage before leaving.",
+                android.widget.Toast.LENGTH_LONG).show();
+        }
         if (billing != null) billing.connect();
     }
 
