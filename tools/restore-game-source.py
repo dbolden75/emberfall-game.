@@ -232,6 +232,37 @@ assert content.count(load_recovery_old) == 1, 'Expected one unguarded character-
 content = content.replace(load_recovery_old, load_recovery_new, 1)
 assert hashlib.sha256(content).hexdigest() == 'eb2997aa721a4a2df455734fa1967e71009c33b16d32ffe2e6216db43d95146d', 'Character-load recovery hash mismatch'
 
+# Character deletion must be durable before the live save-slot list is changed.
+# Android WebView can throw on storage quota or silently ignore a write.
+# Protect the currently active character: switch to another verified save
+# before deleting it, and keep the existing legacy migration fallback.
+delete_old = b"function deleteSaveSlot(id){if(!SAVE_SLOT_IDS.includes(id)||!saveSlots[id])return;const name=saveSlots[id].name||'this character';if(!window.confirm('Delete '+name+' and all progress in this slot?'))return;delete saveSlots[id];localStorage.setItem(SAVE_SLOTS_KEY,JSON.stringify(saveSlots));if(id==='slot1')localStorage.removeItem(SAVE_KEY);if(id===activeSlotId){switchingCharacter=true;localStorage.setItem(ACTIVE_SLOT_KEY,'slot1');window.location.reload();return}renderSaveSlots()}"
+delete_new = b"""function deleteSaveSlot(id){
+ if(!SAVE_SLOT_IDS.includes(id)||!saveSlots[id]||switchingCharacter)return;
+ // Never delete a running character or abandon its unsaved progress.
+ if(id===activeSlotId){say('Switch to another character before deleting the active save.');return}
+ if(!confirmSaveBeforeSlotSwitch()){say('Current character progress could not be saved. Free storage and retry before deleting a character.');return}
+ const name=saveSlots[id].name||'this character';
+ if(!window.confirm('Delete '+name+' and all progress in this slot?'))return;
+ // Save and read back a copy before changing the live slot list. Storage can
+ // throw or silently discard writes on Android WebView.
+ const remaining={...saveSlots};delete remaining[id];
+ const serialized=JSON.stringify(remaining);
+ try{
+  localStorage.setItem(SAVE_SLOTS_KEY,serialized);
+  if(localStorage.getItem(SAVE_SLOTS_KEY)!==serialized)throw new Error('Slot deletion did not persist');
+ }catch(_){say('Character deletion could not be saved. No characters were deleted. Free storage and retry.');return}
+ saveSlots=remaining;
+ // The old single-character mirror is only a migration fallback; the slot
+ // store above is already authoritative. Failure to clear it is non-fatal.
+ if(id==='slot1')try{localStorage.removeItem(SAVE_KEY)}catch(error){console.warn('Legacy save mirror could not be cleared:',error.name)}
+ renderSaveSlots();
+}"""
+assert content.count(delete_old) == 1, 'Expected one vulnerable character deletion path'
+content = content.replace(delete_old, delete_new, 1)
+assert hashlib.sha256(content).hexdigest() == '0187ab7907d26f45ecdd32386f308ea26b2991dfc26d427d51ddeb15ea35bfe3', 'Atomic character-deletion hash mismatch'
+
+
 
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
