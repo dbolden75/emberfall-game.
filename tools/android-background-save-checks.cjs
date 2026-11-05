@@ -54,7 +54,9 @@ assert.equal(simulate({throwSave:true}),false,'Thrown quota failure detected');
 assert.equal(simulate({malformed:true,write:false}),false,'Corrupt slot JSON detected');
 assert.equal(simulate({hasStarted:false}),true,'Title startup requires no character slot');
 assert.equal(simulate({titleMenuActive:true}),true,'Title menu may background');
-assert.equal(simulate({switchingCharacter:true}),true,'Character switching does not overwrite old slot');
+assert.equal(simulate({switchingCharacter:true}),false,'Switching without a confirmed save must be reported on resume');
+assert.equal(simulate({switchingCharacter:true,previous:true,write:false}),false,
+  'Existing old character slot cannot falsely confirm an interrupted switch');
 assert(pause.includes('if (!"true".equals(result)) backgroundSaveFailed(pausedView, epoch)'),
   'Failed JS verification must be recorded');
 assert(pause.includes('backgroundSaveFailed(pausedView, epoch)')&&pause.includes('if (!answered[0])'),
@@ -73,4 +75,4 @@ assert(java.includes('if (game != view || pauseEpoch != epoch) return;'),
   'Stale WebView/Activity callback must never mark a new session failed');
 const destroy=java.slice(java.indexOf('protected void onDestroy()'));
 assert(destroy.includes('++pauseEpoch'),'Destroy must invalidate stale callbacks');
-console.log('PASS: 8 production background-save JavaScript scenarios and native lifecycle guards. Mocked storage, not device testing.');
+console.log('PASS: 9 production background-save JavaScript scenarios and native lifecycle guards. Mocked storage, not device testing.');
