@@ -33,6 +33,8 @@ function scenario(mode, requested='slot2', started=true){
    getItem(k){return storage.has(k)?storage.get(k):null;},
    setItem(k,v){
     if(k==='emberfall_character_slots_v1'&&mode==='quota')throw Error('QuotaExceededError');
+    if(k==='emberfall_active_character_slot_v1'&&v==='slot2'&&mode==='pref-quota')throw Error('QuotaExceededError');
+    if(k==='emberfall_active_character_slot_v1'&&v==='slot2'&&mode==='pref-silent')return;
     if(k==='emberfall_character_slots_v1'&&mode==='silent')return;
     storage.set(k,String(v));
    }
@@ -78,4 +80,18 @@ for(const mode of ['quota','silent']){
  const r=scenario('ok','slot2',false);
  assert.equal(r.c.activeSlotId,'slot2','A new character can be selected at start');
 }
-console.log('PASS: five real HTML character-switch cases: quota, silent storage, success, same slot, fresh start.');
+// Preference persistence is separate from the authoritative slot write.
+// Refusal must not switch to a different character or corrupt the current one.
+for (const mode of ['pref-quota','pref-silent']){
+ const r=scenario(mode);
+ assert.equal(r.c.activeSlotId,'slot1',mode+' preference failure must keep current character');
+ assert.equal(r.storage.get('emberfall_active_character_slot_v1'),'slot1');
+ assert.equal(r.switched.length,0,mode+' must not apply a different save');
+ assert(r.alerts.some(msg=>msg.includes('Character switch could not be saved')),mode+' must warn');
+}
+{
+ const r=scenario('pref-silent','slot2',false);
+ assert.equal(r.c.activeSlotId,'slot1','Fresh character selection cannot proceed with unpersisted preference');
+ assert.equal(r.switched.length,0);
+}
+console.log('PASS: eight real HTML slot cases: save quota, silent save refusal, normal switch, same slot, fresh start, preference quota, preference silent refusal, fresh-start preference refusal.');
