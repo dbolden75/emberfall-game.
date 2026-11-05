@@ -190,6 +190,49 @@ assert content.count(slot_pref_old)==1, 'Expected exactly one prior character-sw
 content=content.replace(slot_pref_old,slot_pref_new,1)
 assert hashlib.sha256(content).hexdigest() == 'c9e67bca38ce0ebfc037e44227ea0e6543387bc95be6d97f1f4a791006f85cd0', 'Slot-preference guard hash mismatch'
 
+# A selected slot's preference is written before loading the character, as a
+# safeguard against WebView's silent preference-write refusals. If the saved
+# character cannot be applied (or rendering throws), that already-persisted
+# preference would otherwise refer to the wrong character on next launch.
+# The preceding guard has verified the original slot's save is durable:
+# restore its active selection and reload the verified save.
+load_guard_old = b""" try{
+  localStorage.setItem(ACTIVE_SLOT_KEY,id);
+"""
+load_guard_new = b""" const previousSlotId=activeSlotId;
+ try{
+  localStorage.setItem(ACTIVE_SLOT_KEY,id);
+"""
+assert content.count(load_guard_old) == 1, 'Expected one slot preference transaction'
+content = content.replace(load_guard_old, load_guard_new, 1)
+
+load_recovery_old = b"""  if(hasStarted)say('Welcome back, '+player.name+'. Your story continues in '+activeMap.name+'.');
+ }finally{switchingCharacter=false}
+}
+function deleteSaveSlot(id)"""
+load_recovery_new = b"""  if(hasStarted)say('Welcome back, '+player.name+'. Your story continues in '+activeMap.name+'.');
+ }catch(error){
+  // Even after the preference write succeeds, a corrupt save or UI error may
+  // prevent the new hero from loading. Recover the previously verified slot.
+  let recovered=false;
+  try{
+   localStorage.setItem(ACTIVE_SLOT_KEY,previousSlotId);
+   recovered=localStorage.getItem(ACTIVE_SLOT_KEY)===previousSlotId;
+  }catch(_){}
+  if(recovered){
+   say('That character could not be loaded. Reloading your previous saved character.');
+   window.location.reload();
+  }else{
+   say('Character switch failed and the previous slot selection could not be restored. Keep the game open and back up your progress.');
+  }
+ }finally{switchingCharacter=false}
+}
+function deleteSaveSlot(id)"""
+assert content.count(load_recovery_old) == 1, 'Expected one unguarded character-load path'
+content = content.replace(load_recovery_old, load_recovery_new, 1)
+assert hashlib.sha256(content).hexdigest() == 'eb2997aa721a4a2df455734fa1967e71009c33b16d32ffe2e6216db43d95146d', 'Character-load recovery hash mismatch'
+
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
