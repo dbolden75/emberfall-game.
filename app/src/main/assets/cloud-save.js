@@ -42,7 +42,32 @@ function startNative(action,text=''){
  if(requestId)return;requestId=Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);busy(true);
  try{native[action](requestId,text);}catch(e){requestId=null;busy(false);status('The file picker could not open. Your local saves are unchanged.');}
 }
-get('cloudSaveExport').onclick=()=>{try{const slots=JSON.parse(localStorage.getItem(core.SLOT_KEY)||'{}'),text=core.encode(slots,activeSlotId);resetReview();if(native){startNative('save',text);return;}const a=document.createElement('a'),url=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.href=url;a.download='Thornhaven-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);status('Backup download requested. Store the file in your own Drive.');}catch(e){status(e.message);}};
+/* THORNHAVEN_CLOUD_EXPORT_DURABILITY_START */
+// Returning to the title screen calls saveGame(), but WebView can reject that
+// write or silently leave the older slots on disk. Never upload those older
+// bytes as a supposedly current character backup.
+function verifiedBackupText(){
+ // On cold launch, applySavedGame() can normalize the active hero through
+ // aliases into the cached save slot while the title menu remains visible.
+ // Save that normalized/current hero first; do not confuse the legitimate
+ // cold-load difference with a silently rejected write.
+ if(typeof switchingCharacter!=='undefined'&&switchingCharacter)
+  throw Error('Character selection is still changing. Try the backup again.');
+ if(typeof hasStarted!=='undefined'&&hasStarted){
+  const wasTitle=titleMenuActive;
+  try{if(wasTitle)titleMenuActive=false;saveGame();}
+  finally{if(wasTitle)titleMenuActive=true;}
+ }
+ const raw=localStorage.getItem(core.SLOT_KEY),slots=JSON.parse(raw||'{}');
+ const unsaved='Latest character progress is not safely stored on this device. Keep Thornhaven open, free storage and retry saving before exporting a backup.';
+ if(document.getElementById('saveFailureWarning'))throw Error(unsaved);
+ if(typeof saveSlots!=='undefined')for(const id of core.IDS){
+  if(JSON.stringify(slots[id]??null)!==JSON.stringify(saveSlots[id]??null))throw Error(unsaved);
+ }
+ return core.encode(slots,activeSlotId);
+}
+/* THORNHAVEN_CLOUD_EXPORT_DURABILITY_END */
+get('cloudSaveExport').onclick=()=>{try{const text=verifiedBackupText();resetReview();if(native){startNative('save',text);return;}const a=document.createElement('a'),url=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.href=url;a.download='Thornhaven-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);status('Backup download requested. Store the file in your own Drive.');}catch(e){status(e.message);}};
 get('cloudSaveImport').onclick=()=>{resetReview();if(native)startNative('load');else get('cloudSaveFile').click();};
 get('cloudSaveFile').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>core.MAX_BYTES)throw Error('Backup exceeds 8 MB.');review(await f.text());}catch(error){status(error.message);}finally{e.target.value='';}};
 get('cloudSaveManage').onclick=()=>{if(native)startNative('manage');else status('Your cloud backups are files in your own Drive. Manage them there. Use Open backup file to restore one here.');};
