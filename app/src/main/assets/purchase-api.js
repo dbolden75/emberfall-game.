@@ -57,3 +57,39 @@
   if(notice)notice.textContent='Only Google Play-listed cosmetics and builder contracts are offered. XP and level packs are retired; legitimate older purchases can still be restored. Previously purchased XP credits remain usable.';
  };
 })();
+
+/* THORNHAVEN_SAVE_DURABILITY_GUARD_START */
+// Ordinary saves, not only purchases/exits, must detect silent WebView storage failures.
+// This runs after the original saveGame() and preserves its historical save keys/format.
+(() => {
+ // Unit-test previews may load purchase-api.js without initializing the game.
+ if(typeof saveGame!=='function')return;
+ const saveWithoutReadback=saveGame;
+ saveGame=function(...args){
+  if(!hasStarted||titleMenuActive||switchingCharacter)return saveWithoutReadback(...args);
+  // snapshotGameState makes a plain JSON copy, the same serialization as saveGame.
+  // Do not make a new failure mode for a damaged state snapshot: let the
+  // original save routine handle it and display its usual error.
+  let expected;
+  try{expected=snapshotGameState()}catch(_){return saveWithoutReadback(...args)}
+  const slot=activeSlotId,result=saveWithoutReadback(...args);
+  try{
+   const saved=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+   if(!saved||JSON.stringify(saved[slot]?.state)!==JSON.stringify(expected))
+    throw new Error('Character save did not persist');
+   document.getElementById('saveFailureWarning')?.remove();
+  }catch(error){
+   let warning=document.getElementById('saveFailureWarning');
+   if(!warning){
+    warning=document.createElement('div');warning.id='saveFailureWarning';
+    warning.setAttribute('role','alert');
+    warning.style.cssText='position:fixed;bottom:70px;left:10%;right:10%;z-index:9999;padding:12px;background:#5c2020;color:white';
+    document.body.appendChild(warning);
+   }
+   warning.textContent='Progress could not be saved. Keep the game open. Free device storage and retry.';
+   console.error('Thornhaven save verification failed:',error);
+  }
+  return result;
+ };
+})();
+/* THORNHAVEN_SAVE_DURABILITY_GUARD_END */
