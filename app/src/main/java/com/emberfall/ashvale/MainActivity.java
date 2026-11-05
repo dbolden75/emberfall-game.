@@ -132,10 +132,31 @@ public class MainActivity extends Activity {
         if (hasFocus) applyImmersiveMode();
     }
 
+    // Back exits must wait for the asynchronous WebView pagehide save, or a
+    // bounded fallback if WebView fails to respond. Never finish twice.
+    private boolean backExitPending;
     @Override
     public void onBackPressed() {
-        if (game != null && game.canGoBack()) game.goBack();
-        else super.onBackPressed();
+        if (game != null && game.canGoBack()) { game.goBack(); return; }
+        if (backExitPending) return;
+        backExitPending = true;
+        final WebView closingView = game;
+        if (closingView == null) { finish(); return; }
+        final Runnable finishBackExit = new Runnable() {
+            private boolean completed;
+            @Override public void run() {
+                if (completed || game != closingView) return;
+                completed = true;
+                finish();
+            }
+        };
+        try {
+            closingView.evaluateJavascript("window.dispatchEvent(new Event('pagehide'))",
+                    ignored -> finishBackExit.run());
+        } catch (RuntimeException saveUnavailable) {
+            finishBackExit.run();
+        }
+        closingView.postDelayed(finishBackExit, 1000);
     }
 
     @Override
