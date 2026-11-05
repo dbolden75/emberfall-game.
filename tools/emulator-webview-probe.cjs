@@ -296,7 +296,11 @@ const pickerSave=String.raw`(()=>{
   button.click();
   if(document.getElementById('cloudSavePanel').hidden)throw Error('Cloud Save panel failed to open');
   document.getElementById('cloudSaveExport').click();
-  if(!document.getElementById('cloudSaveExport').disabled)throw Error('Save action did not start picker request');
+  if(!document.getElementById('cloudSaveExport').disabled){
+    const disk=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');
+    const mismatch=['slot1','slot2','slot3','slot4'].filter(id=>JSON.stringify(disk[id]??null)!==JSON.stringify(saveSlots[id]??null));
+    throw Error('Save action did not start picker request: '+(document.getElementById('cloudSaveStatus')?.textContent||'<no status>')+'; warning='+Boolean(document.getElementById('saveFailureWarning'))+'; mismatched slots='+mismatch.join(',')+'; started='+hasStarted+'; title='+titleMenuActive+'; switching='+switchingCharacter);
+  }
   return JSON.stringify({action:'save',pickerRequest:'started'});
 })()`;
 const pickerLoad=String.raw`(()=>{
