@@ -442,9 +442,10 @@ function safeCompanions(pets){
   // discarded, so importing them would falsely claim to preserve gear.
   ['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>
    p[slot]==null||typeof p[slot]==='string')&&
-  // normalizePets() converts invalid health to zero and deactivates the pet.
-  // Reject lossy health snapshots before replacing a player's existing save.
-  ['hp','max'].every(field=>p[field]==null||
+  // normalizePets() treats explicit null health as zero or substitutes a
+  // default maximum, potentially deactivating or healing a purchased pet.
+  // Only missing historical health fields may inherit defaults.
+  ['hp','max'].every(field=>p[field]===undefined||
    (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0))&&
   // Restored pets preserve their saved movement and attack timers. Text,
   // nulls or off-world coordinates are not repaired by normalizePets(), so a
