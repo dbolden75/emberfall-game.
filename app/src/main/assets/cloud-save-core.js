@@ -391,15 +391,18 @@ function safeEnemySnapshots(mapStates){
    ['spawnX','spawnY'].every(key=>e[key]==null||safeWorldCoord(e[key]))&&
    // Reject invalid attributes before applySavedGame copies them to live
    // enemies. A nonnumeric respawnAt silently prevents future respawns.
+   // An explicit null is NOT an omitted legacy field: Number(null) becomes
+   // zero HP, respawnAt||0 discards a timer, and null alive/lootClaimed
+   // changes enemy and loot state. Preserve truly absent historical fields.
    ['hp','maxHp','respawnAt'].every(key=>
-    e[key]==null||(typeof e[key]==='number'&&Number.isFinite(e[key])&&
+    e[key]===undefined||(typeof e[key]==='number'&&Number.isFinite(e[key])&&
     (key==='hp'||key==='maxHp'||key==='respawnAt'?e[key]>=0:true)))&&
    // applySavedGame rescales HP as savedHp/savedMax * regional max HP.
    // A damaged saved overmax ratio would resurrect a monster with far more
    // health than the region permits; refuse that import instead of changing
    // enemy difficulty. Missing historical maxima remain compatible.
    (e.hp==null||e.maxHp==null||e.hp<=e.maxHp)&&
-   ['alive','lootClaimed'].every(key=>e[key]==null||typeof e[key]==='boolean'));
+   ['alive','lootClaimed'].every(key=>e[key]===undefined||typeof e[key]==='boolean'));
  });
 }
 // Inventory is used as row.id/row.count without null checks by the game.
