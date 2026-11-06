@@ -449,7 +449,7 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         String id=r.optString("id");if(closed||!client.isReady()||!r.optBoolean("active")||!trustworthySavedReceipt(r)||r.optBoolean("finished")||!finishing.add(id))return;
         final int finishSession=billingSessionEpoch;
         try{
-            if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->complete(r,result,finishSession)));
+            if(consumable(r.optString("product")))client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(r.optString("token")).build(),(result,token)->activity.runOnUiThread(()->completeConsumed(r,result,token,finishSession)));
             else client.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(r.optString("token")).build(),result->activity.runOnUiThread(()->complete(r,result,finishSession)));
         }catch(RuntimeException dispatchFailure){
             // A thrown Play API call is not a confirmation. Keep the already
@@ -458,6 +458,12 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             message="Google Play could not confirm the saved purchase. Tap Restore purchases to retry.";
             publish();
         }
+    }
+    // A successful consume callback must refer to this exact paid token.
+    // A mismatched/null callback token is not proof that Play consumed the
+    // receipt we submitted. Leave the delivered reward intact and retryable.
+    private void completeConsumed(JSONObject r,BillingResult result,String returnedToken,int finishSession){
+        complete(r,r.optString("token").equals(returnedToken)?result:null,finishSession);
     }
     private void complete(JSONObject r,BillingResult result,int finishSession){
         // Ignore callbacks from an ended connection. After disconnect the

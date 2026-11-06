@@ -20,6 +20,19 @@ for(let i=brace;i<source.length;i++){
 }
 assert(end>brace,'Billing completion method must have a matching closing brace');
 const productionMethod=source.slice(begin,end);
+const consumeMarker='private void completeConsumed(JSONObject r,BillingResult result,String returnedToken,int finishSession)';
+const consumeBegin=source.indexOf(consumeMarker);
+assert(consumeBegin>=0,'Production consume-token completion guard must exist');
+const consumeBrace=source.indexOf('{',consumeBegin);
+let consumeDepth=0,consumeEnd=-1;
+for(let i=consumeBrace;i<source.length;i++){
+  if(source[i]==='{')consumeDepth++;
+  if(source[i]==='}'&&!--consumeDepth){consumeEnd=i+1;break;}
+}
+assert(consumeEnd>consumeBrace,'Consume-token completion method must have a closing brace');
+const productionConsumeMethod=source.slice(consumeBegin,consumeEnd);
+assert(/consumeAsync\([\s\S]*?completeConsumed\(r,result,token,finishSession\)/.test(source),
+       'Production Play consume callback must verify the token returned by Play');
 
 const java=`
 import java.util.*;
@@ -55,11 +68,12 @@ public class BillingCompletionHarness {
   }
   void publish(){published++;}
   ${productionMethod}
+  ${productionConsumeMethod}
   static void check(boolean condition,String name){
     if(!condition)throw new AssertionError(name);
   }
   static JSONObject receipt(){
-    return new JSONObject().put("id","paid-token").put("active",true).put("delivered",true).put("finished",false);
+    return new JSONObject().put("id","paid-token").put("token","expected-play-token").put("active",true).put("delivered",true).put("finished",false);
   }
   static BillingCompletionHarness active(JSONObject r){
     BillingCompletionHarness h=new BillingCompletionHarness();
@@ -132,7 +146,24 @@ public class BillingCompletionHarness {
     check(!r.optBoolean("finished") && h.persistenceCalls==0,
           "Unverified receipt must not be confirmed");
 
-    System.out.println("PASS: 11 native completion cases including detached, deleted, revoked and unverified receipts");
+    r=receipt();h=active(r);
+    h.completeConsumed(r,new BillingResult(0),"expected-play-token",7);
+    check(r.optBoolean("finished") && h.persistenceCalls==1,
+          "Matching Play consume token can finish the delivered receipt");
+
+    r=receipt();h=active(r);
+    h.completeConsumed(r,new BillingResult(0),"different-play-token",7);
+    check(!r.optBoolean("finished") && r.optBoolean("delivered") && h.persistenceCalls==0,
+          "Different Play consume token must never mark this receipt finished");
+    check(h.finishing.isEmpty() && h.message.contains("retry"),
+          "Mismatched consume response must permit a fresh Restore retry");
+
+    r=receipt();h=active(r);
+    h.completeConsumed(r,new BillingResult(0),null,7);
+    check(!r.optBoolean("finished") && h.persistenceCalls==0,
+          "Missing Play consume token cannot confirm this paid receipt");
+
+    System.out.println("PASS: 14 native completion cases including matched/mismatched/missing Play consume tokens");
   }
 }
 `;
