@@ -484,6 +484,16 @@ function safeInventory(items){
 function safeHouseStorage(saved){
  if(saved==null)return true;
  if(typeof saved!=='object'||Array.isArray(saved))return false;
+ // normalizeHouseStorage() only visits the four current home IDs. A backup
+ // from a newer version could contain a future home's populated chests; the
+ // older loader would silently discard that gear on the next character save.
+ // Reject only actual stored items in unknown homes, not harmless metadata or
+ // empty historical structures, to preserve backward compatibility.
+ for(const [id,home] of Object.entries(saved)){
+  if(['ashvale','brackenford','stonewatch','sunmere','front_chest','side_chest'].includes(id))continue;
+  if(home&&typeof home==='object'&&!Array.isArray(home)&&
+   ['front_chest','side_chest'].some(chest=>Array.isArray(home[chest])&&home[chest].length>0))return false;
+ }
  for(const id of ['ashvale','brackenford','stonewatch','sunmere']){
   const home=saved[id];
   // An explicitly supplied town chest must be a keyed container. The game
