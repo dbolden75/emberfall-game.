@@ -353,7 +353,8 @@ function safeEnemySnapshots(mapStates){
    e&&typeof e==='object'&&!Array.isArray(e)&&
    // Malformed but finite coordinates previously sent enemies far off-map
    // without any warning after a supposedly successful Cloud Save restore.
-   ['x','y','spawnX','spawnY'].every(key=>e[key]==null||safeWorldCoord(e[key]))&&
+   ['x','y'].every(key=>e[key]===undefined||safeWorldCoord(e[key]))&&
+   ['spawnX','spawnY'].every(key=>e[key]==null||safeWorldCoord(e[key]))&&
    // Reject invalid attributes before applySavedGame copies them to live
    // enemies. A nonnumeric respawnAt silently prevents future respawns.
    ['hp','maxHp','respawnAt'].every(key=>
