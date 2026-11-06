@@ -460,7 +460,15 @@ function readLocal(raw){
   return {slots,unreadable:false};
  }catch(_){return {slots:{},unreadable:true};}
 }
-function conflicts(incoming,current){return Object.keys(current).filter(id=>!incoming.slots[id]||Number(incoming.slots[id].updated)<Number(current[id].updated));}
+// A timestamp is not a unique save revision: two devices can have equal
+// millisecond update times but different character progress. Never silently
+// replace different state at the same timestamp without the extra approval.
+function conflicts(incoming,current){return Object.keys(current).filter(id=>{
+ const incomingRow=incoming.slots[id],localRow=current[id];
+ if(!incomingRow)return true;
+ if(incomingRow.updated<localRow.updated)return true;
+ return incomingRow.updated===localRow.updated&&JSON.stringify(incomingRow)!==JSON.stringify(localRow);
+});}
 function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}={}){
  if(!confirmed)throw Error('Confirm before replacing saved characters.');
  const incoming=parse(text),raw=storage.getItem(SLOT_KEY),local=readLocal(raw),current=local.slots;
