@@ -72,7 +72,7 @@ function validate(value){
   if(!Array.isArray(row.state.companions)||
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
-  if(!safeExperience(p.xp))throw Error('Invalid character experience.');
+  if(!safeExperience(p.xp,p.level))throw Error('Invalid character experience.');
   if(!safeHeroVitals(p))throw Error('Invalid character health, movement or position in backup.');
   if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
@@ -108,8 +108,16 @@ function safeHeroVitals(player){
 // The live grantXp() uses player.xp += amount, so a restored string such
 // as '4' turns a 7-XP reward into '47' instead of 11. Historical missing
 // or null XP is still accepted; reject nonnumeric or negative supplied XP.
-function safeExperience(xp){
- return xp==null||(typeof xp==='number'&&Number.isFinite(xp)&&xp>=0);
+function safeExperience(xp,level){
+ if(xp==null)return true; // Old saves may not contain this optional field.
+ if(typeof xp!=='number'||!Number.isFinite(xp)||xp<0)return false;
+ // grantXp() processes every earned level synchronously. A finite but
+ // impossibly large restored balance (e.g. 1e308) can monopolize the UI
+ // thread on the next reward. Real saves normalize excess XP after leveling.
+ // Allow a generous 1,000,000-XP historical buffer and ten level thresholds
+ // at high levels so this does not introduce a level cap or reject old saves.
+ const n=Math.max(0,level-1),threshold=40+10*n+2*n*n;
+ return xp<=Math.max(1000000,10*threshold);
 }
 // The live gathering normalizer converts XP using Number(...), treating an
 // invalid string as 0 or Infinity as unlimited skill progress. Similarly the
@@ -511,7 +519,7 @@ function readableLocalRow(id,row){
   KNOWN_MAP_IDS.has(state.mapId)&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeExperience(p.xp)&&safeHeroVitals(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
+  safeExperience(p.xp,p.level)&&safeHeroVitals(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
   safeTownQuestFlags(state.townQuestState);
 }
