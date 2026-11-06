@@ -16,11 +16,25 @@ const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
 // 'constructor' make maps[id] appear valid and can crash setMap().
 // Update this list when adding a playable map.
 const KNOWN_MAP_IDS=new Set([
- 'ashvale','ashvale_home','brackenford','brackenford_home','crowfield','emberdeep',
- 'frontier_outpost','frontier_quarry','frostmarch','glassridge','greenhollow',
- 'highmoor','memory_valley','mosslight','redfen','shrine_heart',
- 'shrine_rootmaze','stonewatch','stonewatch_home','stonewatchroad','sunharbor',
- 'sunmere','sunmere_home','veilhaven','wayfarers_camp','whisperwood','willowfen'
+ 'ancientgrove','ashenpass','ashenwastes','ashvale','ashvale_home',
+ 'aurorareach','blackbriar','blackstone','bogreach','borealhollow',
+ 'brackenford','brackenford_home','briarhollow','burntwood','cinderfall',
+ 'cinderfields','cinderridge','coalcoast','coastroad','coldwater',
+ 'coralstrand','crowfield','deepfen','duskwood','dustroad',
+ 'easternshoals','elderwood','emberdeep','emberplain','fenroad',
+ 'fernvale','flamecrest','forgottenmoor','frontier_outpost','frontier_quarry',
+ 'frosthavenwilds','frostmarch','frostwood','frozenstrand','glaciergate',
+ 'glassridge','greenhollow','gullwatch','highmoor','iceboundvale',
+ 'icecoast','meadowroad','memory_valley','moonwood','mosslight',
+ 'murkwood','northernshoals','northridge','oakheart','obsidianreach',
+ 'obsidianshore','redfen','redstonevale','reedwater','rimewatch',
+ 'saltwindreach','scorchedstrand','seafoamcliffs','shrine_heart','shrine_rootmaze',
+ 'silverpine','sinkinghollow','snowmeltbasin','snowveil','sootmarsh',
+ 'southernthicket','southwood','starfallridge','stonewatch','stonewatch_home',
+ 'stonewatchroad','stormcoast','sunharbor','sunmere','sunmere_home',
+ 'thornwall','tidewood','veilhaven','wayfarers_camp','westwood',
+ 'whisperwood','whitefangpass','willowfen','winterspire','witchfen',
+ 'wolfpine'
 ]);
 const clone=v=>JSON.parse(JSON.stringify(v));
 function validate(value){

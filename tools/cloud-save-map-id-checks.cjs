@@ -5,13 +5,20 @@
 // can otherwise crash map setup instead of selecting the restored region.
 const assert=require('node:assert/strict');
 const core=require('../app/src/main/assets/cloud-save-core.js');
-const regions=[
- 'ashvale','ashvale_home','brackenford','brackenford_home','crowfield','emberdeep',
- 'frontier_outpost','frontier_quarry','frostmarch','glassridge','greenhollow',
- 'highmoor','memory_valley','mosslight','redfen','shrine_heart',
- 'shrine_rootmaze','stonewatch','stonewatch_home','stonewatchroad','sunharbor',
- 'sunmere','sunmere_home','veilhaven','wayfarers_camp','whisperwood','willowfen'
-];
+const fs=require('node:fs');
+// The packaged game creates outdoor maps from the complete 9x9 worldGrid.
+// Do not infer the map catalog from the smaller initial maps object.
+const game=fs.readFileSync('app/src/main/assets/index.html','utf8');
+const gridMatch=game.match(/const worldGrid=(\[[\s\S]*?\n\]);/);
+assert(gridMatch,'Actual packaged world grid missing');
+const grid=JSON.parse(gridMatch[1]);
+assert.equal(grid.length,9);
+assert(grid.every(row=>row.length===9));
+const regions=[...new Set([...grid.flat(),
+ 'ashvale_home','brackenford_home','frontier_quarry','memory_valley',
+ 'shrine_heart','shrine_rootmaze','stonewatch_home','sunmere_home',
+ 'veilhaven','wayfarers_camp'
+])];
 const row=mapId=>({id:'slot1',updated:1000,name:'Map Keeper',class:'warrior',level:3,state:{
  player:{name:'Map Keeper',class:'warrior',level:3,xp:0,coins:4,inventory:[],hp:30,max:40,x:300,y:200,speed:3},
  mapId,companions:[],mapStates:{},townQuestState:{}}});
@@ -43,4 +50,4 @@ const storage={getItem:key=>storageMap.get(key)??null,
 core.restore(storage,backup('wayfarers_camp'),{confirmed:true,allowOlder:true});
 assert.equal(JSON.parse(storageMap.get(core.SLOT_KEY)).slot1.state.mapId,'wayfarers_camp');
 assert.equal(core.parse(core.recoveryText(storage)).slots.slot1.state.mapId,'ashvale');
-console.log('PASS: 8 unknown/inherited regions refused without writes; 27 actual regions and recovery import preserved.');
+console.log('PASS: 8 unknown/inherited regions refused without writes; all packaged outdoor/interior regions and recovery import preserved.');
