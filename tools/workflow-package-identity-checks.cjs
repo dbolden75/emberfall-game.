@@ -20,7 +20,7 @@ assert.match(maintained, /python3\s+tools\/restore-game-source\.py/,
   'Maintained CI must restore audited game assets');
 assert.match(maintained, /:app:assembleDebug\s+:app:assembleRelease\s+:app:bundleRelease/,
   'Maintained CI must build APK and AAB from the real Android project');
-assert.match(maintained, /com\.vaelbrink\.ashvale\.newjourney.*versionCode='166'.*versionName='1\.0\.64'/,
+assert.match(maintained, /com\.vaelbrink\.ashvale\.newjourney.*versionCode='167'.*versionName='1\.0\.64'/,
   'Maintained CI must assert the release package and version');
 assert.match(gradle, /applicationId\s+['"]com\.vaelbrink\.ashvale\.newjourney['"]/,
   'The appId must preserve existing Play app and local saves');
