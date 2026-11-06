@@ -8,6 +8,12 @@ const IDS=['slot1','slot2','slot3','slot4'],MAX_BYTES=8*1024*1024;
 // that would clamp/teleport a hero or strand monsters outside every map.
 const MAX_WORLD_COORD=10000;
 const safeWorldCoord=v=>typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<=MAX_WORLD_COORD;
+// Live gathering and respawn AI compare saved deadlines to Date.now(). A
+// mathematically finite but century-long deadline would permanently disable
+// resources/respawns. Allow ten years of clock skew and historical timestamps.
+const MAX_FUTURE_DEADLINE_MS=10*366*24*60*60*1000;
+const safeDeadline=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&
+ v<=Date.now()+MAX_FUTURE_DEADLINE_MS;
 // Match installed petDefs ids. Unknown ids otherwise disappear in normalizePets().
 // Explicit membership also rejects inherited names such as '__proto__'.
 const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
@@ -359,7 +365,7 @@ function safeEnemySnapshots(mapStates){
   // or fishing permanently unavailable. Historical absent/null timers remain
   // valid, but supplied cooldowns must be finite nonnegative numbers.
   if(saved.gatherNodes!=null&&(!Array.isArray(saved.gatherNodes)||
-   !saved.gatherNodes.every(time=>typeof time==='number'&&Number.isFinite(time)&&time>=0)))return false;
+   !saved.gatherNodes.every(safeDeadline)))return false;
   // Shrine load coerces runeProgress with Number(...), so a corrupt text
   // counter can silently advance/skip a puzzle or block the next rune.
   // Legitimate saves write a nonnegative integer; older saves may omit it.
@@ -395,8 +401,8 @@ function safeEnemySnapshots(mapStates){
    // zero HP, respawnAt||0 discards a timer, and null alive/lootClaimed
    // changes enemy and loot state. Preserve truly absent historical fields.
    ['hp','maxHp','respawnAt'].every(key=>
-    e[key]===undefined||(typeof e[key]==='number'&&Number.isFinite(e[key])&&
-    (key==='hp'||key==='maxHp'||key==='respawnAt'?e[key]>=0:true)))&&
+    e[key]===undefined||(key==='respawnAt'?safeDeadline(e[key]):
+    (typeof e[key]==='number'&&Number.isFinite(e[key])&&e[key]>=0)))&&
    // applySavedGame rescales HP as savedHp/savedMax * regional max HP.
    // A damaged saved overmax ratio would resurrect a monster with far more
    // health than the region permits; refuse that import instead of changing
