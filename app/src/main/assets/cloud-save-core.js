@@ -379,6 +379,18 @@ function safeCompanions(pets){
  const seen=new Set();
  return pets.every(p=>p&&typeof p==='object'&&!Array.isArray(p)&&
   typeof p.id==='string'&&KNOWN_PET_IDS.has(p.id)&&!seen.has(p.id)&&!!seen.add(p.id)&&
+  // normalizePets() treats any version other than numeric 1 as legacy and
+  // refunds equipped pet gear into the hero's bag before deleting its slots.
+  // A corrupt string or a newer, unsupported migration version would silently
+  // alter equipment and can grant duplicate gear. Preserve genuine legacy 0
+  // and absent versions, but refuse other explicitly supplied versions.
+  (p.petVersion==null||(Number.isSafeInteger(p.petVersion)&&
+   (p.petVersion===0||p.petVersion===1)))&&
+  // Old pets can carry equipment in these slots for the one-time migration.
+  // Only item ids or empty slots are meaningful; malformed objects would be
+  // discarded, so importing them would falsely claim to preserve gear.
+  ['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>
+   p[slot]==null||typeof p[slot]==='string')&&
   // normalizePets() converts invalid health to zero and deactivates the pet.
   // Reject lossy health snapshots before replacing a player's existing save.
   ['hp','max'].every(field=>p[field]==null||
