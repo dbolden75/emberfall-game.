@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - fix/cloud-save-map-id-integrity-20261106
       - fix/cloud-backup-stale-export-20261105
       - fix/ordinary-save-silent-storage-20261105
       - fix/play-purchase-silent-storage-20261105
