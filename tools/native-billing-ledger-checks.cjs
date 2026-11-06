@@ -53,8 +53,13 @@ assert(finishMethod.includes('final int finishSession=billingSessionEpoch;'),
        'Finish requests must capture the Play session identity');
 assert(finishMethod.includes('!r.optBoolean("active")')&&finishMethod.includes('!trustworthySavedReceipt(r)'),
        'Play consume/ack dispatch must reject revoked or unverified receipts directly');
-assert.equal(finishMethod.split('complete(r,result,finishSession)').length-1,2,
-       'Consumption and acknowledgement callbacks must preserve their session identity');
+assert.equal(finishMethod.split('complete(r,result,finishSession)').length-1,1,
+       'Acknowledgement callback must preserve its Play session identity');
+assert.equal(finishMethod.split('completeConsumed(r,result,token,finishSession)').length-1,1,
+       'Consumption callback must pass its returned token and Play session identity');
+const consumeMethod=finishMethod.slice(finishMethod.indexOf('private void completeConsumed('));
+assert(consumeMethod.includes('r.optString("token").equals(returnedToken)?result:null'),
+       'A mismatched Play consume callback token must not confirm another purchase');
 assert(finishMethod.includes('}catch(RuntimeException dispatchFailure){'),
        'Thrown Play consume/ack API calls must be guarded without crashing the Activity');
 const onFailure=finishMethod.slice(finishMethod.indexOf('}catch(RuntimeException dispatchFailure){'));
