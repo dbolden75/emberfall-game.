@@ -21,24 +21,25 @@ const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
 // regions silently strand the hero; inherited names such as '__proto__' and
 // 'constructor' make maps[id] appear valid and can crash setMap().
 // Update this list when adding a playable map.
+// Includes generated outdoor maps, interior maps and four story sanctums.
 const KNOWN_MAP_IDS=new Set([
  'ancientgrove','ashenpass','ashenwastes','ashvale','ashvale_home',
  'aurorareach','blackbriar','blackstone','bogreach','borealhollow',
  'brackenford','brackenford_home','briarhollow','burntwood','cinderfall',
  'cinderfields','cinderridge','coalcoast','coastroad','coldwater',
  'coralstrand','crowfield','deepfen','duskwood','dustroad',
- 'easternshoals','elderwood','emberdeep','emberplain','fenroad',
+ 'easternshoals','elderwood','embercrypt','emberdeep','emberplain','fenroad',
  'fernvale','flamecrest','forgottenmoor','frontier_outpost','frontier_quarry',
  'frosthavenwilds','frostmarch','frostwood','frozenstrand','glaciergate',
- 'glassridge','greenhollow','gullwatch','highmoor','iceboundvale',
+ 'glassridge','greenhollow','gullwatch','highmoor','hollowcrown','iceboundvale',
  'icecoast','meadowroad','memory_valley','moonwood','mosslight',
  'murkwood','northernshoals','northridge','oakheart','obsidianreach',
  'obsidianshore','redfen','redstonevale','reedwater','rimewatch',
  'saltwindreach','scorchedstrand','seafoamcliffs','shrine_heart','shrine_rootmaze',
  'silverpine','sinkinghollow','snowmeltbasin','snowveil','sootmarsh',
  'southernthicket','southwood','starfallridge','stonewatch','stonewatch_home',
- 'stonewatchroad','stormcoast','sunharbor','sunmere','sunmere_home',
- 'thornwall','tidewood','veilhaven','wayfarers_camp','westwood',
+ 'stonewatchroad','stormcoast','stormspire','sunharbor','sunmere','sunmere_home',
+ 'thornwall','tidevault','tidewood','veilhaven','wayfarers_camp','westwood',
  'whisperwood','whitefangpass','willowfen','winterspire','witchfen',
  'wolfpine'
 ]);
