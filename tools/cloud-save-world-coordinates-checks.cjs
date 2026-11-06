@@ -26,6 +26,8 @@ for(const key of ['x','y','spawnX','spawnY']){
  for(const value of [-1e12,1e12])
   mustReject(payload(s=>{s.mapStates.ashvale.enemies[0][key]=value;}),'Enemy '+key+'='+value);
 }
+for(const key of ['x','y'])
+ mustReject(payload(s=>{s.mapStates.ashvale.enemies[0][key]=null;}),'Explicit null enemy position '+key);
 // Older game saves can legitimately omit optional fields, and the open-world
 // map has negative offsets. Do not reject those or ordinary large positions.
 for(const val of [-9999,9999]){
@@ -45,4 +47,4 @@ const keys=[core.SLOT_KEY,core.ACTIVE_SLOT_KEY,core.RECOVERY_KEY];
 const before=keys.map(k=>storage.getItem(k));
 assert.throws(()=>core.restore(storage,payload(s=>{s.mapStates.ashvale.enemies[0].x=1e12}),{confirmed:true,allowOlder:true}),/enemy positions/i);
 assert.deepEqual(keys.map(k=>storage.getItem(k)),before,'Rejected import must preserve saves and recovery');
-console.log('PASS: 12 impossible world coordinates rejected; valid/legacy snapshots and existing local saves preserved.');
+console.log('PASS: 14 invalid world coordinates rejected; valid/legacy snapshots and existing local saves preserved.');
