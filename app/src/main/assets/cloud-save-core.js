@@ -21,7 +21,7 @@ const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
 // regions silently strand the hero; inherited names such as '__proto__' and
 // 'constructor' make maps[id] appear valid and can crash setMap().
 // Update this list when adding a playable map.
-// Includes generated outdoor maps, interior maps and four story sanctums.
+// Includes generated outdoor maps, Worldsend, interiors and four story sanctums.
 const KNOWN_MAP_IDS=new Set([
  'ancientgrove','ashenpass','ashenwastes','ashvale','ashvale_home',
  'aurorareach','blackbriar','blackstone','bogreach','borealhollow',
@@ -41,7 +41,7 @@ const KNOWN_MAP_IDS=new Set([
  'stonewatchroad','stormcoast','stormspire','sunharbor','sunmere','sunmere_home',
  'thornwall','tidevault','tidewood','veilhaven','wayfarers_camp','westwood',
  'whisperwood','whitefangpass','willowfen','winterspire','witchfen',
- 'wolfpine'
+ 'wolfpine','worldsend'
 ]);
 const clone=v=>JSON.parse(JSON.stringify(v));
 function validate(value){
