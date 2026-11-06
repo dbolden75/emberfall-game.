@@ -442,9 +442,10 @@ function safeCompanions(pets){
   // discarded, so importing them would falsely claim to preserve gear.
   ['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>
    p[slot]==null||typeof p[slot]==='string')&&
-  // normalizePets() converts invalid health to zero and deactivates the pet.
-  // Reject lossy health snapshots before replacing a player's existing save.
-  ['hp','max'].every(field=>p[field]==null||
+  // normalizePets() treats explicit null health as zero or substitutes a
+  // default maximum, potentially deactivating or healing a purchased pet.
+  // Only missing historical health fields may inherit defaults.
+  ['hp','max'].every(field=>p[field]===undefined||
    (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0))&&
   // Restored pets preserve their saved movement and attack timers. Text,
   // nulls or off-world coordinates are not repaired by normalizePets(), so a
@@ -455,9 +456,10 @@ function safeCompanions(pets){
    (typeof p[field]==='number'&&Number.isFinite(p[field])&&Math.abs(p[field])<=1))&&
   ['cool','skillCool','attack','castTime'].every(field=>p[field]===undefined||
    (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0))&&
-  // A string like 'false' is truthy in normalizePets(), activating pets
-  // that were inactive in the backup. Keep missing historical flags valid.
-  (p.active==null||typeof p.active==='boolean')&&
+  // Explicit null is not an absent legacy flag: normalizePets() turns it
+  // into false and silently deactivates a previously active pet.
+  // Only omitted historical flags may inherit the normalizer's default.
+  (p.active===undefined||typeof p.active==='boolean')&&
   // normalizePets() clamps hp/max to a 0..1 ratio. If the saved pet reports
   // more health than its max, import would silently treat it as fully healed.
   // Retain compatibility with old saves missing either field and dead zero/zero pets.
