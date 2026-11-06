@@ -3,6 +3,11 @@
 'use strict';
 const SLOT_KEY='emberfall_character_slots_v1',ACTIVE_SLOT_KEY='emberfall_active_character_slot_v1',RECOVERY_KEY='thornhaven.restore-recovery.v1';
 const IDS=['slot1','slot2','slot3','slot4'],MAX_BYTES=8*1024*1024;
+// Thornhaven's current maps are at most a few thousand world pixels across.
+// Permit much larger historical offsets, but refuse clearly corrupt positions
+// that would clamp/teleport a hero or strand monsters outside every map.
+const MAX_WORLD_COORD=10000;
+const safeWorldCoord=v=>typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<=MAX_WORLD_COORD;
 // Match installed petDefs ids. Unknown ids otherwise disappear in normalizePets().
 // Explicit membership also rejects inherited names such as '__proto__'.
 const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
@@ -60,6 +65,7 @@ function safeHeroVitals(player){
   if(typeof value!=='number'||!Number.isFinite(value))return false;
   if((key==='max'||key==='speed')&&value<=0)return false;
   if(key==='hp'&&value<0)return false;
+  if((key==='x'||key==='y')&&!safeWorldCoord(value))return false;
  }
  // applySavedGame() clamps HP above the saved maximum, silently turning a
  // corrupt backup into a fully healed hero. Check only when both fields were
@@ -345,11 +351,13 @@ function safeEnemySnapshots(mapStates){
   if(saved.enemies===undefined)return true;
   return Array.isArray(saved.enemies)&&saved.enemies.every(e=>
    e&&typeof e==='object'&&!Array.isArray(e)&&
-   (e.x===undefined||(typeof e.x==='number'&&Number.isFinite(e.x)))&&
-   (e.y===undefined||(typeof e.y==='number'&&Number.isFinite(e.y)))&&
+   // Malformed but finite coordinates previously sent enemies far off-map
+   // without any warning after a supposedly successful Cloud Save restore.
+   ['x','y'].every(key=>e[key]===undefined||safeWorldCoord(e[key]))&&
+   ['spawnX','spawnY'].every(key=>e[key]==null||safeWorldCoord(e[key]))&&
    // Reject invalid attributes before applySavedGame copies them to live
    // enemies. A nonnumeric respawnAt silently prevents future respawns.
-   ['hp','maxHp','respawnAt','spawnX','spawnY'].every(key=>
+   ['hp','maxHp','respawnAt'].every(key=>
     e[key]==null||(typeof e[key]==='number'&&Number.isFinite(e[key])&&
     (key==='hp'||key==='maxHp'||key==='respawnAt'?e[key]>=0:true)))&&
    // applySavedGame rescales HP as savedHp/savedMax * regional max HP.
