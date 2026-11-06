@@ -19,9 +19,9 @@ const regions=[...new Set([...grid.flat(),
  'ashvale_home','brackenford_home','frontier_quarry','memory_valley',
  'shrine_heart','shrine_rootmaze','stonewatch_home','sunmere_home',
  'veilhaven','wayfarers_camp',
- 'embercrypt','tidevault','stormspire','hollowcrown'
+ 'embercrypt','tidevault','stormspire','hollowcrown','worldsend'
 ])];
-assert.equal(regions.length,95,'All generated regions, interiors and story sanctums must be covered');
+assert.equal(regions.length,96,'All generated regions, interiors and story sanctums must be covered');
 const row=mapId=>({id:'slot1',updated:1000,name:'Map Keeper',class:'warrior',level:3,state:{
  player:{name:'Map Keeper',class:'warrior',level:3,xp:0,coins:4,inventory:[],hp:30,max:40,x:300,y:200,speed:3},
  mapId,companions:[],mapStates:{},townQuestState:{}}});
