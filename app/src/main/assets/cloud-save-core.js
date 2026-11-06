@@ -280,8 +280,16 @@ function safeHumanParty(party){
   if(c.name!=null&&(typeof c.name!=='string'||!c.name.trim()))return false;
   if(c.active!=null&&typeof c.active!=='boolean')return false;
   if(c.human!=null&&c.human!==true)return false;
-  for(const key of ['x','y','faceX','faceY','cool','skillCool'])
-   if(c[key]!=null&&(typeof c[key]!=='number'||!Number.isFinite(c[key])))return false;
+  // Human companions are restored directly into the follow/combat AI.
+  // A finite but far-off x/y can strand them; unbounded facing or negative
+  // timers can break attacks or skill availability. Missing/null historical
+  // fields remain supported, as they were before this validation.
+  for(const key of ['x','y'])
+   if(c[key]!=null&&!safeWorldCoord(c[key]))return false;
+  for(const key of ['faceX','faceY'])
+   if(c[key]!=null&&(typeof c[key]!=='number'||!Number.isFinite(c[key])||Math.abs(c[key])>1))return false;
+  for(const key of ['cool','skillCool','attack','castTime'])
+   if(c[key]!=null&&(typeof c[key]!=='number'||!Number.isFinite(c[key])||c[key]<0))return false;
  }
  return true;
 }
