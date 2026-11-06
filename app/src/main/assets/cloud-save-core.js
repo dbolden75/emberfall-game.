@@ -11,6 +11,31 @@ const safeWorldCoord=v=>typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<=MA
 // Match installed petDefs ids. Unknown ids otherwise disappear in normalizePets().
 // Explicit membership also rejects inherited names such as '__proto__'.
 const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
+// Only map keys actually defined in the game are safe to restore. Unknown
+// regions silently strand the hero; inherited names such as '__proto__' and
+// 'constructor' make maps[id] appear valid and can crash setMap().
+// Update this list when adding a playable map.
+const KNOWN_MAP_IDS=new Set([
+ 'ancientgrove','ashenpass','ashenwastes','ashvale','ashvale_home',
+ 'aurorareach','blackbriar','blackstone','bogreach','borealhollow',
+ 'brackenford','brackenford_home','briarhollow','burntwood','cinderfall',
+ 'cinderfields','cinderridge','coalcoast','coastroad','coldwater',
+ 'coralstrand','crowfield','deepfen','duskwood','dustroad',
+ 'easternshoals','elderwood','emberdeep','emberplain','fenroad',
+ 'fernvale','flamecrest','forgottenmoor','frontier_outpost','frontier_quarry',
+ 'frosthavenwilds','frostmarch','frostwood','frozenstrand','glaciergate',
+ 'glassridge','greenhollow','gullwatch','highmoor','iceboundvale',
+ 'icecoast','meadowroad','memory_valley','moonwood','mosslight',
+ 'murkwood','northernshoals','northridge','oakheart','obsidianreach',
+ 'obsidianshore','redfen','redstonevale','reedwater','rimewatch',
+ 'saltwindreach','scorchedstrand','seafoamcliffs','shrine_heart','shrine_rootmaze',
+ 'silverpine','sinkinghollow','snowmeltbasin','snowveil','sootmarsh',
+ 'southernthicket','southwood','starfallridge','stonewatch','stonewatch_home',
+ 'stonewatchroad','stormcoast','sunharbor','sunmere','sunmere_home',
+ 'thornwall','tidewood','veilhaven','wayfarers_camp','westwood',
+ 'whisperwood','whitefangpass','willowfen','winterspire','witchfen',
+ 'wolfpine'
+]);
 const clone=v=>JSON.parse(JSON.stringify(v));
 function validate(value){
  let nodes=0;
@@ -37,7 +62,8 @@ function validate(value){
   if((row.name!=null&&row.name!==p.name)||
      (row.class!=null&&row.class!==p.class)||
      (row.level!=null&&row.level!==p.level))throw Error('Backup character listing does not match its saved progress.');
-  if(!row.state.mapId||typeof row.state.mapId!=='string'||!Array.isArray(row.state.companions)||
+  if(!KNOWN_MAP_IDS.has(row.state.mapId))throw Error('Unknown saved region in backup.');
+  if(!Array.isArray(row.state.companions)||
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
   if(!safeExperience(p.xp))throw Error('Invalid character experience.');
@@ -456,7 +482,7 @@ function readableLocalRow(id,row){
   p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.name==='string'&&!!p.name.trim()&&
   ['warrior','rogue','mage','cleric'].includes(p.class)&&
   Number.isSafeInteger(p.level)&&p.level>=1&&Number.isFinite(p.coins)&&p.coins>=0&&
-  typeof state.mapId==='string'&&!!state.mapId&&Array.isArray(state.companions)&&
+  KNOWN_MAP_IDS.has(state.mapId)&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
   safeExperience(p.xp)&&safeHeroVitals(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&

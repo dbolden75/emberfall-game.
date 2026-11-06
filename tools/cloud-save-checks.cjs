@@ -6,7 +6,7 @@ class Storage {
  setItem(k,v){if(k===this.fail)throw Error('QuotaExceededError');this.data.set(k,String(v));}
  removeItem(k){this.data.delete(k);}
 }
-function row(name='Cloud hero',updated=100){return {id:'slot1',name,class:'warrior',level:9,updated,state:{player:{name,class:'warrior',level:9,coins:543,inventory:[{id:'iron',count:12}],weapon:'iron_sword',armor:'leather',xp:27},mapId:'elderwood',companions:[{id:'dalen',hp:20,active:true}],mapStates:{elderwood:{enemies:[{alive:false,lootClaimed:true}],gatherNodes:[123]}},townQuestState:{questA:true,_localExploration:{elderwood:{'1,2':true}},_playReceipts:{['a'.repeat(64)]:'thornhaven_builder_contract'}},houseStorage:{ashvale:{wood:10}},gatheringSkills:{mining:{xp:100,level:3}},ownedHomes:{ashvale:true}}};}
+function row(name='Cloud hero',updated=100){return {id:'slot1',name,class:'warrior',level:9,updated,state:{player:{name,class:'warrior',level:9,coins:543,inventory:[{id:'iron',count:12}],weapon:'iron_sword',armor:'leather',xp:27},mapId:'ashvale',companions:[{id:'dalen',hp:20,active:true}],mapStates:{ashvale:{enemies:[{alive:false,lootClaimed:true}],gatherNodes:[123]}},townQuestState:{questA:true,_localExploration:{ashvale:{'1,2':true}},_playReceipts:{['a'.repeat(64)]:'thornhaven_builder_contract'}},houseStorage:{ashvale:{wood:10}},gatheringSkills:{mining:{xp:100,level:3}},ownedHomes:{ashvale:true}}};}
 // Use the live game's {xp,level} skill record, not the old synthetic
 // mining:3 placeholder (which the loader would silently reset to zero XP).
 const slots={slot1:row(),slot3:{...row('Second hero',200),id:'slot3'}};
@@ -238,7 +238,7 @@ for(const [label,enemy] of [
  ['invalid y',{x:20,y:'north'}]
 ]){
  const damaged=row('Damaged map');
- damaged.state.mapStates.elderwood.enemies=[enemy];
+ damaged.state.mapStates.ashvale.enemies=[enemy];
  const raw=JSON.stringify({slot1:damaged});
  const blob=JSON.stringify({format:'thornhaven-save',schema:1,createdAt:300,
   activeSlot:'slot1',slots:{slot1:damaged}});
@@ -249,7 +249,7 @@ for(const [label,enemy] of [
  assert.equal(store.getItem(core.SLOT_KEY),raw,'No unapproved save overwrite');
 }
 const oldEnemy=row('Historic map');
-oldEnemy.state.mapStates.elderwood.enemies=[{alive:false,lootClaimed:true}];
+oldEnemy.state.mapStates.ashvale.enemies=[{alive:false,lootClaimed:true}];
 const oldBlob=JSON.stringify({format:'thornhaven-save',schema:1,createdAt:300,
  activeSlot:'slot1',slots:{slot1:oldEnemy}});
 assert(core.parse(oldBlob),'Previous save shape without optional enemy coordinates remains supported');
@@ -267,8 +267,8 @@ for(const [field,bad] of [
  ['alive','false'],['lootClaimed','false']
 ]){
  const damaged=row('Bad enemy field');
- damaged.state.mapStates.elderwood.enemies=[{x:1,y:2,alive:false,respawnAt:500,hp:0,maxHp:12}];
- damaged.state.mapStates.elderwood.enemies[0][field]=bad;
+ damaged.state.mapStates.ashvale.enemies=[{x:1,y:2,alive:false,respawnAt:500,hp:0,maxHp:12}];
+ damaged.state.mapStates.ashvale.enemies[0][field]=bad;
  const raw=JSON.stringify({slot1:damaged});
  const backup=JSON.stringify({format:'thornhaven-save',schema:1,
   createdAt:300,activeSlot:'slot1',slots:{slot1:damaged}});
@@ -280,7 +280,7 @@ for(const optional of ['hp','maxHp','respawnAt','spawnX','spawnY','alive','lootC
  const enemy={x:1,y:2,alive:false,respawnAt:500,hp:0,maxHp:12,
   spawnX:1,spawnY:2,lootClaimed:false};
  delete enemy[optional];
- historical.state.mapStates.elderwood.enemies=[enemy];
+ historical.state.mapStates.ashvale.enemies=[enemy];
  const backup=JSON.stringify({format:'thornhaven-save',schema:1,
   createdAt:300,activeSlot:'slot1',slots:{slot1:historical}});
  assert(core.parse(backup),'Historical snapshot may omit '+optional);
