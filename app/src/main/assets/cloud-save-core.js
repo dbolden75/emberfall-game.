@@ -76,7 +76,8 @@ function validate(value){
   // Game load/save only visits existing maps. Unknown saved map-state keys are
   // silently dropped during the next save, erasing enemy, shrine or loot progress.
   // Refuse lossy restores rather than falsely claiming a complete backup import.
-  if(!Object.keys(row.state.mapStates).every(id=>KNOWN_MAP_IDS.has(id)))throw Error('Unknown saved map state in backup.');
+  const unknownMapStates=Object.keys(row.state.mapStates).filter(id=>!KNOWN_MAP_IDS.has(id));
+  if(unknownMapStates.length)throw Error('Unknown saved map state in backup: '+unknownMapStates.join(','));
   if(!safeExperience(p.xp,p.level))throw Error('Invalid character experience.');
   if(!safeHeroVitals(p))throw Error('Invalid character health, movement or position in backup.');
   if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
