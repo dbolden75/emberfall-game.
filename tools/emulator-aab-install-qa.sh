@@ -14,12 +14,12 @@ mkdir -p "$OUT"
 test -s "$APK"
 "$APKSIGNER" verify --verbose "$APK" > "$OUT/qa-aab-universal-signature.txt"
 "$AAPT" dump badging "$APK" | tee "$OUT/qa-aab-universal-badging.txt"
-grep -q "package: name='$PKG' versionCode='166' versionName='1.0.64'" "$OUT/qa-aab-universal-badging.txt"
+grep -q "package: name='$PKG' versionCode='167' versionName='1.0.65'" "$OUT/qa-aab-universal-badging.txt"
 adb wait-for-device
 # The previous emulator-release-qa stage already installed synthetic saves in
-# version 166 using this same disposable QA signer. Do not uninstall/clear it.
+# version 167 using this same disposable QA signer. Do not uninstall/clear it.
 adb shell dumpsys package "$PKG" > "$OUT/qa-aab-before-package.txt"
-grep -q 'versionCode=166' "$OUT/qa-aab-before-package.txt"
+grep -q 'versionCode=167' "$OUT/qa-aab-before-package.txt"
 # Android keeps the original first-install timestamp on a genuine in-place
 # replacement. A reinstall after uninstalling would reset it and invalidate
 # this non-destructive install test, even if the fresh APK could launch.
@@ -31,7 +31,7 @@ adb shell am force-stop "$PKG"
 timeout --signal=TERM --kill-after=10s 120s adb install -r "$APK" | tee "$OUT/qa-aab-install-in-place.txt"
 grep -qx 'Success' "$OUT/qa-aab-install-in-place.txt"
 adb shell dumpsys package "$PKG" > "$OUT/qa-aab-after-package.txt"
-grep -q 'versionCode=166' "$OUT/qa-aab-after-package.txt"
+grep -q 'versionCode=167' "$OUT/qa-aab-after-package.txt"
 after_first_install="$(sed -n 's/^[[:space:]]*firstInstallTime=//p' "$OUT/qa-aab-after-package.txt" | head -n 1)"
 test "$before_first_install" = "$after_first_install" || {
   echo 'FAIL: Android firstInstallTime changed during AAB install; not a verified in-place replacement'

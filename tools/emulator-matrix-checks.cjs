@@ -45,7 +45,7 @@ for(const orientation of ['portrait','landscape']){
 assert(workflow.includes('api-level: ${{ matrix.api-level }}'));
 assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}'));
-assert(workflow.includes('name: thornhaven-164-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
+assert(workflow.includes('name: thornhaven-165-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
 assert(shell.includes('control-preferences-$orientation'),'Native matrix must select its orientation');
 const logcatLaunch='adb logcat -v threadtime -b main -b system -b crash > reports/control-matrix/streamed-logcat.txt 2>&1 &';
 assert(shell.includes(logcatLaunch),'Guest crash logs must stream before ADB disappears');

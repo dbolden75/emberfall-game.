@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dedicated Android 14 control-matrix QA in a CLEAN disposable emulator.
-# This intentionally runs apart from the 1.0.57 -> 1.0.64 upgrade/SAF
+# This intentionally runs apart from the 1.0.57 -> 1.0.65 upgrade/SAF
 # DocumentsUI stress test so graphics-emulator exhaustion cannot hide a
 # genuine control-layout failure. Production signing materials are never used.
 set -euo pipefail
@@ -70,7 +70,7 @@ test -s "$APK"
 node tools/emulator-matrix-checks.cjs | tee reports/control-matrix/static-validation.txt
 "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
 "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee reports/control-matrix/badging.txt
-grep -q "package: name='$PKG' versionCode='166' versionName='1.0.64'" reports/control-matrix/badging.txt
+grep -q "package: name='$PKG' versionCode='167' versionName='1.0.65'" reports/control-matrix/badging.txt
 # Never uninstall or clear data from a user device. This is a brand-new,
 # ephemeral Android emulator used only for synthetic test characters.
 adb install "$APK" | tee reports/control-matrix/install.txt
