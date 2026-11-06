@@ -421,6 +421,15 @@ function safeCompanions(pets){
   // Reject lossy health snapshots before replacing a player's existing save.
   ['hp','max'].every(field=>p[field]==null||
    (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0))&&
+  // Restored pets preserve their saved movement and attack timers. Text,
+  // nulls or off-world coordinates are not repaired by normalizePets(), so a
+  // malformed import can strand a purchased/quest pet or break its combat AI.
+  // Missing historical movement fields still inherit makeCompanion defaults.
+  ['x','y'].every(field=>p[field]===undefined||safeWorldCoord(p[field]))&&
+  ['faceX','faceY'].every(field=>p[field]===undefined||
+   (typeof p[field]==='number'&&Number.isFinite(p[field])&&Math.abs(p[field])<=1))&&
+  ['cool','skillCool','attack','castTime'].every(field=>p[field]===undefined||
+   (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0))&&
   // A string like 'false' is truthy in normalizePets(), activating pets
   // that were inactive in the backup. Keep missing historical flags valid.
   (p.active==null||typeof p.active==='boolean')&&
