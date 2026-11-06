@@ -352,6 +352,11 @@ function safeEnemySnapshots(mapStates){
    ['hp','maxHp','respawnAt','spawnX','spawnY'].every(key=>
     e[key]==null||(typeof e[key]==='number'&&Number.isFinite(e[key])&&
     (key==='hp'||key==='maxHp'||key==='respawnAt'?e[key]>=0:true)))&&
+   // applySavedGame rescales HP as savedHp/savedMax * regional max HP.
+   // A damaged saved overmax ratio would resurrect a monster with far more
+   // health than the region permits; refuse that import instead of changing
+   // enemy difficulty. Missing historical maxima remain compatible.
+   (e.hp==null||e.maxHp==null||e.hp<=e.maxHp)&&
    ['alive','lootClaimed'].every(key=>e[key]==null||typeof e[key]==='boolean'));
  });
 }
