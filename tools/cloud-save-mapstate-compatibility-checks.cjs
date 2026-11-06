@@ -35,7 +35,7 @@ for(const variant of [
  {ashvale:null},
  {ashvale:{enemies:[{x:400,y:200,hp:20,maxHp:20,alive:true,lootClaimed:false,respawnAt:0}]},brackenford:{enemies:[]}},
  {shrine_rootmaze:{runes:[false,true]},wayfarers_camp:{enemies:[]}},
- {embercrypt:{enemies:[]},tidevault:{enemies:[]},stormspire:{enemies:[]},hollowcrown:{enemies:[]}},
+ {embercrypt:{enemies:[]},tidevault:{enemies:[]},stormspire:{enemies:[]},hollowcrown:{enemies:[]},worldsend:{enemies:[]}},
 ]){
  const r=row();r.state.mapStates=variant;
  assert.doesNotThrow(()=>core.parse(data(r)),'Existing map snapshot remains valid');checks++;
