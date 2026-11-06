@@ -19,8 +19,8 @@ android {
         applicationId 'com.vaelbrink.ashvale.newjourney'
         minSdk 24
         targetSdk 36
-        versionCode 166
-        versionName '1.0.64'
+        versionCode 167
+        versionName '1.0.65'
     }
 }
 
