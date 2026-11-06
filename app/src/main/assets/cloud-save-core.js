@@ -21,26 +21,27 @@ const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
 // regions silently strand the hero; inherited names such as '__proto__' and
 // 'constructor' make maps[id] appear valid and can crash setMap().
 // Update this list when adding a playable map.
+// Includes generated outdoor maps, Worldsend, interiors and four story sanctums.
 const KNOWN_MAP_IDS=new Set([
  'ancientgrove','ashenpass','ashenwastes','ashvale','ashvale_home',
  'aurorareach','blackbriar','blackstone','bogreach','borealhollow',
  'brackenford','brackenford_home','briarhollow','burntwood','cinderfall',
  'cinderfields','cinderridge','coalcoast','coastroad','coldwater',
  'coralstrand','crowfield','deepfen','duskwood','dustroad',
- 'easternshoals','elderwood','emberdeep','emberplain','fenroad',
+ 'easternshoals','elderwood','embercrypt','emberdeep','emberplain','fenroad',
  'fernvale','flamecrest','forgottenmoor','frontier_outpost','frontier_quarry',
  'frosthavenwilds','frostmarch','frostwood','frozenstrand','glaciergate',
- 'glassridge','greenhollow','gullwatch','highmoor','iceboundvale',
+ 'glassridge','greenhollow','gullwatch','highmoor','hollowcrown','iceboundvale',
  'icecoast','meadowroad','memory_valley','moonwood','mosslight',
  'murkwood','northernshoals','northridge','oakheart','obsidianreach',
  'obsidianshore','redfen','redstonevale','reedwater','rimewatch',
  'saltwindreach','scorchedstrand','seafoamcliffs','shrine_heart','shrine_rootmaze',
  'silverpine','sinkinghollow','snowmeltbasin','snowveil','sootmarsh',
  'southernthicket','southwood','starfallridge','stonewatch','stonewatch_home',
- 'stonewatchroad','stormcoast','sunharbor','sunmere','sunmere_home',
- 'thornwall','tidewood','veilhaven','wayfarers_camp','westwood',
+ 'stonewatchroad','stormcoast','stormspire','sunharbor','sunmere','sunmere_home',
+ 'thornwall','tidevault','tidewood','veilhaven','wayfarers_camp','westwood',
  'whisperwood','whitefangpass','willowfen','winterspire','witchfen',
- 'wolfpine'
+ 'wolfpine','worldsend'
 ]);
 const clone=v=>JSON.parse(JSON.stringify(v));
 function validate(value){
@@ -72,6 +73,11 @@ function validate(value){
   if(!Array.isArray(row.state.companions)||
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
+  // Game load/save only visits existing maps. Unknown saved map-state keys are
+  // silently dropped during the next save, erasing enemy, shrine or loot progress.
+  // Refuse lossy restores rather than falsely claiming a complete backup import.
+  const unknownMapStates=Object.keys(row.state.mapStates).filter(id=>!KNOWN_MAP_IDS.has(id));
+  if(unknownMapStates.length)throw Error('Unknown saved map state in backup: '+unknownMapStates.join(','));
   if(!safeExperience(p.xp,p.level))throw Error('Invalid character experience.');
   if(!safeHeroVitals(p))throw Error('Invalid character health, movement or position in backup.');
   if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
@@ -519,6 +525,7 @@ function readableLocalRow(id,row){
   Number.isSafeInteger(p.level)&&p.level>=1&&Number.isFinite(p.coins)&&p.coins>=0&&
   KNOWN_MAP_IDS.has(state.mapId)&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
+  Object.keys(state.mapStates).every(id=>KNOWN_MAP_IDS.has(id))&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
   safeExperience(p.xp,p.level)&&safeHeroVitals(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
