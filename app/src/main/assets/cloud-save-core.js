@@ -186,7 +186,7 @@ function safeSettlementProgress(settlement){
   if(values==null)continue;
   if(typeof values!=='object'||Array.isArray(values))return false;
   for(const [id,value] of Object.entries(values)){
-   const supported=group==='levels'?['hall','mill','quarry','garden','forge','lodge']:
+   const supported=group==='levels'?['palisade','gate','tower','barracks','hall','mill','quarry','garden','forge','lodge']:
     group==='claimed'?['hearth','lumber','stone','roads','promise','home']:
     ['wood','stone','food'];
    // Unknown fields from future game versions must survive an older restore.
