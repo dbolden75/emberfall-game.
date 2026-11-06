@@ -72,6 +72,10 @@ function validate(value){
   if(!Array.isArray(row.state.companions)||
    !row.state.mapStates||typeof row.state.mapStates!=='object'||Array.isArray(row.state.mapStates)||
    !row.state.townQuestState||typeof row.state.townQuestState!=='object'||Array.isArray(row.state.townQuestState))throw Error('Incomplete character progress.');
+  // Game load/save only visits existing maps. Unknown saved map-state keys are
+  // silently dropped during the next save, erasing enemy, shrine or loot progress.
+  // Refuse lossy restores rather than falsely claiming a complete backup import.
+  if(!Object.keys(row.state.mapStates).every(id=>KNOWN_MAP_IDS.has(id)))throw Error('Unknown saved map state in backup.');
   if(!safeExperience(p.xp,p.level))throw Error('Invalid character experience.');
   if(!safeHeroVitals(p))throw Error('Invalid character health, movement or position in backup.');
   if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
@@ -519,6 +523,7 @@ function readableLocalRow(id,row){
   Number.isSafeInteger(p.level)&&p.level>=1&&Number.isFinite(p.coins)&&p.coins>=0&&
   KNOWN_MAP_IDS.has(state.mapId)&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
+  Object.keys(state.mapStates).every(id=>KNOWN_MAP_IDS.has(id))&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
   safeExperience(p.xp,p.level)&&safeHeroVitals(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
