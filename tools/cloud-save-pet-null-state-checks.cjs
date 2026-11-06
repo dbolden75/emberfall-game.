@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Explicit-null pet vitals/active flags cannot be losslessly restored by
+// Explicit-null pet health fields cannot be losslessly restored by
 // normalizePets(). Preserve older snapshots with omitted optional fields.
 const assert=require('node:assert/strict');
 const core=require('../app/src/main/assets/cloud-save-core.js');
@@ -9,7 +9,7 @@ const row=pet=>({id:'slot1',updated:1000,name:'Companion Keeper',class:'warrior'
  mapId:'ashvale',companions:[pet],mapStates:{},townQuestState:{}}});
 const backup=pet=>JSON.stringify({format:'thornhaven-save',schema:1,createdAt:1000,activeSlot:'slot1',slots:{slot1:row(pet)}});
 const healthy={id:'dalen',petVersion:1,hp:10,max:20,active:true};
-for(const key of ['hp','max','active']){
+for(const key of ['hp','max']){
  const pet={...healthy,[key]:null},serialized=backup(pet);
  assert.throws(()=>core.parse(serialized),/companion|pet/i,`Explicit null ${key} must not mutate a pet on load`);
  assert.equal(core.readLocal(JSON.stringify({slot1:row(pet)})).unreadable,true,`Unreadable local ${key}`);
@@ -22,8 +22,9 @@ for(const key of ['hp','max','active']){
 }
 for(const pet of [healthy,{id:'dalen'}, {id:'dalen',petVersion:0,hp:0,max:0,active:false},
  {id:'dalen',petVersion:1,hp:10,max:20},
- {id:'ember_dragon',petVersion:1,hp:0,max:40,active:false}]){
+ {id:'ember_dragon',petVersion:1,hp:0,max:40,active:false},
+ {id:'dalen',petVersion:1,hp:10,max:20,active:null}]){
  assert.doesNotThrow(()=>core.parse(backup(pet)),'Valid/historical pet must remain importable');
  assert.equal(core.readLocal(JSON.stringify({slot1:row(pet)})).unreadable,false);
 }
-console.log('PASS: explicit-null hp/max/active rejected with zero writes; five current/legacy pet snapshots accepted');
+console.log('PASS: explicit-null hp/max rejected with zero writes; six current/legacy pet snapshots accepted');
