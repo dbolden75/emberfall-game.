@@ -20,6 +20,10 @@ button.onclick=show;get('cloudSaveClose').onclick=close;
 panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close();}if(e.key==='Tab'){const controls=[...panel.querySelectorAll('button,input')].filter(el=>!el.disabled&&el.getClientRects().length);const first=controls[0],last=controls[controls.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
 function review(text){
  const incoming=core.parse(text);
+ // Core validates saved data; compare all saved map snapshots against the
+ // installed world before overwriting local progress. Older releases cannot
+ // restore extra enemy, puzzle, trap, or gathering slots without item loss.
+ core.assertRestorableMapLayout(incoming,maps);
  for(const row of Object.values(incoming.slots))if(!Object.prototype.hasOwnProperty.call(maps,row.state.mapId))throw Error('This backup uses a map unavailable in this version.');
  // The game drops pets with unrecognized ids when loading. Do not silently
  // erase a pet from a backup made by a newer version.
