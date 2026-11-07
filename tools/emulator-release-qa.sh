@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Disposable Android 14 same-signer RELEASE -> RELEASE upgrade with synthetic saves.
-# Both 1.0.57 and 1.0.65 APKs use the SAME one-run QA certificate, never the
+# Both 1.0.57 and 1.0.66 APKs use the SAME one-run QA certificate, never the
 # maintained Play/upload key. No APK here may be distributed to players.
 set -euo pipefail
 PKG=com.vaelbrink.ashvale.newjourney
@@ -34,7 +34,7 @@ done
 "$AAPT" dump badging "$OLD_APK" | tee reports/emulator/qa-release-old-badging.txt
 "$AAPT" dump badging "$APK" | tee reports/emulator/qa-release-badging.txt
 grep -q "package: name='$PKG' versionCode='159' versionName='1.0.57'" reports/emulator/qa-release-old-badging.txt
-grep -q "package: name='$PKG' versionCode='167' versionName='1.0.65'" reports/emulator/qa-release-badging.txt
+grep -q "package: name='$PKG' versionCode='168' versionName='1.0.66'" reports/emulator/qa-release-badging.txt
 
 # This emulator is disposable: the preceding DEBUG-key smoke/upgrade phases
 # created only synthetic QA saves. A different QA key cannot update that app.
@@ -87,7 +87,7 @@ adb shell am force-stop "$PKG"
 # NO adb uninstall or pm clear is permitted between the two installs.
 adb install -r "$APK" | tee reports/emulator/qa-release-in-place-upgrade.txt
 adb shell dumpsys package "$PKG" > reports/emulator/qa-release-package.txt
-grep -q 'versionCode=167' reports/emulator/qa-release-package.txt
+grep -q 'versionCode=168' reports/emulator/qa-release-package.txt
 start_game upgraded
 webview_phase verify upgraded
 # Re-render all four towns in the NEW release variant and save again. The
@@ -129,5 +129,5 @@ if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
   echo 'FAIL: Android Runtime recorded release-variant process crash'
   exit 1
 fi
-echo 'PASS: same disposable QA signer: 1.0.57 RELEASE -> 1.0.65 RELEASE upgrade retained 2 character slots, inventory, XP and active slot; four towns rendered before/after; cold restart and Android background lifecycle saves passed.'
+echo 'PASS: same disposable QA signer: 1.0.57 RELEASE -> 1.0.66 RELEASE upgrade retained 2 character slots, inventory, XP and active slot; four towns rendered before/after; cold restart and Android background lifecycle saves passed.'
 echo 'NOT VERIFIED: maintained-key APK installation, Google Play distribution/signing/versionCode acceptance, physical Samsung, authenticated Drive account.'
