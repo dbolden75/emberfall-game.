@@ -591,6 +591,11 @@ function readableLocalRow(id,row){
  return IDS.includes(id)&&row.id===id&&Number.isSafeInteger(row.updated)&&row.updated>=0&&
   state&&typeof state==='object'&&!Array.isArray(state)&&
   p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.name==='string'&&!!p.name.trim()&&
+  // Like imported backups, local selector headings must reflect the real
+  // saved hero. Otherwise do not treat a damaged row as a safe overwrite.
+  (row.name==null||row.name===p.name)&&
+  (row.class==null||row.class===p.class)&&
+  (row.level==null||row.level===p.level)&&
   ['warrior','rogue','mage','cleric'].includes(p.class)&&
   Number.isSafeInteger(p.level)&&p.level>=1&&Number.isFinite(p.coins)&&p.coins>=0&&
   KNOWN_MAP_IDS.has(state.mapId)&&Array.isArray(state.companions)&&
