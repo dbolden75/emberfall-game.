@@ -157,6 +157,11 @@ function safeGatheringForgeProgress(state){
 // Only validate explicitly supplied flags; missing/null legacy fields still
 // receive the game's existing defaults without changing the save schema.
 function safeProgressFlags(state){
+ // The First Hunt uses `defeated=Number(save.defeated)||0` and increments
+ // defeated before comparing it to three. Strings such as "Infinity" silently
+ // complete the quest after one kill; fractional/negative values also change
+ // legitimate combat progress. Missing/null historical counters default to 0.
+ if(state.defeated!=null&&(!Number.isSafeInteger(state.defeated)||state.defeated<0))return false;
  const flags=['done','hasSigil','hasFourfoldKey','huntRewarded','shrineRewarded',
   'deepQuestDone','houseBought'];
  if(!flags.every(key=>state[key]==null||typeof state[key]==='boolean'))return false;
