@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - release/thornhaven-1.0.66-v168-20261107
       - fix/cloud-save-map-id-integrity-20261106
       - fix/cloud-save-defense-levels-20261106
       - fix/cloud-town-stock-restore-20261106
