@@ -541,6 +541,17 @@ function safeInventory(items){
 // The game silently drops non-array chest values during normalization; reject
 // these backups rather than reporting success while discarding stored gear.
 // Null/missing chests retain historical "empty chest" compatibility.
+// Future/home-specific containers can contain item stacks that this release
+// does not know how to load. Never silently discard those stacks when importing
+// a backup from another version. Harmless unknown metadata remains supported.
+function hasUnrecognizedItemRows(value){
+ if(Array.isArray(value))return value.some(row=>
+  (row&&typeof row==='object'&&!Array.isArray(row)&&
+   typeof row.id==='string'&&Object.prototype.hasOwnProperty.call(row,'count'))||
+  hasUnrecognizedItemRows(row));
+ return !!(value&&typeof value==='object'&&
+  Object.values(value).some(hasUnrecognizedItemRows));
+}
 function safeHouseStorage(saved){
  if(saved==null)return true;
  if(typeof saved!=='object'||Array.isArray(saved))return false;
@@ -551,8 +562,7 @@ function safeHouseStorage(saved){
  // empty historical structures, to preserve backward compatibility.
  for(const [id,home] of Object.entries(saved)){
   if(['ashvale','brackenford','stonewatch','sunmere','front_chest','side_chest'].includes(id))continue;
-  if(home&&typeof home==='object'&&!Array.isArray(home)&&
-   ['front_chest','side_chest'].some(chest=>Array.isArray(home[chest])&&home[chest].length>0))return false;
+  if(hasUnrecognizedItemRows(home))return false;
  }
  for(const id of ['ashvale','brackenford','stonewatch','sunmere']){
   const home=saved[id];
@@ -561,6 +571,11 @@ function safeHouseStorage(saved){
   // Keep missing/null legacy houses compatible, but refuse lossy shapes.
   if(home==null)continue;
   if(typeof home!=='object'||Array.isArray(home))return false;
+  // Unknown chests from newer versions are otherwise dropped by the loader.
+  for(const [field,contents] of Object.entries(home)){
+   if(!['front_chest','side_chest'].includes(field)&&
+    hasUnrecognizedItemRows(contents))return false;
+  }
   for(const chest of ['front_chest','side_chest']){
    if(home[chest]!=null&&!safeInventory(home[chest]))return false;
   }
