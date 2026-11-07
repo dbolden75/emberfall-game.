@@ -80,6 +80,7 @@ function validate(value){
   if(unknownMapStates.length)throw Error('Unknown saved map state in backup: '+unknownMapStates.join(','));
   if(!safeExperience(p.xp,p.level))throw Error('Invalid character experience.');
   if(!safeHeroVitals(p))throw Error('Invalid character health, movement or position in backup.');
+  if(!safeHeroGearSlots(p))throw Error('Invalid character equipment in backup.');
   if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
   if(!safeInventory(p.inventory))throw Error('Invalid character inventory.');
   if(!safeCompanions(row.state.companions))throw Error('Invalid saved companion data.');
@@ -115,6 +116,17 @@ function safeHeroVitals(player){
  // explicitly saved so older partial records remain importable.
  if(typeof player.hp==='number'&&typeof player.max==='number'&&player.hp>player.max)return false;
  return true;
+}
+// The game copies saved hero gear directly onto player before checking
+// canUseItem(). Non-string gear values (such as {id:'short_sword'}) and empty
+// strings are then silently reset to null, losing equipped equipment during a
+// supposedly successful Cloud Save import. Accept genuine item-id strings,
+// explicit empty slots (null), and missing gear fields from older versions.
+function safeHeroGearSlots(player){
+ return ['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>{
+  if(!Object.prototype.hasOwnProperty.call(player,slot)||player[slot]===null)return true;
+  return typeof player[slot]==='string'&&!!player[slot].trim();
+ });
 }
 // The live grantXp() uses player.xp += amount, so a restored string such
 // as '4' turns a 7-XP reward into '47' instead of 11. Historical missing
@@ -570,7 +582,7 @@ function readableLocalRow(id,row){
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   Object.keys(state.mapStates).every(id=>KNOWN_MAP_IDS.has(id))&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeExperience(p.xp,p.level)&&safeHeroVitals(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
+  safeExperience(p.xp,p.level)&&safeHeroVitals(p)&&safeHeroGearSlots(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
   safeTownQuestFlags(state.townQuestState);
 }
