@@ -67,7 +67,9 @@ function validate(value){
  for(const [id,row] of Object.entries(slots)){
   const p=row?.state?.player;
   if(!IDS.includes(id)||row.id!==id||!p||typeof p.name!=='string'||!p.name.trim()||p.name.length>80||!['warrior','rogue','mage','cleric'].includes(p.class))throw Error('Invalid character in backup.');
-  if(!Number.isSafeInteger(row.updated)||row.updated<0||!Number.isSafeInteger(p.level)||p.level<1||!Number.isFinite(p.coins)||p.coins<0)throw Error('Invalid character progress.');
+  // Coins are earned/spent in whole numbers. Non-integer or unsafe balances can
+  // overflow on rewards and turn into null when JSON-saved, losing progress.
+  if(!Number.isSafeInteger(row.updated)||row.updated<0||!Number.isSafeInteger(p.level)||p.level<1||!Number.isSafeInteger(p.coins)||p.coins<0)throw Error('Invalid character progress.');
   // The character selector displays row.name/class/level, while loading uses
   // row.state.player. A mismatched import can advertise a different hero or
   // level than the one it actually restores. Older saves may omit row labels.
@@ -683,7 +685,7 @@ function readableLocalRow(id,row){
   (row.class==null||row.class===p.class)&&
   (row.level==null||row.level===p.level)&&
   ['warrior','rogue','mage','cleric'].includes(p.class)&&
-  Number.isSafeInteger(p.level)&&p.level>=1&&Number.isFinite(p.coins)&&p.coins>=0&&
+  Number.isSafeInteger(p.level)&&p.level>=1&&Number.isSafeInteger(p.coins)&&p.coins>=0&&
   KNOWN_MAP_IDS.has(state.mapId)&&Array.isArray(state.companions)&&
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   Object.keys(state.mapStates).every(id=>KNOWN_MAP_IDS.has(id))&&
