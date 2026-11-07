@@ -86,6 +86,7 @@ function validate(value){
   const unknownMapStates=Object.keys(row.state.mapStates).filter(id=>!KNOWN_MAP_IDS.has(id));
   if(unknownMapStates.length)throw Error('Unknown saved map state in backup: '+unknownMapStates.join(','));
   if(!safeExperience(p.xp,p.level))throw Error('Invalid character experience.');
+  if(!safeHeroGender(p))throw Error('Invalid character gender in backup.');
   if(!safeHeroVitals(p))throw Error('Invalid character health, movement or position in backup.');
   if(!safeHeroGearSlots(p))throw Error('Invalid character equipment in backup.');
   if(!safeGatheringForgeProgress(row.state))throw Error('Invalid saved gathering or forge progress.');
@@ -97,6 +98,12 @@ function validate(value){
   if(!safeEnemySnapshots(row.state.mapStates))throw Error('Invalid saved enemy positions.');
  }
  return value;
+}
+// applySavedGame() normalizes any unrecognized gender to the class default,
+// silently changing the hero's selected appearance after an import. An old
+// save may omit gender (or hold null), but supplied values must be supported.
+function safeHeroGender(player){
+ return player.gender==null||player.gender==='male'||player.gender==='female';
 }
 // applySavedGame() coerces saved hero vitals with Number(...), replacing
 // malformed values with full health, default movement speed or town arrival.
@@ -690,7 +697,7 @@ function readableLocalRow(id,row){
   state.mapStates&&typeof state.mapStates==='object'&&!Array.isArray(state.mapStates)&&
   Object.keys(state.mapStates).every(id=>KNOWN_MAP_IDS.has(id))&&
   state.townQuestState&&typeof state.townQuestState==='object'&&!Array.isArray(state.townQuestState)&&
-  safeExperience(p.xp,p.level)&&safeHeroVitals(p)&&safeHeroGearSlots(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
+  safeHeroGender(p)&&safeExperience(p.xp,p.level)&&safeHeroVitals(p)&&safeHeroGearSlots(p)&&safeGatheringForgeProgress(state)&&safeInventory(p.inventory)&&safeCompanions(state.companions)&&safeEnemySnapshots(state.mapStates)&&
   safeHouseStorage(state.houseStorage)&&safeProgressFlags(state)&&
   safeTownQuestFlags(state.townQuestState);
 }
