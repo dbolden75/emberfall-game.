@@ -27,6 +27,20 @@ const originalCombat=updateEnemyCombat;updateEnemyCombat=function(e,dt){if(e.cat
  return originalCombat(e,dt);
 };
 const originalFinish=finishEnemy;finishEnemy=function(e,killerClass){if(e.catalogSummoned){e.alive=false;e.hp=0;e.deathAnim=.6;e.respawnAt=0;return;}return originalFinish(e,killerClass)};
+// Temporary dungeon guards are spawned into a map's live enemy array but
+// deliberately excluded from character saves. Without clearing them when a
+// different character is loaded, they survive the switch, potentially attacking
+// the new character and contaminating future map encounters.
+const loadWithoutCatalogSummons=applySavedGame;
+applySavedGame=function(save){
+ if(save)for(const map of Object.values(maps)){
+  if(!Array.isArray(map.enemies))continue;
+  // Remove in place: the active `enemies` reference aliases this same array.
+  for(let i=map.enemies.length-1;i>=0;i--)
+   if(map.enemies[i].catalogSummoned)map.enemies.splice(i,1);
+ }
+ return loadWithoutCatalogSummons(save);
+};
 window.ThornhavenMonsterCatalog=catalog;
 scaleEnemiesForRegion();
 })();
