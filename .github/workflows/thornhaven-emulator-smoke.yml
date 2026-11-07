@@ -9,6 +9,7 @@ on:
       - fix/cloud-save-map-id-integrity-20261106
       - fix/cloud-save-defense-levels-20261106
       - fix/cloud-town-stock-restore-20261106
+      - fix/cloud-first-hunt-counter-integrity-20261106
       - fix/cloud-save-mapstate-guard-20261106
       - fix/cloud-save-pet-movement-integrity-20261106
       - fix/cloud-backup-stale-export-20261105
