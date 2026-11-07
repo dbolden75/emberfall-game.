@@ -592,6 +592,39 @@ function safeHouseStorage(saved){
  }
  return true;
 }
+// A valid backup can still lose quest, shrine, enemy or resource progress if
+// it came from a version with more map objects than this installed build.
+// applySavedGame() iterates saved arrays but silently ignores out-of-range
+// entries. Check against the actual live maps when reviewing an import.
+function assertRestorableMapLayout(backup,liveMaps){
+ if(!backup||!backup.slots||!liveMaps||typeof liveMaps!=='object')
+  throw Error('Cannot verify saved regions for this backup.');
+ for(const row of Object.values(backup.slots)){
+  for(const [id,saved] of Object.entries(row.state.mapStates)){
+   if(!Object.prototype.hasOwnProperty.call(liveMaps,id)||!liveMaps[id])
+    throw Error('Backup contains a region unavailable in this version. Update Thornhaven.');
+   if(!saved)continue;
+   const current=liveMaps[id];
+   // Catalog-summoned enemies are ephemeral and deliberately omitted by
+   // snapshotGameState(), so they must not inflate the durable enemy count.
+   const counts={
+    enemies:Array.isArray(current.enemies)?current.enemies.filter(e=>!e.catalogSummoned).length:0,
+    runes:Array.isArray(current.runes)?current.runes.length:0,
+    traps:Array.isArray(current.traps)?current.traps.length:0,
+    gatherNodes:Array.isArray(current.gatherNodes)?current.gatherNodes.length:0
+   };
+   for(const [field,count] of Object.entries(counts)){
+    if(Array.isArray(saved[field])&&saved[field].length>count)
+     throw Error('Backup has more '+field+' in '+id+' than this version can safely restore. Update Thornhaven.');
+   }
+   if(saved.runeProgress!=null&&saved.runeProgress>(current.runeSequence||[]).length)
+    throw Error('Backup shrine puzzle in '+id+' cannot safely restore. Update Thornhaven.');
+   if((saved.chest?.open&&!current.chest)||(saved.treasure?.opened&&!current.treasure))
+    throw Error('Backup quest loot in '+id+' cannot safely restore. Update Thornhaven.');
+  }
+ }
+ return true;
+}
 function parse(text){if(typeof text!=='string'||new TextEncoder().encode(text).length>MAX_BYTES)throw Error('Backup exceeds 8 MB.');return validate(JSON.parse(text));}
 function encode(slots,active,now=Date.now()){
  const data={format:'thornhaven-save',schema:1,createdAt:now,activeSlot:IDS.includes(active)?active:'slot1',slots:clone(slots)};
@@ -699,6 +732,6 @@ function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}
  return incoming;
 }
 function recoveryText(storage){const r=JSON.parse(storage.getItem(RECOVERY_KEY)||'null');if(!r||r.format!=='thornhaven-recovery'||r.schema!==1||typeof r.slots!=='string')throw Error('No recovery copy with saved characters is available.');return encode(JSON.parse(r.slots),r.activeSlot||'slot1',r.createdAt);}
-const api={SLOT_KEY,ACTIVE_SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,readLocal,conflicts,restore,recoveryText};
+const api={SLOT_KEY,ACTIVE_SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,readLocal,conflicts,restore,recoveryText,assertRestorableMapLayout};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ThornhavenCloudSaveCore=api;
 })(typeof window!=='undefined'?window:this);
