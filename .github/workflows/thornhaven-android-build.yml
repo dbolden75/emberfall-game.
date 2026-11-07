@@ -96,12 +96,12 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee apk-badging.txt
-          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='168' versionName='1.0.66'" apk-badging.txt
+          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='169' versionName='1.0.67'" apk-badging.txt
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
           sha256sum "$APK"
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-1.0.66-debug-test-apk
+          name: thornhaven-1.0.67-debug-test-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -127,8 +127,8 @@ jobs:
           printf '%s  %s\n' a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29 "$tool" | sha256sum -c -
           java -jar "$tool" validate --bundle="$aab"
           test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@package)" = 'com.vaelbrink.ashvale.newjourney'
-          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '168'
-          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionName)" = '1.0.66'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '169'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionName)" = '1.0.67'
           test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/uses-sdk/@android:targetSdkVersion)" = '36'
           # Disposable QA signing for bundletool's generated APK. Never distribute it.
           qa_key="$RUNNER_TEMP/thornhaven-bundletool-qa.p12"
@@ -145,7 +145,7 @@ jobs:
           test -s "$qa_apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$qa_apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$qa_apk" | \
-            grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='168' versionName='1.0.66'"
+            grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='169' versionName='1.0.67'"
           cmp <(unzip -p "$aab" base/assets/index.html) <(unzip -p "$qa_apk" assets/index.html)
           rm -f "$qa_key" "$qa_set" "$qa_apk" "$tool"
           echo 'PASS: bundletool 1.18.3 validated the AAB and generated a matching QA-signed universal APK. NOT a Play-delivered update.'
@@ -167,7 +167,7 @@ jobs:
           echo "Release outputs are UNSIGNED. Never install or distribute as a Play update."
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-1.0.66-UNSIGNED-release-payload
+          name: thornhaven-1.0.67-UNSIGNED-release-payload
           path: release-payload/
           if-no-files-found: error
           retention-days: 7
