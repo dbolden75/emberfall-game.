@@ -202,6 +202,28 @@ function safeSettlementProgress(settlement){
  }
  return true;
 }
+// The four town shops restore their supply and restock timers directly from
+// _townStock. townStock() dereferences s.items[id] with no shape guard: a
+// nonempty but malformed saved row can crash shopping. A text/century-long
+// remaining timer can also prevent shops from restocking indefinitely.
+// Historical missing/null whole towns are initialized on first visit; do not
+// discard future towns' metadata that this release never interprets.
+function safeTownStock(stock){
+ if(stock==null)return true;
+ if(typeof stock!=='object'||Array.isArray(stock))return false;
+ for(const town of ['ashvale','brackenford','stonewatch','sunmere']){
+  const row=stock[town];
+  if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(!row.items||typeof row.items!=='object'||Array.isArray(row.items))return false;
+  // Shop restocks every 900 seconds today. Preserve a full day's historical
+  // timer headroom, while rejecting impossible timeouts that lock out buying.
+  if(typeof row.remaining!=='number'||!Number.isFinite(row.remaining)||
+    row.remaining<0||row.remaining>86400)return false;
+  if(!Object.values(row.items).every(n=>Number.isSafeInteger(n)&&n>=0))return false;
+ }
+ return true;
+}
 // Slayer Hall reads its saved ledger and hunt terms directly. Restored text
 // such as marks:'4' or coins:'30' concatenates during reward calculation;
 // a non-array rankRewards crashes .includes()/push() when claiming a rank.
@@ -353,6 +375,7 @@ function safeTownQuestFlags(quests){
  if(!safePurchaseEntitlements(quests))return false;
  if(!safeHumanParty(quests._humanParty))return false;
  if(!safeSettlementProgress(quests._settlement))return false;
+ if(!safeTownStock(quests._townStock))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
  if(!safeVampireStory(quests._vampire))return false;
  const briar=quests.briar_hollow;
