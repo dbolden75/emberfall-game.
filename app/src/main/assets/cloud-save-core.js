@@ -516,10 +516,20 @@ function safeCompanions(pets){
   (p.hp==null||p.max==null||p.hp<=p.max));
 }
 function safeInventory(items){
- return Array.isArray(items)&&items.every(row=>
-  row&&typeof row==='object'&&!Array.isArray(row)&&
-  typeof row.id==='string'&&!!row.id&&
-  Number.isSafeInteger(row.count)&&row.count>0);
+ if(!Array.isArray(items))return false;
+ // Live bagCount() reads the first matching stack but removeItem() deletes
+ // every matching stack when it reaches zero. Duplicate IDs therefore cause
+ // silent item loss (including forged or paid gear) after Cloud Save import.
+ // Reject these before replacing local saves; unique historical stacks remain
+ // compatible, including the legacy Brackenford home-chest format.
+ const seen=new Set();
+ return items.every(row=>{
+  if(!row||typeof row!=='object'||Array.isArray(row)||
+   typeof row.id!=='string'||!row.id||
+   !Number.isSafeInteger(row.count)||row.count<=0||seen.has(row.id))return false;
+  seen.add(row.id);
+  return true;
+ });
 }
 // Older saves may omit houseStorage, use legacy top-level chest arrays, or
 // include ignored home metadata. Validate every explicitly present chest.
