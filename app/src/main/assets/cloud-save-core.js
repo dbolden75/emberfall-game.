@@ -625,6 +625,44 @@ function assertRestorableMapLayout(backup,liveMaps){
  }
  return true;
 }
+// Backup metadata allows unknown future item IDs so files remain readable, but
+// the installed game cannot render/equip/use them, and pet migration or forge
+// normalization may erase them. Check the *live* item catalog at restore
+// review time before any local character slot is overwritten.
+function assertRestorableItemCatalog(backup,itemCatalog){
+ if(!backup||!backup.slots||!itemCatalog||typeof itemCatalog!=='object'||Array.isArray(itemCatalog))
+  throw Error('Cannot verify item compatibility for this backup.');
+ const known=id=>typeof id==='string'&&Object.prototype.hasOwnProperty.call(itemCatalog,id)&&
+  itemCatalog[id]&&typeof itemCatalog[id]==='object';
+ const verify=(id,where)=>{
+  if(id!=null&&!known(id))
+   throw Error('Backup contains an unavailable item in '+where+'. Update Thornhaven before restoring.');
+ };
+ const slots=['weapon','armor','shield','earrings','necklace','legs','boots'];
+ const stacks=(rows,where)=>{if(rows!=null)for(const row of rows)verify(row.id,where);};
+ for(const [slotId,row] of Object.entries(backup.slots)){
+  const state=row?.state,player=state?.player;
+  if(!player)throw Error('Cannot verify items in an incomplete character backup.');
+  stacks(player.inventory,slotId+' inventory');
+  for(const slot of slots)verify(player[slot],slotId+' equipment');
+  for(const pet of state.companions||[])
+   for(const slot of slots)verify(pet[slot],slotId+' pet equipment');
+  const homes=state.houseStorage;
+  if(homes&&typeof homes==='object'){
+   // Older Brackenford records have root-level chest arrays.
+   for(const chest of ['front_chest','side_chest'])stacks(homes[chest],slotId+' home chest');
+   for(const town of ['ashvale','brackenford','stonewatch','sunmere']){
+    const home=homes[town];if(!home)continue;
+    for(const chest of ['front_chest','side_chest'])stacks(home[chest],slotId+' '+town+' chest');
+   }
+  }
+  // An older build clamps upgrades for unknown item IDs to zero, losing
+  // materials and progression. Zero-rank unknown metadata is harmless.
+  for(const [id,rank] of Object.entries(state.gearUpgradeLevels||{}))
+   if(rank>0)verify(id,slotId+' forge upgrade');
+ }
+ return true;
+}
 function parse(text){if(typeof text!=='string'||new TextEncoder().encode(text).length>MAX_BYTES)throw Error('Backup exceeds 8 MB.');return validate(JSON.parse(text));}
 function encode(slots,active,now=Date.now()){
  const data={format:'thornhaven-save',schema:1,createdAt:now,activeSlot:IDS.includes(active)?active:'slot1',slots:clone(slots)};
@@ -732,6 +770,6 @@ function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}
  return incoming;
 }
 function recoveryText(storage){const r=JSON.parse(storage.getItem(RECOVERY_KEY)||'null');if(!r||r.format!=='thornhaven-recovery'||r.schema!==1||typeof r.slots!=='string')throw Error('No recovery copy with saved characters is available.');return encode(JSON.parse(r.slots),r.activeSlot||'slot1',r.createdAt);}
-const api={SLOT_KEY,ACTIVE_SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,readLocal,conflicts,restore,recoveryText,assertRestorableMapLayout};
+const api={SLOT_KEY,ACTIVE_SLOT_KEY,RECOVERY_KEY,MAX_BYTES,IDS,validate,parse,encode,readLocal,conflicts,restore,recoveryText,assertRestorableMapLayout,assertRestorableItemCatalog};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ThornhavenCloudSaveCore=api;
 })(typeof window!=='undefined'?window:this);
