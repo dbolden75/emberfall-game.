@@ -44,6 +44,11 @@ const KNOWN_MAP_IDS=new Set([
  'wolfpine','worldsend'
 ]);
 const clone=v=>JSON.parse(JSON.stringify(v));
+// Item lookups use ordinary itemDefs[id] objects, not prototype-free maps.
+// A serialized ID like 'constructor' or '__proto__' resolves to an inherited
+// object rather than a real item, making bag/gear rendering or migration unsafe.
+// Allow unknown future item IDs, but never JavaScript prototype property IDs.
+const unsafeItemId=id=>id==='prototype'||Object.prototype.hasOwnProperty.call(Object.prototype,id);
 function validate(value){
  let nodes=0;
  function visit(v,depth){
@@ -125,7 +130,7 @@ function safeHeroVitals(player){
 function safeHeroGearSlots(player){
  return ['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>{
   if(!Object.prototype.hasOwnProperty.call(player,slot)||player[slot]===null)return true;
-  return typeof player[slot]==='string'&&!!player[slot].trim();
+  return typeof player[slot]==='string'&&!!player[slot].trim()&&!unsafeItemId(player[slot]);
  });
 }
 // The live grantXp() uses player.xp += amount, so a restored string such
@@ -492,7 +497,7 @@ function safeCompanions(pets){
   // Only item ids or empty slots are meaningful; malformed objects would be
   // discarded, so importing them would falsely claim to preserve gear.
   ['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>
-   p[slot]==null||typeof p[slot]==='string')&&
+   p[slot]==null||(typeof p[slot]==='string'&&!unsafeItemId(p[slot])))&&
   // normalizePets() treats explicit null health as zero or substitutes a
   // default maximum, potentially deactivating or healing a purchased pet.
   // Only missing historical health fields may inherit defaults.
@@ -525,7 +530,7 @@ function safeInventory(items){
  const seen=new Set();
  return items.every(row=>{
   if(!row||typeof row!=='object'||Array.isArray(row)||
-   typeof row.id!=='string'||!row.id||
+   typeof row.id!=='string'||!row.id||unsafeItemId(row.id)||
    !Number.isSafeInteger(row.count)||row.count<=0||seen.has(row.id))return false;
   seen.add(row.id);
   return true;
