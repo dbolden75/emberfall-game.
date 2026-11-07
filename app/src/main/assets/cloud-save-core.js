@@ -102,6 +102,11 @@ function safeHeroVitals(player){
   const value=player[key];
   if(typeof value!=='number'||!Number.isFinite(value))return false;
   if((key==='max'||key==='speed')&&value<=0)return false;
+  // Movement consumes restored player.speed without an upper clamp. A finite
+  // but enormous value can jump across the entire map in one frame and break
+  // meaningful movement/camera progression. Legitimate class speeds are below
+  // 300; leave generous headroom for older and future boosts.
+  if(key==='speed'&&value>2000)return false;
   if(key==='hp'&&value<0)return false;
   if((key==='x'||key==='y')&&!safeWorldCoord(value))return false;
  }
