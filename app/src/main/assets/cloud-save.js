@@ -24,6 +24,7 @@ function review(text){
  // installed world before overwriting local progress. Older releases cannot
  // restore extra enemy, puzzle, trap, or gathering slots without item loss.
  core.assertRestorableMapLayout(incoming,maps);
+ core.assertRestorableItemCatalog(incoming,itemDefs);
  for(const row of Object.values(incoming.slots))if(!Object.prototype.hasOwnProperty.call(maps,row.state.mapId))throw Error('This backup uses a map unavailable in this version.');
  // The game drops pets with unrecognized ids when loading. Do not silently
  // erase a pet from a backup made by a newer version.
