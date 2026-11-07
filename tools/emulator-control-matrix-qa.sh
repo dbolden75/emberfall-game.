@@ -70,7 +70,7 @@ test -s "$APK"
 node tools/emulator-matrix-checks.cjs | tee reports/control-matrix/static-validation.txt
 "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
 "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee reports/control-matrix/badging.txt
-grep -q "package: name='$PKG' versionCode='168' versionName='1.0.66'" reports/control-matrix/badging.txt
+grep -q "package: name='$PKG' versionCode='169' versionName='1.0.67'" reports/control-matrix/badging.txt
 # Never uninstall or clear data from a user device. This is a brand-new,
 # ephemeral Android emulator used only for synthetic test characters.
 adb install "$APK" | tee reports/control-matrix/install.txt
