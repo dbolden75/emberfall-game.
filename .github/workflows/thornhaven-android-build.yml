@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Restore hash-verified 1.0.64 source
+      - name: Restore hash-verified Thornhaven game source
         run: python3 tools/restore-game-source.py
       - uses: actions/setup-node@v4
         with:
@@ -26,6 +26,7 @@ jobs:
       - name: Verify source and regression tests
         run: |
           python3 tools/verify.py
+          python3 tools/test-release-instructions.py
           python3 tools/test-release-native-parity.py
           for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-python@v5
