@@ -315,6 +315,25 @@ function safePurchaseEntitlements(quests){
    !/^[a-f0-9]{64}$/.test(quests._purchaseProfile)))return false;
  return true;
 }
+// Premium appearance selections are restored as display IDs, not receipt proof.
+// The live style renderer only recognizes aura/trail/title cosmetics and three
+// earned titles. Invalid or newer selection IDs would silently disappear on
+// this older build, even though the import reports success. Keep historical
+// missing/null slots but reject meaningful values this build cannot display.
+function safePremiumAppearance(quests){
+ const title=quests._earnedTitle;
+ if(title!=null&&!['earned_trailblazer','earned_oathkeeper','earned_reachkeeper'].includes(title))return false;
+ const equipped=quests._equippedPaid;
+ if(equipped==null)return true;
+ if(typeof equipped!=='object'||Array.isArray(equipped))return false;
+ const ids={
+  aura:['emberfall_aura_embers','emberfall_aura_frost','emberfall_aura_arcane'],
+  trail:['emberfall_trail_embers','emberfall_trail_stars','emberfall_trail_leaves'],
+  title:['emberfall_title_emberborn','emberfall_title_wayfarer','emberfall_title_champion']
+ };
+ return Object.entries(equipped).every(([slot,id])=>id==null||
+  (Object.prototype.hasOwnProperty.call(ids,slot)&&ids[slot].includes(id)));
+}
 // The Night Visitor reads quest flags as truthy values and increments hunts
 // with `(s.hunts||0)+1`. A restored string hunts:'4' jumps to 6 kills
 // after only one kill; text turned:'false' grants vampire combat effects.
@@ -408,7 +427,7 @@ function safeTownQuestFlags(quests){
  // exploration; an arbitrary truthy plan can skip preparing her escape.
  // Older backups may omit either field. Keep only the two plans the game writes
  // and the three unique clue ids its objects can actually produce.
- if(!safePurchaseEntitlements(quests))return false;
+ if(!safePurchaseEntitlements(quests)||!safePremiumAppearance(quests))return false;
  if(!safeHumanParty(quests._humanParty))return false;
  if(!safeSettlementProgress(quests._settlement))return false;
  if(!safeTownStock(quests._townStock))return false;
