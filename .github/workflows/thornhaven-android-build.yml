@@ -66,6 +66,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Verify privileged WebView stays on trusted game page
+        run: |
+          set -eu
+          TEST_CLASSES="$(mktemp -d)"
+          trap 'rm -rf "$TEST_CLASSES"' EXIT
+          javac -d "$TEST_CLASSES" \
+            app/src/main/java/com/emberfall/ashvale/TrustedGameNavigation.java \
+            tools/TrustedGameNavigationTest.java
+          java -cp "$TEST_CLASSES" com.emberfall.ashvale.TrustedGameNavigationTest
       - name: Verify native Cloud Save document round-trip handling
         run: |
           set -eu

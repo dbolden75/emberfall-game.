@@ -33,7 +33,16 @@ public class MainActivity extends Activity {
         game.setHapticFeedbackEnabled(false);
         game.setLongClickable(false);
         game.setOnLongClickListener(view -> true);
-        game.setWebViewClient(new WebViewClient());
+        // The JavaScript bridges expose save documents, billing, and device settings.
+        // Never let a navigated external/downloaded page inherit those privileges.
+        game.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view,
+                    android.webkit.WebResourceRequest request) {
+                return request == null || !TrustedGameNavigation.isTrusted(
+                        request.getUrl() == null ? null : request.getUrl().toString());
+            }
+        });
         game.setWebChromeClient(new WebChromeClient());
 
         WebSettings settings = game.getSettings();
