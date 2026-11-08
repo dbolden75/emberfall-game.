@@ -34,6 +34,15 @@
  document.getElementById('restorePurchasesButton').onclick=()=>api.restorePurchases();
  // Keep old receipt SKU definitions for restore and previously paid credits,
  // but do not show off-sale products as new purchase options.
+ // TheDanCode is a level-only developer character. Do not allow the public
+ // package to grant premium items without a Google Play purchase. Keep
+ // historical _testPremium save fields intact for backward compatibility,
+ // but never treat them as ownership or offer a free-grant action.
+ purchaseOwned=function(id){
+  const owned=Array.isArray(playStore.owned)?playStore.owned:[];
+  return owned.includes(id)||owned.some(key=>premiumProduct(key)?.contains?.includes(id));
+ };
+ grantTestPremium=function(){return false;};
  const previousRenderPremiumShop=renderPremiumShop;
  renderPremiumShop=function(...args){
   if(premiumCategory==='xp'||premiumCategory==='levels')premiumCategory='all';
@@ -53,6 +62,11 @@
      control.disabled=true;control.textContent='No longer sold';
     }
   }
+  for(const button of document.querySelectorAll('#premiumList .premiumCard button')){
+   if(button.textContent.startsWith('Test grant'))button.remove();
+  }
+  if(danTesting())document.getElementById('premiumSummary').textContent=
+   'DEVELOPER TEST CHARACTER · Level testing only. Free premium grants and real checkout are disabled. Use a normal character for purchases.';
   const notice=document.querySelector('.premiumPreviewNotice');
   if(notice)notice.textContent='Only Google Play-listed cosmetics and builder contracts are offered. XP and level packs are retired; legitimate older purchases can still be restored. Previously purchased XP credits remain usable.';
  };

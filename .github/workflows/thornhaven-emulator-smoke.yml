@@ -8,6 +8,7 @@ on:
       - main
       # Run the full matrix for new fixes without editing this list each time.
       - 'fix/**'
+      - 'release/**'
       - fix/guard-impossible-hero-speed-20261107
       - release/thornhaven-1.0.67-code169-20261107
       - fix/cloud-save-map-id-integrity-20261106
