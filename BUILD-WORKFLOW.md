@@ -1,6 +1,8 @@
 # Thornhaven build and test workflow
 
-Current main development source: 1.0.64, Android versionCode 166. Multiple development candidates share versionCode 166; do not submit another to Google Play until confirming the highest already uploaded code and choosing a fresh one if needed. Earlier entries below are historical release notes. See BUILD-STATUS.txt for verified current status.
+Current main development source: 1.0.67, Android versionCode 169. Current main SHA 5f17352f0a4316c9d54d2952e8ffb3ba7ca42cba (PR218 test-only merge), verified by Android build run 42498098732 and all seven Android emulator jobs in run 42498098719 on November 8, 2026. The maintained-key-signed PR217 APK/AAB candidate has matching compiled gameplay/native content; this is QA evidence, not Google Play acceptance.
+Before submission, check the HIGHEST versionCode already uploaded to Google Play Console: versionCode 169 may not be available. Confirm the AAB's signing certificate is accepted as the existing application's upload certificate. Test a Play-delivered in-place update with existing saved characters, without uninstalling, and test real license-tester purchases and restoration. Physical Samsung testing and production Play acceptance remain unverified.
+BUILD-STATUS.txt is a dated historical status log, not the current release authority. Earlier entries below are historical release notes.
 Package: com.vaelbrink.ashvale.newjourney. Keep this identity and the maintained signing key.
 
 Run from this directory:
@@ -11,7 +13,7 @@ The signing folder contains signing.properties and vaelbrink-maintained.jks.
 Never distribute that folder, create a replacement key, or put signing passwords in command arguments.
 Release packaging starts with a clean build to prevent stale incremental ZIP entries. The signing tool requires the established certificate SHA-256 and deletes an output signed with a different certificate.
 
-Requirements: JDK 17, Gradle 8.11.1, Android platform 36, build tools 35.0.0, Node, Python 3, and Playwright. Dependencies must already be cached for offline builds. A fresh host needs permitted access to the official repositories to install them. Runtime caches are temporary and are not included in this source kit.
+Requirements: JDK 17, Gradle 8.11.1, Android platform 36, build tools 36.0.0, Node, Python 3, and Playwright. Dependencies must already be cached for offline builds. A fresh host needs permitted access to the official repositories to install them. Runtime caches are temporary and are not included in this source kit.
 
 Fallbacks:
 - Drive source download: fetch raw files with include_base64=false. Inline downloads of this archive failed.
