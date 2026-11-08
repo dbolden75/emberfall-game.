@@ -356,7 +356,12 @@ jobs:
           # Use the Android emulator runner's documented SwiftShader indirect mode,
           # which has better Chromium/WebView compatibility than -gpu swiftshader.
           # Continue disabling guest Vulkan to isolate hosted graphics issues.
-          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          # API34 portrait-left lost the entire hosted QEMU guest twice before
+          # the first side-selection assertion. Diagnostic evidence shows no
+          # Android Java crash or host-memory pressure; isolate hosted GPU as a
+          # cause in this one matrix leg. Do NOT skip the left-side assertions.
+          # All other six jobs retain the passing SwiftShader backend.
+          emulator-options: ${{ matrix.api-level == 34 && matrix.orientation == 'portrait' && matrix.side == 'left' && '-no-window -gpu off -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' || '-no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' }}
           script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}
       - name: Upload independent control matrix and crash diagnostics
         if: always()
