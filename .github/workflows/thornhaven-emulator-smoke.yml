@@ -78,6 +78,8 @@ on:
       - 'tools/emulator-control-matrix-qa.sh'
       - 'tools/emulator-matrix-checks.cjs'
       - 'tools/emulator-webview-probe.cjs'
+      # New Cloud Save regressions must exercise the emulator at the exact PR head.
+      - 'tools/*checks.cjs'
       - 'tools/emulator-document-picker.py'
 jobs:
   emulator-smoke:
