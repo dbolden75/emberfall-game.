@@ -762,12 +762,19 @@ function restore(storage,text,{confirmed=false,allowOlder=false,expectedCurrent}
  const recovery=JSON.stringify({format:'thornhaven-recovery',schema:1,createdAt:Date.now(),slots:raw,activeSlot:previousActive});
  // A failed restore must not erase an earlier, still-valuable recovery copy.
  const previousRecovery=storage.getItem(RECOVERY_KEY);
+ // If this device currently has no characters, there is nothing useful to
+ // undo. Do not overwrite an older recovery containing real saved progress
+ // with an empty/null slot set during a clean-install Cloud Save restore.
+ // Unreadable local bytes are always valuable evidence, so still back them up.
+ const shouldSaveRecovery=local.unreadable||Object.keys(current).length>0;
  const importedSlots=JSON.stringify(incoming.slots);
  let attemptedRecovery=false,attemptedActive=false,attemptedSlots=false;
  try{
-  attemptedRecovery=true;
-  storage.setItem(RECOVERY_KEY,recovery);
-  if(storage.getItem(RECOVERY_KEY)!==recovery)throw Error('Could not verify the recovery copy.');
+  if(shouldSaveRecovery){
+   attemptedRecovery=true;
+   storage.setItem(RECOVERY_KEY,recovery);
+   if(storage.getItem(RECOVERY_KEY)!==recovery)throw Error('Could not verify the recovery copy.');
+  }
   // Commit the selected character before the slots. Verify both writes: an
   // interrupted/silent storage write must not be reported as a restore.
   attemptedActive=true;
