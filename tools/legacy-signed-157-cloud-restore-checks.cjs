@@ -72,4 +72,24 @@ assert.equal(store.getItem(core.SLOT_KEY),current,
 const corrupt=JSON.parse(backupText);
 corrupt.slots.slot1.state.companions=[{id:'dalen',hp:200,max:20}];
 assert.throws(()=>core.parse(JSON.stringify(corrupt)),/companion/i);
+// Cross-version regression for PR217: genuine historical snapshots may omit
+// spawn coordinates, but a present null must not silently move an enemy.
+// Refused imports must not damage current saves or their recovery copy.
+const missingSpawn=JSON.parse(backupText);
+delete missingSpawn.slots.slot1.state.mapStates.ashvale.enemies[0].spawnX;
+assert.doesNotThrow(()=>core.parse(JSON.stringify(missingSpawn)),
+ 'Legacy enemy snapshots without a spawnX remain importable');
+const corruptSpawn=JSON.parse(backupText);
+corruptSpawn.slots.slot1.state.mapStates.ashvale.enemies[0].spawnX=null;
+assert.throws(()=>core.parse(JSON.stringify(corruptSpawn)),/Invalid saved enemy positions/,
+ 'Explicit null spawnX must be rejected, unlike a missing legacy coordinate');
+const untouchedSlots=store.getItem(core.SLOT_KEY);
+const untouchedRecovery=store.getItem(core.RECOVERY_KEY);
+assert.throws(()=>core.restore(store,JSON.stringify(corruptSpawn),{
+ confirmed:true,allowOlder:true,expectedCurrent:untouchedSlots
+}),/Invalid saved enemy positions/);
+assert.equal(store.getItem(core.SLOT_KEY),untouchedSlots,
+ 'Rejected corrupt historical restore must preserve both active characters');
+assert.equal(store.getItem(core.RECOVERY_KEY),untouchedRecovery,
+ 'Rejected corrupt historical restore must preserve earlier rollback copy');
 console.log('PASS: real signed 1.0.57 serializer snapshot -> current Cloud Save; two slots, active selection, progress, recovery, downgrade refusal, invalid pet rejection. Mocked JS, not Android/Play delivery.');
