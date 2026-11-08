@@ -35,6 +35,13 @@ package_field() {
 certificate() {
   local report
   report=$("$APKSIGNER" verify --verbose --print-certs "$1") || return 1
+  # A matching certificate alone is insufficient for an installable release:
+  # reject a maintained-key candidate without both Android v2 and v3 signatures.
+  # Do not impose this rule on the installed historical/Play-signed base APK.
+  if [[ "$1" == "$CANDIDATE" ]]; then
+    grep -Fq 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$report" || return 1
+    grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' <<< "$report" || return 1
+  fi
   local count
   count=$(printf '%s\n' "$report" | grep -Ec '^Signer #[0-9]+ certificate SHA-256 digest: ' || true)
   [[ "$count" -eq 1 ]] || return 1
