@@ -291,6 +291,18 @@ function safeSlayerLedger(ledger){
 // lose already-paid boosts). Reject explicitly corrupt purchase state before
 // replacing local characters. Historical saves without purchases still work.
 function safePurchaseEntitlements(quests){
+ // Paid builder boosts and legacy purchased XP boosts must have a finite,
+ // nonnegative numeric countdown. The game uses Number(seconds) and then
+ // subtracts frame time. An imported "Infinity" or 1e308 never counts down;
+ // a malformed/null value silently discards remaining paid boost time.
+ // Live boosts start at 900 seconds; allow a day of historical headroom.
+ for(const key of ['_builderBoost','_xpBoost']){
+  const boost=quests[key];
+  if(boost==null)continue; // Historical saves may not have a boost.
+  if(typeof boost!=='object'||Array.isArray(boost)||
+   typeof boost.seconds!=='number'||!Number.isFinite(boost.seconds)||
+   boost.seconds<0||boost.seconds>86400)return false;
+ }
  const credits=quests._purchaseCredits;
  if(credits!=null){
   if(typeof credits!=='object'||Array.isArray(credits))return false;
