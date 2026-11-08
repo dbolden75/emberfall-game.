@@ -498,7 +498,7 @@ function safeEnemySnapshots(mapStates){
    // Malformed but finite coordinates previously sent enemies far off-map
    // without any warning after a supposedly successful Cloud Save restore.
    ['x','y'].every(key=>e[key]===undefined||safeWorldCoord(e[key]))&&
-   ['spawnX','spawnY'].every(key=>e[key]==null||safeWorldCoord(e[key]))&&
+   // Missing historical spawn locations use region defaults; explicit null is\n       // corrupted and would silently reset a saved enemy's spawn position.\n       ['spawnX','spawnY'].every(key=>e[key]===undefined||safeWorldCoord(e[key]))&&
    // Reject invalid attributes before applySavedGame copies them to live
    // enemies. A nonnumeric respawnAt silently prevents future respawns.
    // An explicit null is NOT an omitted legacy field: Number(null) becomes
