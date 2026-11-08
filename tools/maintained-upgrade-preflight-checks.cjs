@@ -34,13 +34,17 @@ try {
   mock('apksigner',[
     '#!/bin/bash','set -eu',
     'if [[ "$*" == *installed-base.apk ]]; then cert="$INSTALLED_CERT"; else cert="$CANDIDATE_CERT"; fi',
-    'echo "Signer #1 certificate SHA-256 digest: $cert"'
+    'echo "Signer #1 certificate SHA-256 digest: $cert"',
+    'if [[ "$*" != *installed-base.apk ]]; then',
+    '  echo "Verified using v2 scheme (APK Signature Scheme v2): ${CANDIDATE_V2:-true}"',
+    '  echo "Verified using v3 scheme (APK Signature Scheme v3): ${CANDIDATE_V3:-true}"',
+    'fi'
   ]);
   const script=path.join(__dirname,'maintained-upgrade-preflight.sh');
   function check(label,override,pass,match){
     const log=path.join(tmp,'calls');fs.writeFileSync(log,'');
     const env={...process.env,ADB_BIN:path.join(bin,'adb'),AAPT_BIN:path.join(bin,'aapt'),APKSIGNER_BIN:path.join(bin,'apksigner'),TEST_LOG:log,
-      CANDIDATE_PACKAGE:'com.vaelbrink.ashvale.newjourney',CANDIDATE_CODE:'166',INSTALLED_CODE:'159',
+      CANDIDATE_PACKAGE:'com.vaelbrink.ashvale.newjourney',CANDIDATE_CODE:'169',INSTALLED_CODE:'159',
       INSTALLED_CERT:cert,CANDIDATE_CERT:cert,DEVICE_SDK:'34',CANDIDATE_MIN_SDK:'24',INSTALLED_MIN_SDK:'24',...override};
     const run=spawnSync('bash',[script,candidate],{encoding:'utf8',env});
     assert.equal(run.status===0,pass,label+' '+run.stderr+' '+run.stdout);
@@ -48,10 +52,13 @@ try {
     assert.doesNotMatch(fs.readFileSync(log,'utf8'),/(^| )(install|uninstall|clear)( |$)/m,label+' wrote to device');
     console.log('PASS:',label);
   }
-  check('maintained signer 159->166',{},true,'PASS: candidate signer matches');
+  check('maintained signer 159->169',{},true,'PASS: candidate signer matches');
   check('large aapt dump under pipefail',{BADGING_EXTRA_LINES:'20000'},true,'PASS: candidate signer matches');
   check('Play-signed base blocks sideload',{INSTALLED_CERT:'0'.repeat(64)},false,'different certificate');
-  check('equal version blocked',{INSTALLED_CODE:'166'},false,'not newer');
+  check('candidate missing v2 signature blocked',{CANDIDATE_V2:'false'},false,'candidate signature failed verification');
+  check('candidate missing v3 signature blocked',{CANDIDATE_V3:'false'},false,'candidate signature failed verification');
+  check('equal version blocked',{INSTALLED_CODE:'169'},false,'not newer');
+  check('installed version newer than candidate blocked',{INSTALLED_CODE:'170'},false,'not newer');
   check('wrong app id blocked',{CANDIDATE_PACKAGE:'org.example.wrong'},false,'candidate package/version wrong');
   check('wrong candidate signing key blocked',{CANDIDATE_CERT:'f'.repeat(64)},false,'not signed with the historical');
   check('minimum supported API is allowed',{DEVICE_SDK:'24'},true,'PASS: candidate signer matches');
@@ -59,5 +66,5 @@ try {
   check('device API cannot be determined is blocked',{DEVICE_SDK:''},false,'device SDK level is missing');
   check('multiline device API cannot be reinterpreted',{DEVICE_SDK:'3\n4'},false,'device SDK level is missing');
   check('candidate missing minimum SDK blocks',{CANDIDATE_MIN_SDK:''},false,'no valid minimum Android SDK');
-  console.log('PASS: all eleven read-only preflight checks (mock Android commands; no device)');
+  console.log('PASS: all fourteen read-only preflight checks (mock Android commands; no device)');
 } finally {fs.rmSync(tmp,{recursive:true,force:true});}
