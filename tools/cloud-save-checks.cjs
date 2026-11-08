@@ -263,7 +263,7 @@ console.log('PASS: null/malformed saved enemies rejected before game startup; hi
 // Reject nonsensical present types, but preserve older snapshots omitting them.
 for(const [field,bad] of [
  ['respawnAt','never'],['respawnAt',-1],['hp','broken'],
- ['maxHp',{}],['spawnX','left'],['spawnY',[]],
+ ['maxHp',{}],['spawnX','left'],['spawnX',null],['spawnY',[]],['spawnY',null],
  ['alive','false'],['lootClaimed','false']
 ]){
  const damaged=row('Bad enemy field');
