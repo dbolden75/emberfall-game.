@@ -10,6 +10,8 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import zipfile
+from collections import Counter
 
 EXPECTED_CERT = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
 ROOT = Path(__file__).resolve().parent
@@ -26,6 +28,26 @@ def embedded_identity(apk, aapt, env):
 
 def run(args, env, **kwargs):
     return subprocess.run([str(item) for item in args], env=env, check=True, **kwargs)
+
+
+
+def verify_game_assets(apk):
+    """Fail closed if a package has stale, missing, corrupt, or duplicate game assets."""
+    source_root = ROOT / 'app/src/main/assets'
+    source_assets = {'assets/' + p.relative_to(source_root).as_posix(): p
+                     for p in source_root.rglob('*') if p.is_file()}
+    if not source_assets:
+        raise RuntimeError('Release source assets directory is missing or empty')
+    with zipfile.ZipFile(apk) as archive:
+        damaged = archive.testzip()
+        if damaged is not None:
+            raise RuntimeError(f'APK contains corrupt ZIP member: {damaged}')
+        counts = Counter(archive.namelist())
+        for name, source in source_assets.items():
+            if counts[name] != 1:
+                raise RuntimeError(f'APK game asset must appear exactly once: {name} (found {counts[name]})')
+            if archive.read(name) != source.read_bytes():
+                raise RuntimeError(f'APK game asset differs from source: {name}')
 
 
 def main():
@@ -65,6 +87,7 @@ def main():
     expected = (package.group(1), code.group(1), version.group(1))
     if embedded_identity(unsigned, aapt, env) != expected:
         raise RuntimeError(f'Unsigned APK identity does not match Gradle release {expected}')
+    verify_game_assets(unsigned)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     aligned = unsigned.with_name('app-release-aligned.apk')
@@ -92,12 +115,13 @@ def main():
                 raise RuntimeError(f'APK {scheme} signature not verified')
         if embedded_identity(pending, aapt, env) != expected:
             raise RuntimeError(f'Signed APK identity does not match Gradle release {expected}')
+        verify_game_assets(pending)
         os.replace(pending, output)
     finally:
         aligned.unlink(missing_ok=True)
         pending.unlink(missing_ok=True)
     print('Verified original signing certificate:', EXPECTED_CERT)
-    print('Verified APK v2/v3 signatures and 16 KiB alignment')
+    print('Verified APK v2/v3 signatures, 16 KiB alignment and source game assets')
     print('Signed APK:', output.resolve())
 
 
