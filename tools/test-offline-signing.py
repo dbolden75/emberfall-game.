@@ -61,18 +61,6 @@ def main():
                         archive.writestr('assets/index.html', contents)
         write_unsigned()
         gradle = work / 'app/build.gradle'
-        for label, contents, duplicate in [
-            ('stale game asset', b'old game payload', False),
-            ('missing game asset', None, False),
-            ('duplicate game asset', b'fixture game asset', True),
-        ]:
-            write_unsigned(contents, duplicate)
-            bad = invoke()
-            assert bad.returncode != 0, label + ': unsigned APK accepted'
-            assert signed.read_bytes() == previous, label + ': verified release overwritten'
-            assert not list((work / 'dist').glob('*.pending-*.apk')), label + ': pending output leaked'
-        write_unsigned()
-
         gradle.write_text("defaultConfig {\n applicationId 'com.vaelbrink.ashvale.newjourney'\n versionName '1.0.67'\n versionCode 169\n}")
         (work / 'key.properties').write_text('storePassword=fixture\nkeyPassword=fixture\nkeyAlias=fixture\n')
         (work / 'fake-keystore').write_bytes(b'fake fixture only')
@@ -114,6 +102,18 @@ def main():
             assert signed.read_bytes() == previous, 'failure replaced existing signed release'
             assert not list((work / 'dist').glob('*.pending-*.apk')), 'pending release file leaked'
             assert not apk.with_name('app-release-aligned.apk').exists(), 'aligned APK leaked'
+
+        for label, contents, duplicate in [
+            ('stale game asset', b'old game payload', False),
+            ('missing game asset', None, False),
+            ('duplicate game asset', b'fixture game asset', True),
+        ]:
+            write_unsigned(contents, duplicate)
+            bad = invoke()
+            assert bad.returncode != 0, label + ': unsigned APK accepted'
+            assert signed.read_bytes() == previous, label + ': verified release overwritten'
+            assert not list((work / 'dist').glob('*.pending-*.apk')), label + ': pending output leaked'
+        write_unsigned()
 
         gradle.write_text("defaultConfig {\n applicationId 'com.changed.identity'\n versionName '1.0.67'\n versionCode 169\n}")
         result = invoke()
