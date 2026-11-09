@@ -9,9 +9,19 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 
 EXPECTED_CERT = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
 ROOT = Path(__file__).resolve().parent
+
+
+def embedded_identity(apk, aapt, env):
+    """Read the *built APK*, not merely the possibly newer Gradle source."""
+    badging = run([aapt, 'dump', 'badging', apk], env, capture_output=True, text=True).stdout
+    match = re.search(r"(?m)^package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'(?:\s|$)", badging)
+    if not match:
+        raise RuntimeError(f'Cannot read package, versionCode and versionName from {apk}')
+    return match.groups()
 
 
 def run(args, env, **kwargs):
@@ -31,7 +41,69 @@ def main():
     gradle_config = (ROOT / 'app/build.gradle').read_text(encoding='utf-8')
     version = re.search(r"(?m)^\s*versionName\s+'([^']+)'\s*$", gradle_config)
     package = re.search(r"(?m)^\s*applicationId\s+'([^']+)'\s*$", gradle_config)
-    if not version or not package or package.group(1) != 'com.vaelbrink.ashvale.newjourney':
+    code = re.search(r'(?m)^\s*versionCode\s+(\d+)\s*        raise SystemExit('Refusing release: missing version or maintained applicationId changed')
+    output = args.output or Path('dist') / f'Thornhaven-{version.group(1)}.apk'
+
+    props = dict(line.strip().split('=', 1) for line in args.signing_properties.read_text().splitlines()
+                 if '=' in line and not line.lstrip().startswith('#'))
+    env = os.environ.copy()
+    env['ANDROID_HOME'] = str(args.sdk.resolve())
+    env['THORNHAVEN_STORE_PASS'] = props['storePassword']
+    env['THORNHAVEN_KEY_PASS'] = props['keyPassword']
+    build_tools = args.sdk / 'build-tools' / '36.0.0'
+    zipalign, apksigner, aapt = (build_tools / tool for tool in ('zipalign', 'apksigner', 'aapt'))
+    if not all(tool.is_file() for tool in (zipalign, apksigner, aapt)):
+        raise SystemExit('Android SDK build-tools 36.0.0 zipalign/apksigner/aapt unavailable')
+    if not args.skip_build:
+        run([args.gradle, '--offline', '--no-daemon', 'clean', 'assembleRelease'], env)
+    unsigned = Path('app/build/outputs/apk/release/app-release-unsigned.apk')
+    if not unsigned.is_file():
+        raise SystemExit(f'Expected release APK missing: {unsigned}')
+    # --skip-build must not sign a stale APK from another package or version.
+    expected = (package.group(1), code.group(1), version.group(1))
+    if embedded_identity(unsigned, aapt, env) != expected:
+        raise RuntimeError(f'Unsigned APK identity does not match Gradle release {expected}')
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    aligned = unsigned.with_name('app-release-aligned.apk')
+    # Publish only after every verification passes. A failed signing attempt must
+    # not overwrite or delete a previously verified candidate in dist/.
+    fd, pending_name = tempfile.mkstemp(prefix=f'.{output.name}.pending-', suffix='.apk',
+                                       dir=output.parent)
+    os.close(fd)
+    pending = Path(pending_name)
+    pending.unlink()
+    try:
+        run([zipalign, '-P', '16', '-f', '4', unsigned, aligned], env)
+        run([apksigner, 'sign', '--ks', args.keystore, '--ks-key-alias', props['keyAlias'],
+             '--ks-pass', 'env:THORNHAVEN_STORE_PASS', '--key-pass', 'env:THORNHAVEN_KEY_PASS',
+             '--v2-signing-enabled', 'true', '--v3-signing-enabled', 'true',
+             '--out', pending, aligned], env)
+        run([zipalign, '-c', '-P', '16', '4', pending], env)
+        details = run([apksigner, 'verify', '--verbose', '--print-certs', pending], env,
+                      capture_output=True, text=True).stdout
+        certs = [line.split(': ', 1)[1].strip().lower() for line in details.splitlines()
+                 if 'certificate SHA-256 digest:' in line]
+        if certs != [EXPECTED_CERT]:
+            raise RuntimeError('Signing certificate mismatch')
+        for scheme in ('v2', 'v3'):
+            if f'Verified using {scheme} scheme (APK Signature Scheme {scheme}): true' not in details:
+                raise RuntimeError(f'APK {scheme} signature not verified')
+        if embedded_identity(pending, aapt, env) != expected:
+            raise RuntimeError(f'Signed APK identity does not match Gradle release {expected}')
+        os.replace(pending, output)
+    finally:
+        aligned.unlink(missing_ok=True)
+        pending.unlink(missing_ok=True)
+    print('Verified original signing certificate:', EXPECTED_CERT)
+    print('Verified APK v2/v3 signatures and 16 KiB alignment')
+    print('Signed APK:', output.resolve())
+
+
+if __name__ == '__main__':
+    main()
+, gradle_config)
+    if not version or not code or not package or package.group(1) != 'com.vaelbrink.ashvale.newjourney':
         raise SystemExit('Refusing release: missing version or maintained applicationId changed')
     output = args.output or Path('dist') / f'Thornhaven-{version.group(1)}.apk'
 
@@ -52,7 +124,6 @@ def main():
         raise SystemExit(f'Expected release APK missing: {unsigned}')
     output.parent.mkdir(parents=True, exist_ok=True)
     aligned = unsigned.with_name('app-release-aligned.apk')
-    verified = False
     try:
         run([zipalign, '-P', '16', '-f', '4', unsigned, aligned], env)
         run([apksigner, 'sign', '--ks', args.keystore, '--ks-key-alias', props['keyAlias'],
