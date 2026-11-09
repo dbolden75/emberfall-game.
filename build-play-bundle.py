@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 import urllib.parse
 import zipfile
+from collections import Counter
 
 EXPECTED_CERT = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
 ROOT = Path(__file__).resolve().parent
@@ -96,11 +97,27 @@ def main():
             bad_entry = archive.testzip()
             if bad_entry is not None:
                 raise RuntimeError(f'Signed AAB has a corrupt ZIP member: {bad_entry}')
-            for asset in (ROOT / 'app/src/main/assets').rglob('*'):
-                if asset.is_file():
-                    path = 'base/assets/' + str(asset.relative_to(ROOT / 'app/src/main/assets'))
-                    if archive.read(path) != asset.read_bytes():
-                        raise RuntimeError(f'Signed AAB differs from source asset: {path}')
+            # A valid copy of each expected asset is not enough: a stale or
+            # tampered bundle may carry additional or duplicate game entries.
+            # Check the complete packaged asset manifest before publication.
+            source_root = ROOT / 'app/src/main/assets'
+            expected = {'base/assets/' + item.relative_to(source_root).as_posix(): item
+                        for item in source_root.rglob('*') if item.is_file()}
+            if not expected:
+                raise RuntimeError('Release source assets directory is missing or empty')
+            counts = Counter(archive.namelist())
+            packaged = {name for name in counts
+                        if name.startswith('base/assets/') and not name.endswith('/')}
+            if packaged != set(expected):
+                raise RuntimeError(
+                    'Signed AAB game assets differ from source manifest: '
+                    f'missing {sorted(set(expected) - packaged)}, '
+                    f'extra {sorted(packaged - set(expected))}')
+            for name, source in expected.items():
+                if counts[name] != 1:
+                    raise RuntimeError(f'Signed AAB must contain exactly one game asset: {name}')
+                if archive.read(name) != source.read_bytes():
+                    raise RuntimeError(f'Signed AAB differs from source asset: {name}')
         os.replace(pending, output)
     finally:
         pending.unlink(missing_ok=True)
