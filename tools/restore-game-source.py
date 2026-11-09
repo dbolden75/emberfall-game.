@@ -340,10 +340,23 @@ content=content.replace(mirror_parse_old,mirror_parse_new,1)
 assert hashlib.sha256(content).hexdigest() == 'db2b079172a26bad3a4604fc99957f00009b50d4e973f96d63a318988bcaa809', 'Corrupt-mirror independent parsing hash mismatch'
 
 
+
+# Preserve the fully audited 1.0.64 gameplay and save logic above. Only the
+# two user-visible version labels are updated to match Android 1.0.67.
+# This must not touch save keys, callbacks, gameplay logic or purchase IDs.
+label_changes = (
+    (b'New Journey \xc2\xb7 v1.0.64', b'New Journey \xc2\xb7 v1.0.67'),
+    (b'Version 1.0.64 \xc2\xb7 Ashvale Reach', b'Version 1.0.67 \xc2\xb7 Ashvale Reach'),
+)
+for old, new in label_changes:
+    assert content.count(old) == 1, 'Expected one exact release label'
+    content = content.replace(old, new, 1)
+assert hashlib.sha256(content).hexdigest() == '12f8a29e6e1973b3d580a9f0f5b108e2564470f50993963a0c2e688c91dbf123', 'Version-label-only release payload hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
     assert target.read_bytes() == content, 'Refusing to overwrite a different game source'
 else:
     target.write_bytes(content)
-print('Thornhaven 1.0.64 HTML reconstructed, SHA-256 verified:', hashlib.sha256(content).hexdigest())
+print('Thornhaven 1.0.67 HTML reconstructed, SHA-256 verified:', hashlib.sha256(content).hexdigest())
