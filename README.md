@@ -5,10 +5,10 @@ Thornhaven is a single-player Android RPG under active development.
 ## Current Android release candidate
 - **Version:** 1.0.67 (versionCode 169).
 - **Application ID:** `com.vaelbrink.ashvale.newjourney` (must remain unchanged to preserve existing game data).
-- **Merged source:** [`10d1c491`](https://github.com/dbolden75/emberfall-game./commit/10d1c4918231d0b741224a5e35d840791637f2ff), including PR #224's safer damaged-save recovery.
-- **CI:** [Android APK/AAB build](https://github.com/dbolden75/emberfall-game./actions/runs/42576678427) and [seven Android emulator checks](https://github.com/dbolden75/emberfall-game./actions/runs/42576678561) passed on November 9, 2026.
-- **Maintained-key-signed APK SHA-256:** `546a8bf3eba4d5b3bc28d288ac59c9ba11508639248a8a3572c4bd34ff5a1add`.
-- **Maintained-key-signed AAB SHA-256:** `e086385db4e1fdbfa75e1a377024b3b9d166987c3f0b24e5cd9d5876268d686f`.
+- **Merged source:** [`b1181589`](https://github.com/dbolden75/emberfall-game./commit/b11815892cbae8e0e3c0e2c44ba02bdfca56bb46), including PR #224's save recovery and PR #226's corrected 1.0.67 title/menu labels.
+- **CI:** [Android APK/AAB build](https://github.com/dbolden75/emberfall-game./actions/runs/42595838898) and [seven Android emulator checks](https://github.com/dbolden75/emberfall-game./actions/runs/42595838766) passed on November 9, 2026.
+- **Maintained-key-signed APK SHA-256:** `e2de191323734d6c5df781a9fb9599a13968d4c331a2f8a59f8b551b069a900a`.
+- **Maintained-key-signed AAB SHA-256:** `d3e168752b117e5b52b6a1cdec21c510f6631fbd908cc6ca730ee8aad279bb22`.
 
 The signed packages and QA report are backed up privately under **Google Drive → Thornhaven → APKs**. GitHub Actions builds use unsigned/disposable QA signing, not the maintained release key.
 
