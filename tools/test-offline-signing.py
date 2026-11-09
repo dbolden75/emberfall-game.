@@ -14,6 +14,16 @@ assert '-P' in a and a[a.index('-P')+1] == '16', a
 if '-c' not in a:
     shutil.copyfile(a[-2], a[-1])
 """
+AAPT = """#!/usr/bin/env python3
+import os, sys
+assert sys.argv[1:3] == ['dump', 'badging'], sys.argv
+pkg = 'com.vaelbrink.ashvale.newjourney'
+if os.environ.get('FAKE_BAD_PACKAGE') == '1' or (os.environ.get('FAKE_BAD_SIGNED') == '1' and '.pending-' in os.path.basename(sys.argv[-1])):
+    pkg = 'com.bad.stale'
+code = '168' if os.environ.get('FAKE_BAD_CODE') == '1' else '169'
+name = '1.0.66' if os.environ.get('FAKE_BAD_VERSION') == '1' else '1.0.67'
+print("package: name='%s' versionCode='%s' versionName='%s' platformBuildVersionName=''" % (pkg, code, name))
+"""
 APKSIGNER = """#!/usr/bin/env python3
 import os, shutil, sys
 a = sys.argv[1:]
@@ -36,12 +46,12 @@ def main():
         apk.parent.mkdir(parents=True)
         apk.write_bytes(b'fake unsigned APK, NEVER DISTRIBUTE')
         gradle = work / 'app/build.gradle'
-        gradle.write_text("defaultConfig {\n applicationId 'com.vaelbrink.ashvale.newjourney'\n versionName '1.0.67'\n}")
+        gradle.write_text("defaultConfig {\n applicationId 'com.vaelbrink.ashvale.newjourney'\n versionName '1.0.67'\n versionCode 169\n}")
         (work / 'key.properties').write_text('storePassword=fixture\nkeyPassword=fixture\nkeyAlias=fixture\n')
         (work / 'fake-keystore').write_bytes(b'fake fixture only')
         sdk = work / 'sdk/build-tools/36.0.0'
         sdk.mkdir(parents=True)
-        for name, body in [('zipalign', ZIPALIGN), ('apksigner', APKSIGNER)]:
+        for name, body in [('zipalign', ZIPALIGN), ('apksigner', APKSIGNER), ('aapt', AAPT)]:
             path = sdk / name
             path.write_text(body)
             path.chmod(0o755)
@@ -60,16 +70,29 @@ def main():
         assert result.returncode == 0, result.stdout + result.stderr
         assert signed.read_bytes() == apk.read_bytes(), 'mock signed output missing'
         assert not apk.with_name('app-release-aligned.apk').exists(), 'temporary aligned file leaked'
-        signed.unlink()
-        result = invoke({'FAKE_NO_V3': '1'})
-        assert result.returncode != 0 and not signed.exists(), 'missing v3 accepted'
-        result = invoke({'FAKE_CERT': '00' * 32})
-        assert result.returncode != 0 and not signed.exists(), 'different certificate accepted'
-        gradle.write_text("defaultConfig {\n applicationId 'com.changed.identity'\n versionName '1.0.67'\n}")
+        # Failed retries must preserve an existing verified release artifact.
+        previous = b'PREVIOUS VERIFIED RELEASE (mock fixture)'
+        signed.write_bytes(previous)
+        for overrides, reason in [
+            ({'FAKE_NO_V3': '1'}, 'missing v3 accepted'),
+            ({'FAKE_CERT': '00' * 32}, 'different certificate accepted'),
+            ({'FAKE_BAD_PACKAGE': '1'}, 'stale package accepted'),
+            ({'FAKE_BAD_CODE': '1'}, 'stale versionCode accepted'),
+            ({'FAKE_BAD_VERSION': '1'}, 'stale versionName accepted'),
+            ({'FAKE_BAD_SIGNED': '1'}, 'signed package mismatch accepted'),
+        ]:
+            result = invoke(overrides)
+            assert result.returncode != 0, reason
+            assert signed.read_bytes() == previous, 'failure replaced existing signed release'
+            assert not list((work / 'dist').glob('*.pending-*.apk')), 'pending release file leaked'
+            assert not apk.with_name('app-release-aligned.apk').exists(), 'aligned APK leaked'
+
+        gradle.write_text("defaultConfig {\n applicationId 'com.changed.identity'\n versionName '1.0.67'\n versionCode 169\n}")
         result = invoke()
         assert result.returncode != 0 and 'maintained applicationId changed' in (
             result.stdout + result.stderr), 'changed app identity accepted'
-    print('PASS: SDK36 16KiB, versioned output, v2/v3 checks, certificate and package guards, cleanup')
+        assert signed.read_bytes() == previous
+    print('PASS: SDK36 16KiB, versioned output, embedded APK identity, v2/v3, certificate, atomic signing cleanup')
     print('NOTE: mocked commands only; no APK was cryptographically signed or installed')
 
 
