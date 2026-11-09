@@ -82,6 +82,16 @@ def main():
                                   capture_output=True, text=True, check=True)
         if 'jar verified' not in verified.stdout:
             raise RuntimeError('Signed AAB failed jarsigner verification')
+        # Verify the signer embedded in the finished AAB, not just the keystore
+        # used to invoke jarsigner. Reject co-signing before atomic publication.
+        certificate_report = subprocess.run(
+            [jdk / 'keytool', '-printcert', '-jarfile', pending],
+            env=env, capture_output=True, text=True, check=True).stdout
+        signers = re.findall(r'(?m)^Signer #[0-9]+:\s*$', certificate_report)
+        hashes = re.findall(r'(?mi)^\s*SHA256:\s*([0-9A-F:]+)\s*$', certificate_report)
+        if (len(signers) != 1 or len(hashes) != 1 or
+                hashes[0].replace(':', '').lower() != EXPECTED_CERT):
+            raise RuntimeError('Signed AAB certificate does not match the maintained release key')
         with zipfile.ZipFile(pending) as archive:
             bad_entry = archive.testzip()
             if bad_entry is not None:
