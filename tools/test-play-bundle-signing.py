@@ -71,7 +71,12 @@ out=root/'app/build/outputs/bundle/release/app-release.aab'
 out.parent.mkdir(parents=True, exist_ok=True)
 with zipfile.ZipFile(out, 'w') as z:
     payload=b'damaged game payload' if os.environ.get('FAKE_BAD_ASSET') == '1' else b'tested game payload'
-    z.writestr('base/assets/index.html', payload)
+    if os.environ.get('FAKE_MISSING_ASSET') != '1':
+        z.writestr('base/assets/index.html', payload)
+    if os.environ.get('FAKE_EXTRA_ASSET') == '1':
+        z.writestr('base/assets/injected.js', b'unapproved game script')
+    if os.environ.get('FAKE_DUPLICATE_ASSET') == '1':
+        z.writestr('base/assets/index.html', payload)
 ''')
         script = (ROOT / 'build-play-bundle.py').read_text()
         script = script.replace(
@@ -96,6 +101,9 @@ with zipfile.ZipFile(out, 'w') as z:
             ('jarsigner failure', {'FAKE_FAIL_SIGN': '1'}),
             ('verification failure', {'FAKE_BAD_VERIFY': '1'}),
             ('bundled game asset mismatch', {'FAKE_BAD_ASSET': '1'}),
+            ('missing game asset', {'FAKE_MISSING_ASSET': '1'}),
+            ('unexpected game asset', {'FAKE_EXTRA_ASSET': '1'}),
+            ('duplicate game asset', {'FAKE_DUPLICATE_ASSET': '1'}),
             ('signed AAB certificate mismatch', {'FAKE_AAB_CERT': 'ff' * 32}),
             ('AAB contains multiple signers', {'FAKE_EXTRA_SIGNER': '1'}),
             ('AAB contains no signer', {'FAKE_NO_SIGNER': '1'}),
@@ -109,7 +117,7 @@ with zipfile.ZipFile(out, 'w') as z:
         wrong = invoke()
         assert wrong.returncode != 0 and output.read_bytes() == previous
         print('PASS: changed Android application ID blocked')
-    print('PASS: eight isolated AAB release-safety scenarios; no real signing or Android install')
+    print('PASS: eleven isolated AAB release-safety scenarios; no real signing or Android install')
 
 
 if __name__ == '__main__':
