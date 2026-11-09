@@ -12,9 +12,10 @@ const legacy={player:{name:'OlderHero',class:'warrior',level:17,coins:412},
   mapId:'ashvale',townQuestState:{},companions:[],mapStates:{}};
 const newer={slot2:{id:'slot2',updated:100,
   state:{player:{name:'CurrentHero',class:'mage',level:20},mapId:'sunmere'}}};
-function boot({old=legacy,slots=null,rawSlots=undefined,confirmRecovery=false,failBackupWrite=false,failSlotWrite=false}={}){
+function boot({old=legacy,rawMirror=undefined,slots=null,rawSlots=undefined,confirmRecovery=false,failBackupWrite=false,failSlotWrite=false}={}){
  const memory=new Map();
  if(old)memory.set('emberfall_singleplayer_v1',JSON.stringify(old));
+ if(rawMirror!==undefined)memory.set('emberfall_singleplayer_v1',rawMirror);
  if(slots)memory.set('emberfall_character_slots_v1',JSON.stringify(slots));
  if(rawSlots!==undefined)memory.set('emberfall_character_slots_v1',rawSlots);
  let loaded;
@@ -67,9 +68,20 @@ assert.equal(backupFull.memory.get('emberfall_character_slots_v1'),'{broken');
 const restoreFull=boot({rawSlots:'{broken',confirmRecovery:true,failSlotWrite:true});
 assert.equal(restoreFull.loaded,null,'A rejected restoration write cannot claim character recovered');
 assert.equal(restoreFull.memory.get('emberfall_character_slots_v1'),'{broken');
+// The secondary legacy cache can be corrupt while the authoritative slot JSON
+// is intact. An optional cache must never hide existing live characters.
+const damagedMirror=boot({slots:newer,rawMirror:'{broken'});
+assert.equal(damagedMirror.loaded?.player?.name,'CurrentHero',
+ 'Damaged legacy cache must not block intact authoritative slot data');
+assert.equal(damagedMirror.memory.get('emberfall_singleplayer_v1'),'{broken',
+ 'Corrupt secondary cache bytes must not be overwritten at startup');
+const damagedBoth=boot({rawSlots:'{broken slots',rawMirror:'{broken cache',confirmRecovery:true});
+assert.equal(damagedBoth.loaded,null,
+ 'If both stores are damaged, never fabricate or automatically overwrite slots');
+assert.equal(damagedBoth.memory.get('emberfall_character_slots_v1'),'{broken slots');
 const intentionallyEmpty=boot({slots:{}});
 assert.equal(intentionallyEmpty.loaded,null,'An intentionally empty slot store must not resurrect stale legacy hero');
 const empty=boot({old:null});
 assert.equal(empty.loaded,null);
 assert.equal(empty.memory.size,0);
-console.log('PASS: 1.0.57 legacy migration, quota resistance, valid slots, malformed-slot preservation, consent-only recovery, backup failure and valid empty-store safety. Mocked startup only, not physical Android upgrade.');
+console.log('PASS: 1.0.57 legacy migration, quota resistance, valid slots, malformed-slot preservation, consent-only recovery, backup failure, corrupt-mirror isolation and valid empty-store safety. Mocked startup only, not physical Android upgrade.');
