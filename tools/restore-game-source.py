@@ -329,6 +329,17 @@ content=content.replace(corrupt_slot_old,corrupt_slot_new,1)
 assert hashlib.sha256(content).hexdigest() == '84c6dc43aa701f850ada2c3f21e18e0584e8dfc3f6750dfd3ec6e009c4e957f8', 'Corrupt-slot readback and consent guard hash mismatch'
 
 
+
+# The historical startup wrapped mirror parsing and slot parsing in the SAME
+# catch. A corrupt legacy cache must not hide an otherwise valid multi-slot save.
+# Parse the secondary mirror independently; the verified slots remain authority.
+mirror_parse_old = b"let legacySave=null;try{legacySave=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');"
+mirror_parse_new = b"let legacySave=null;try{legacySave=JSON.parse(localStorage.getItem(SAVE_KEY)||'null')}catch(_){legacySave=null}try{"
+assert content.count(mirror_parse_old)==1, 'Expected one combined legacy/cache startup parse'
+content=content.replace(mirror_parse_old,mirror_parse_new,1)
+assert hashlib.sha256(content).hexdigest() == 'db2b079172a26bad3a4604fc99957f00009b50d4e973f96d63a318988bcaa809', 'Corrupt-mirror independent parsing hash mismatch'
+
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
