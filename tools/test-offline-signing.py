@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import subprocess
 import tempfile
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CERT = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
@@ -25,11 +26,16 @@ name = '1.0.66' if os.environ.get('FAKE_BAD_VERSION') == '1' else '1.0.67'
 print("package: name='%s' versionCode='%s' versionName='%s' platformBuildVersionName=''" % (pkg, code, name))
 """
 APKSIGNER = """#!/usr/bin/env python3
-import os, shutil, sys
+import os, shutil, sys, zipfile
 a = sys.argv[1:]
 if a[0] == 'sign':
     assert '--v2-signing-enabled' in a and '--v3-signing-enabled' in a, a
-    shutil.copyfile(a[-1], a[a.index('--out')+1])
+    dest = a[a.index('--out')+1]
+    if os.environ.get('FAKE_BAD_SIGNED_ASSET') == '1':
+        with zipfile.ZipFile(dest, 'w') as archive:
+            archive.writestr('assets/index.html', b'changed after signing')
+    else:
+        shutil.copyfile(a[-1], dest)
 else:
     assert a[0] == 'verify' and '--verbose' in a and '--print-certs' in a, a
     print('Signer #1 certificate SHA-256 digest: ' + os.environ.get('FAKE_CERT', '""" + CERT + """'))
@@ -44,8 +50,29 @@ def main():
         work = Path(directory)
         apk = work / 'app/build/outputs/apk/release/app-release-unsigned.apk'
         apk.parent.mkdir(parents=True)
-        apk.write_bytes(b'fake unsigned APK, NEVER DISTRIBUTE')
+        assets = work / 'app/src/main/assets'
+        assets.mkdir(parents=True)
+        (assets / 'index.html').write_bytes(b'fixture game asset')
+        def write_unsigned(contents=b'fixture game asset', duplicate=False):
+            with zipfile.ZipFile(apk, 'w') as archive:
+                if contents is not None:
+                    archive.writestr('assets/index.html', contents)
+                    if duplicate:
+                        archive.writestr('assets/index.html', contents)
+        write_unsigned()
         gradle = work / 'app/build.gradle'
+        for label, contents, duplicate in [
+            ('stale game asset', b'old game payload', False),
+            ('missing game asset', None, False),
+            ('duplicate game asset', b'fixture game asset', True),
+        ]:
+            write_unsigned(contents, duplicate)
+            bad = invoke()
+            assert bad.returncode != 0, label + ': unsigned APK accepted'
+            assert signed.read_bytes() == previous, label + ': verified release overwritten'
+            assert not list((work / 'dist').glob('*.pending-*.apk')), label + ': pending output leaked'
+        write_unsigned()
+
         gradle.write_text("defaultConfig {\n applicationId 'com.vaelbrink.ashvale.newjourney'\n versionName '1.0.67'\n versionCode 169\n}")
         (work / 'key.properties').write_text('storePassword=fixture\nkeyPassword=fixture\nkeyAlias=fixture\n')
         (work / 'fake-keystore').write_bytes(b'fake fixture only')
@@ -80,6 +107,7 @@ def main():
             ({'FAKE_BAD_CODE': '1'}, 'stale versionCode accepted'),
             ({'FAKE_BAD_VERSION': '1'}, 'stale versionName accepted'),
             ({'FAKE_BAD_SIGNED': '1'}, 'signed package mismatch accepted'),
+            ({'FAKE_BAD_SIGNED_ASSET': '1'}, 'signed asset modification accepted'),
         ]:
             result = invoke(overrides)
             assert result.returncode != 0, reason
@@ -92,7 +120,7 @@ def main():
         assert result.returncode != 0 and 'maintained applicationId changed' in (
             result.stdout + result.stderr), 'changed app identity accepted'
         assert signed.read_bytes() == previous
-    print('PASS: SDK36 16KiB, versioned output, embedded APK identity, v2/v3, certificate, atomic signing cleanup')
+    print('PASS: SDK36 16KiB, APK identity, v2/v3, source asset parity, and atomic signing cleanup')
     print('NOTE: mocked commands only; no APK was cryptographically signed or installed')
 
 
