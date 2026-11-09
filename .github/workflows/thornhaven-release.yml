@@ -24,6 +24,7 @@ jobs:
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
           python3 tools/test-offline-signing.py
+          python3 tools/test-play-bundle-signing.py
           python3 tools/test-release-native-parity.py
           for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-java@v4
