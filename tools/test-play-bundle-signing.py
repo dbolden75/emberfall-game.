@@ -31,7 +31,24 @@ def main():
         (keydir / 'vaelbrink-maintained.jks').write_text('mock; never a real key')
         fake_jdk = work / 'jdk/bin'
         fake_jdk.mkdir(parents=True)
-        executable(fake_jdk / 'keytool', 'import sys\nsys.stdout.buffer.write(' + repr(PUBLIC_FIXTURE) + ')\n')
+        executable(fake_jdk / 'keytool', '''import os, sys, hashlib
+if '-printcert' in sys.argv:
+    expected = hashlib.sha256(b'public test cert only (not a signing key)').hexdigest()
+    actual = os.environ.get('FAKE_AAB_CERT', expected)
+    printable = ':'.join(actual[i:i+2] for i in range(0, len(actual), 2))
+    if os.environ.get('FAKE_NO_SIGNER') == '1':
+        print('Not a signed jar file')
+    else:
+        print('Signer #1:')
+        print('Certificate #1:')
+        print(' SHA256: ' + printable)
+        if os.environ.get('FAKE_EXTRA_SIGNER') == '1':
+            print('Signer #2:')
+            print('Certificate #1:')
+            print(' SHA256: ' + printable)
+else:
+    sys.stdout.buffer.write(b'public test cert only (not a signing key)')
+''')
         executable(fake_jdk / 'jarsigner', '''import os, sys, zipfile
 from pathlib import Path
 args=sys.argv[1:]
@@ -79,6 +96,9 @@ with zipfile.ZipFile(out, 'w') as z:
             ('jarsigner failure', {'FAKE_FAIL_SIGN': '1'}),
             ('verification failure', {'FAKE_BAD_VERIFY': '1'}),
             ('bundled game asset mismatch', {'FAKE_BAD_ASSET': '1'}),
+            ('signed AAB certificate mismatch', {'FAKE_AAB_CERT': 'ff' * 32}),
+            ('AAB contains multiple signers', {'FAKE_EXTRA_SIGNER': '1'}),
+            ('AAB contains no signer', {'FAKE_NO_SIGNER': '1'}),
         ]:
             failed = invoke(overrides)
             assert failed.returncode != 0, label + ': unexpectedly accepted'
@@ -89,7 +109,7 @@ with zipfile.ZipFile(out, 'w') as z:
         wrong = invoke()
         assert wrong.returncode != 0 and output.read_bytes() == previous
         print('PASS: changed Android application ID blocked')
-    print('PASS: five isolated AAB release-safety scenarios; no real signing or Android install')
+    print('PASS: eight isolated AAB release-safety scenarios; no real signing or Android install')
 
 
 if __name__ == '__main__':
