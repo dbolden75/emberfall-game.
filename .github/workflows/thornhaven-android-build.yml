@@ -4,6 +4,8 @@ on:
   workflow_call:
   push:
     paths:
+      - 'build-signed-release.py'
+      - 'build-play-bundle.py'
       - 'app/**'
       - 'source-payload/**'
       - 'tools/**'
