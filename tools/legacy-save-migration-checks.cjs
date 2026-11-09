@@ -12,14 +12,18 @@ const legacy={player:{name:'OlderHero',class:'warrior',level:17,coins:412},
   mapId:'ashvale',townQuestState:{},companions:[],mapStates:{}};
 const newer={slot2:{id:'slot2',updated:100,
   state:{player:{name:'CurrentHero',class:'mage',level:20},mapId:'sunmere'}}};
-function boot({old=legacy,slots=null,failSlotWrite=false}={}){
+function boot({old=legacy,rawMirror=undefined,slots=null,rawSlots=undefined,confirmRecovery=false,failBackupWrite=false,failSlotWrite=false}={}){
  const memory=new Map();
  if(old)memory.set('emberfall_singleplayer_v1',JSON.stringify(old));
+ if(rawMirror!==undefined)memory.set('emberfall_singleplayer_v1',rawMirror);
  if(slots)memory.set('emberfall_character_slots_v1',JSON.stringify(slots));
+ if(rawSlots!==undefined)memory.set('emberfall_character_slots_v1',rawSlots);
  let loaded;
  const storage={
   getItem:key=>memory.has(key)?memory.get(key):null,
   setItem:(key,val)=>{
+   if(key==='emberfall_corrupt_character_slots_backup_v1'&&failBackupWrite)
+    throw Object.assign(new Error('No safe recovery backup space'),{name:'QuotaExceededError'});
    if(key==='emberfall_character_slots_v1'&&failSlotWrite)
     throw Object.assign(new Error('Full WebView storage'),{name:'QuotaExceededError'});
    memory.set(key,String(val));
@@ -30,7 +34,7 @@ function boot({old=legacy,slots=null,failSlotWrite=false}={}){
   ACTIVE_SLOT_KEY:'emberfall_active_character_slot_v1',
   SAVE_SLOT_IDS:['slot1','slot2','slot3','slot4'],
   saveSlots:{},activeSlotId:'slot1',localStorage:storage,
-  console:{warn(){}},snapshotGameState:()=>({}),
+  console:{warn(){}},window:{confirm:()=>confirmRecovery,alert(){}},classDefs:{warrior:{},mage:{}},snapshotGameState:()=>({}),
   applySavedGame:save=>{loaded=save;}
  };
  vm.runInNewContext(startup,ctx,{timeout:1000});
@@ -47,7 +51,37 @@ assert.equal(JSON.parse(regular.memory.get('emberfall_character_slots_v1')).slot
 const current=boot({slots:newer});
 assert.equal(current.loaded.player.name,'CurrentHero','Existing authoritative slot wins');
 assert.equal(JSON.parse(current.memory.get('emberfall_character_slots_v1')).slot2.state.player.name,'CurrentHero');
+// A malformed slot store is not equivalent to a deliberately empty one.
+// Keep damaged raw bytes; recover the old 1.0.57 mirror only after its exact
+// byte-level backup is read back and the user explicitly approves recovery.
+const broken=boot({rawSlots:'{broken'});
+assert.equal(broken.loaded,null,'Declined recovery must not auto-load stale mirror');
+assert.equal(broken.memory.get('emberfall_character_slots_v1'),'{broken','Damaged slot bytes must remain untouched');
+assert.equal(broken.memory.get('emberfall_corrupt_character_slots_backup_v1'),'{broken','Retain byte-exact damaged slot backup');
+const approved=boot({rawSlots:'{broken',confirmRecovery:true});
+assert.equal(approved.loaded?.player?.name,'OlderHero','Consent recovers old hero');
+assert.equal(approved.memory.get('emberfall_corrupt_character_slots_backup_v1'),'{broken','Original damaged bytes retained after consent');
+assert.equal(JSON.parse(approved.memory.get('emberfall_character_slots_v1')).slot1.state.player.coins,412);
+const backupFull=boot({rawSlots:'{broken',confirmRecovery:true,failBackupWrite:true});
+assert.equal(backupFull.loaded,null,'No readback-verified backup means no destructive recovery');
+assert.equal(backupFull.memory.get('emberfall_character_slots_v1'),'{broken');
+const restoreFull=boot({rawSlots:'{broken',confirmRecovery:true,failSlotWrite:true});
+assert.equal(restoreFull.loaded,null,'A rejected restoration write cannot claim character recovered');
+assert.equal(restoreFull.memory.get('emberfall_character_slots_v1'),'{broken');
+// The secondary legacy cache can be corrupt while the authoritative slot JSON
+// is intact. An optional cache must never hide existing live characters.
+const damagedMirror=boot({slots:newer,rawMirror:'{broken'});
+assert.equal(damagedMirror.loaded?.player?.name,'CurrentHero',
+ 'Damaged legacy cache must not block intact authoritative slot data');
+assert.equal(damagedMirror.memory.get('emberfall_singleplayer_v1'),'{broken',
+ 'Corrupt secondary cache bytes must not be overwritten at startup');
+const damagedBoth=boot({rawSlots:'{broken slots',rawMirror:'{broken cache',confirmRecovery:true});
+assert.equal(damagedBoth.loaded,null,
+ 'If both stores are damaged, never fabricate or automatically overwrite slots');
+assert.equal(damagedBoth.memory.get('emberfall_character_slots_v1'),'{broken slots');
+const intentionallyEmpty=boot({slots:{}});
+assert.equal(intentionallyEmpty.loaded,null,'An intentionally empty slot store must not resurrect stale legacy hero');
 const empty=boot({old:null});
 assert.equal(empty.loaded,null);
 assert.equal(empty.memory.size,0);
-console.log('PASS: legacy save loads through quota error, retained original bytes, regular migration, existing slots, empty first launch. Mocked startup only, not physical Android upgrade.');
+console.log('PASS: 1.0.57 legacy migration, quota resistance, valid slots, malformed-slot preservation, consent-only recovery, backup failure, corrupt-mirror isolation and valid empty-store safety. Mocked startup only, not physical Android upgrade.');

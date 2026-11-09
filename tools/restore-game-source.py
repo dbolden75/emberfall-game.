@@ -290,6 +290,56 @@ assert hashlib.sha256(content).hexdigest() == 'f57cc406c3c027cf12803d4711d6522c2
 
 
 
+
+# A malformed authoritative slot JSON used to abort the whole startup loader
+# via a silent catch{}, even when the original 1.0.57 legacy mirror was intact.
+# Never resurrect a deliberately empty, but valid, slot store. For malformed
+# bytes, require an independently read-back verified backup and explicit player
+# consent before replacing the damaged store with the known legacy character.
+corrupt_slot_old = b"saveSlots=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'{}');"
+corrupt_slot_new = b"""// If the authoritative slot JSON is malformed, keep its original bytes safe.
+// Never treat a valid empty slot store as corruption: users may delete heroes intentionally.
+const rawSlots=localStorage.getItem(SAVE_SLOTS_KEY);
+let corruptSlots=false;
+try{saveSlots=JSON.parse(rawSlots||'{}')}catch(_){corruptSlots=rawSlots!==null;saveSlots={}}
+if(corruptSlots){
+ const backupKey='emberfall_corrupt_character_slots_backup_v1';
+ let backupVerified=false;
+ try{
+  if(localStorage.getItem(backupKey)===null)localStorage.setItem(backupKey,rawSlots);
+  backupVerified=localStorage.getItem(backupKey)===rawSlots;
+ }catch(_){}
+ let recovered=false;
+ if(backupVerified&&legacySave&&legacySave.player&&legacySave.player.name&&classDefs[legacySave.player.class]
+    &&typeof window.confirm==='function'
+    &&window.confirm('Thornhaven found damaged character-slot data. An older character backup is available. Restore the older character? The damaged slot bytes have been preserved separately.')){
+  const restored={slot1:{id:'slot1',name:legacySave.player.name,class:legacySave.player.class,level:legacySave.player.level||1,updated:Date.now(),state:legacySave}};
+  const serialized=JSON.stringify(restored);
+  try{
+   localStorage.setItem(SAVE_SLOTS_KEY,serialized);
+   if(localStorage.getItem(SAVE_SLOTS_KEY)!==serialized)throw new Error('Restore write not confirmed');
+   saveSlots=restored;recovered=true;
+  }catch(_){saveSlots={}}
+ }
+ if(!recovered&&typeof window.alert==='function')window.alert('Thornhaven could not load damaged character slots. No damaged data was deleted. Do not start a new game or overwrite saves before recovering a backup.');
+}
+"""
+assert content.count(corrupt_slot_old)==1, 'Expected one unguarded malformed slot parse'
+content=content.replace(corrupt_slot_old,corrupt_slot_new,1)
+assert hashlib.sha256(content).hexdigest() == '84c6dc43aa701f850ada2c3f21e18e0584e8dfc3f6750dfd3ec6e009c4e957f8', 'Corrupt-slot readback and consent guard hash mismatch'
+
+
+
+# The historical startup wrapped mirror parsing and slot parsing in the SAME
+# catch. A corrupt legacy cache must not hide an otherwise valid multi-slot save.
+# Parse the secondary mirror independently; the verified slots remain authority.
+mirror_parse_old = b"let legacySave=null;try{legacySave=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');"
+mirror_parse_new = b"let legacySave=null;try{legacySave=JSON.parse(localStorage.getItem(SAVE_KEY)||'null')}catch(_){legacySave=null}try{"
+assert content.count(mirror_parse_old)==1, 'Expected one combined legacy/cache startup parse'
+content=content.replace(mirror_parse_old,mirror_parse_new,1)
+assert hashlib.sha256(content).hexdigest() == 'db2b079172a26bad3a4604fc99957f00009b50d4e973f96d63a318988bcaa809', 'Corrupt-mirror independent parsing hash mismatch'
+
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
