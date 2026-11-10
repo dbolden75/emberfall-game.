@@ -31,6 +31,7 @@ jobs:
           python3 tools/test-release-instructions.py
           python3 tools/test-offline-signing.py
           python3 tools/test-play-bundle-signing.py
+          python3 tools/test-aab-manifest-identity.py
           python3 tools/test-release-native-parity.py
           python3 tools/test_atomic_release_publish.py
           python3 tools/test-release-payload-duplicates.py

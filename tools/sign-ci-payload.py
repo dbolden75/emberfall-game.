@@ -22,6 +22,7 @@ import subprocess
 import tempfile
 import zipfile
 from atomic_release_publish import publish_verified_release
+from aab_manifest_identity import verify_aab_file
 
 EXPECTED_CERT = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
 PACKAGE = 'com.vaelbrink.ashvale.newjourney'
@@ -116,6 +117,8 @@ def main() -> None:
         private = Path(temp)
         private.chmod(0o700)
         extract_selected(opts.payload, private, staged_files)
+        # Artifact identity is checked BEFORE touching private signing credentials.
+        verify_aab_file(private / 'app-release.aab', PACKAGE, code, version)
         extract_selected(opts.backup, private, ('signing.properties', 'vaelbrink-maintained.jks'))
         props = dict(line.strip().split('=', 1) for line in (private / 'signing.properties').read_text().splitlines()
                      if '=' in line and not line.lstrip().startswith('#'))
@@ -161,6 +164,8 @@ def main() -> None:
         # Check the certificate embedded in the resulting AAB independently.
         cert_report = check_run(['keytool', '-printcert', '-jarfile', aab], env, capture=True)
         verify_aab_signing_identity(cert_report)
+        # Also require the final signed Play bundle to retain the same identity.
+        verify_aab_file(aab, PACKAGE, code, version)
         check_run(['python3', Path(__file__).with_name('release-native-parity.py'),
                    '--signed-apk', apk, '--unsigned-apk', private / 'app-release-unsigned.apk',
                    '--signed-aab', aab, '--unsigned-aab', unsigned_aab], env)
