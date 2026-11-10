@@ -162,14 +162,14 @@ with zipfile.ZipFile(out, 'w') as z:
         # A preexisting symlink must not be treated as a replaceable release.
         output.unlink()
         victim = work / 'victim-do-not-touch.aab'
-        victim.write_bytes(b'previous owner's bytes')
+        victim.write_bytes(b'previous owner data')
         output.symlink_to(victim)
         # Restore valid source identity to reach the publication gate.
         (work / 'app/build.gradle').write_text(
-            "applicationId 'com.vaelbrink.ashvale.newjourney'\\nversionCode 169\\nversionName '1.0.67'\\n")
+            "applicationId 'com.vaelbrink.ashvale.newjourney'\nversionCode 169\nversionName '1.0.67'\n")
         blocked = invoke()
         assert blocked.returncode != 0, 'symlink output replaced'
-        assert output.is_symlink() and victim.read_bytes() == b'previous owner\\'s bytes'
+        assert output.is_symlink() and victim.read_bytes() == b'previous owner data'
         print('PASS: symlink release output cannot be overwritten')
     print('PASS: eleven isolated AAB release-safety scenarios; no real signing or Android install')
 
