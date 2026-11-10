@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 import tempfile
 
-from atomic_release_publish import publish_verified_release, sha256
+from atomic_release_publish import publish_verified_release, rename_dir_no_replace, sha256
 
 
 def main():
@@ -21,6 +21,16 @@ def main():
         old_hash = sha256(new_apk)
         rerun = publish_verified_release(out, apk, aab, '1.0.67')
         assert rerun[2] == sums and sha256(new_apk) == old_hash
+        # Exact idempotent output: a stray file must not be silently approved.
+        extra = out / 'unverified-asset.bin'
+        extra.write_bytes(b'not part of the signed release')
+        try:
+            publish_verified_release(out, apk, aab, '1.0.67')
+            assert False, 'Unexpected release file was approved as verified'
+        except RuntimeError:
+            pass
+        assert extra.read_bytes() == b'not part of the signed release'
+        extra.unlink()
         apk.write_bytes(b'changed synthetic APK')
         try:
             publish_verified_release(out, apk, aab, '1.0.67')
@@ -52,8 +62,25 @@ def main():
             except OSError:
                 pass
         assert not fresh.exists()
+        # Simulate a concurrent writer creating an empty output directory
+        # after the staging-time existence check but before the rename.
+        racing = folder / 'racing-release'
+        untouched = b'pre-existing destination bytes'
+        def introduce_race(staged, destination):
+            destination.mkdir()
+            (destination / 'sentinel').write_bytes(untouched)
+            rename_dir_no_replace(staged, destination)
+        with patch('atomic_release_publish.rename_dir_no_replace', side_effect=introduce_race):
+            try:
+                publish_verified_release(racing, apk, aab, '1.0.67')
+                assert False, 'Publication replaced a concurrently-created release directory'
+            except RuntimeError as exc:
+                assert 'destination' in str(exc).lower()
+        assert (racing / 'sentinel').read_bytes() == untouched
+        assert list(racing.iterdir()) == [racing / 'sentinel']
+        assert not fresh.exists()
         assert not list(folder.glob('.thornhaven-release-pending-*'))
-    print('PASS: paired atomic publication, idempotent rerun, conflict refusal, symlink guard, staging failure cleanup')
+    print('PASS: paired atomic publication, idempotent rerun, conflict refusal, symlink guard, exact file set, empty-directory race rejection, staging failure cleanup')
     print('NOTE: synthetic files only; no signing keys or physical device used')
 
 
