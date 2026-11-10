@@ -10,6 +10,11 @@ public class BillingSignatureTest {
   if(BillingSignature.verify(pair.getPublic().getEncoded(),data+"tampered",sig))throw new AssertionError("tamper accepted");
   if(BillingSignature.verify(g.generateKeyPair().getPublic().getEncoded(),data,sig))throw new AssertionError("wrong key accepted");
   if(BillingSignature.verify(new byte[]{0},data,sig))throw new AssertionError("invalid key accepted");
-  System.out.println("PASS: RSA receipt signature, tamper rejection, wrong key and malformed key.");
+  byte[] flipped=sig.clone();flipped[0]^=0x40;
+  if(BillingSignature.verify(pair.getPublic().getEncoded(),data,flipped))throw new AssertionError("corrupt signature accepted");
+  if(BillingSignature.verify(pair.getPublic().getEncoded(),data,java.util.Arrays.copyOf(sig,sig.length-1)))throw new AssertionError("truncated signature accepted");
+  if(BillingSignature.verify(pair.getPublic().getEncoded(),data,null))throw new AssertionError("missing signature accepted");
+  if(BillingSignature.verify(pair.getPublic().getEncoded(),null,sig))throw new AssertionError("missing receipt body accepted");
+  System.out.println("PASS: RSA receipt signature, tamper rejection, wrong key, malformed key, corrupted/truncated signature and absent receipt data.");
  }
 }

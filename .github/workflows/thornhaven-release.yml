@@ -35,6 +35,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Verify native Google Play purchase signature gate
+        run: |
+          set -eu
+          TEST_CLASSES="$(mktemp -d)"
+          trap 'rm -rf "$TEST_CLASSES"' EXIT
+          grep -q 'BillingSignature.verify(' app/src/main/java/com/emberfall/ashvale/PlayBillingPreparation.java
+          javac -d "$TEST_CLASSES" \
+            app/src/main/java/com/emberfall/ashvale/BillingSignature.java \
+            tools/BillingSignatureTest.java
+          java -cp "$TEST_CLASSES" com.emberfall.ashvale.BillingSignatureTest
       - uses: android-actions/setup-android@v3
         with:
           packages: ''

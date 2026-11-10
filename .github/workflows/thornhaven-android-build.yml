@@ -83,6 +83,17 @@ jobs:
             app/src/main/java/com/emberfall/ashvale/TrustedGameNavigation.java \
             tools/TrustedGameNavigationTest.java
           java -cp "$TEST_CLASSES" com.emberfall.ashvale.TrustedGameNavigationTest
+      - name: Verify native Google Play purchase signature gate
+        run: |
+          set -eu
+          TEST_CLASSES="$(mktemp -d)"
+          trap 'rm -rf "$TEST_CLASSES"' EXIT
+          # Compile the same source file used by the app, not a mock verifier.
+          grep -q 'BillingSignature.verify(' app/src/main/java/com/emberfall/ashvale/PlayBillingPreparation.java
+          javac -d "$TEST_CLASSES" \
+            app/src/main/java/com/emberfall/ashvale/BillingSignature.java \
+            tools/BillingSignatureTest.java
+          java -cp "$TEST_CLASSES" com.emberfall.ashvale.BillingSignatureTest
       - name: Verify native Cloud Save document round-trip handling
         run: |
           set -eu
