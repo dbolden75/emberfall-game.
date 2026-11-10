@@ -15,9 +15,24 @@ import tempfile
 import urllib.parse
 import zipfile
 from collections import Counter
+from tools.aab_manifest_identity import verify_aab_file
 
 EXPECTED_CERT = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
 ROOT = Path(__file__).resolve().parent
+
+
+def publish_verified_aab(pending, output):
+    """Publish the fully verified AAB without replacing any existing release."""
+    try:
+        os.link(pending, output)
+    except FileExistsError:
+        if output.is_symlink() or not output.is_file():
+            raise RuntimeError('Refusing to replace an existing non-file AAB release')
+        if pending.stat().st_size != output.stat().st_size:
+            raise RuntimeError('Existing AAB release differs; use a new output path')
+        with pending.open('rb') as fresh, output.open('rb') as existing:
+            if hashlib.file_digest(fresh, 'sha256').digest() != hashlib.file_digest(existing, 'sha256').digest():
+                raise RuntimeError('Existing AAB release differs; use a new output path')
 
 
 def main():
@@ -66,6 +81,8 @@ def main():
     unsigned = ROOT / 'app/build/outputs/bundle/release/app-release.aab'
     if not unsigned.is_file():
         raise RuntimeError(f'Clean-built release AAB missing: {unsigned}')
+    # Never sign a bundle whose embedded identity differs from this project.
+    verify_aab_file(unsigned, package.group(1), code.group(1), version.group(1))
     output = ROOT / 'dist' / f'Thornhaven-{version.group(1)}.aab'
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -118,7 +135,8 @@ def main():
                     raise RuntimeError(f'Signed AAB must contain exactly one game asset: {name}')
                 if archive.read(name) != source.read_bytes():
                     raise RuntimeError(f'Signed AAB differs from source asset: {name}')
-        os.replace(pending, output)
+        verify_aab_file(pending, package.group(1), code.group(1), version.group(1))
+        publish_verified_aab(pending, output)
     finally:
         pending.unlink(missing_ok=True)
     print('Verified maintained signing certificate and all bundled assets:', output)

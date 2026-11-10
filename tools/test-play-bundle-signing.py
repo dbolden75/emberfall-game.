@@ -69,7 +69,35 @@ from pathlib import Path
 root=Path(__file__).resolve().parent
 out=root/'app/build/outputs/bundle/release/app-release.aab'
 out.parent.mkdir(parents=True, exist_ok=True)
+def varint(value):
+    result=bytearray()
+    while value >= 128:
+        result.append((value & 127) | 128)
+        value >>= 7
+    result.append(value)
+    return bytes(result)
+def field(number, data):
+    return varint((number << 3) | 2)+varint(len(data))+data
+def text(number, string):
+    return field(number, string.encode('utf-8'))
+def attribute(name, value, namespace='', code=None):
+    parts=text(2, name)+text(3, value)
+    if namespace:
+        parts=text(1, namespace)+parts
+    if code is not None:
+        parts+=field(6, field(7, varint((6 << 3) | 0)+varint(code)))
+    return field(4, parts)
+ns='http://schemas.android.com/apk/res/android'
+code=os.environ.get('FAKE_MANIFEST_CODE','169')
+manifest=field(1, text(3,'manifest')+
+               attribute('package',os.environ.get('FAKE_MANIFEST_PACKAGE','com.vaelbrink.ashvale.newjourney'))+
+               attribute('versionCode',code,ns,int(os.environ.get('FAKE_MANIFEST_COMPILED_CODE',code)))+
+               attribute('versionName',os.environ.get('FAKE_MANIFEST_VERSION','1.0.67'),ns))
 with zipfile.ZipFile(out, 'w') as z:
+    if os.environ.get('FAKE_MISSING_MANIFEST') != '1':
+        z.writestr('base/manifest/AndroidManifest.xml', manifest)
+        if os.environ.get('FAKE_DUPLICATE_MANIFEST') == '1':
+            z.writestr('base/manifest/AndroidManifest.xml', manifest)
     payload=b'damaged game payload' if os.environ.get('FAKE_BAD_ASSET') == '1' else b'tested game payload'
     if os.environ.get('FAKE_MISSING_ASSET') != '1':
         z.writestr('base/assets/index.html', payload)
@@ -77,12 +105,17 @@ with zipfile.ZipFile(out, 'w') as z:
         z.writestr('base/assets/injected.js', b'unapproved game script')
     if os.environ.get('FAKE_DUPLICATE_ASSET') == '1':
         z.writestr('base/assets/index.html', payload)
+    if os.environ.get('FAKE_DIFFERENT_VALID_BUNDLE') == '1':
+        z.writestr('base/extra-nongame-metadata.txt',b'new build, same version')
 ''')
         script = (ROOT / 'build-play-bundle.py').read_text()
         script = script.replace(
             '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22',
             hashlib.sha256(PUBLIC_FIXTURE).hexdigest())
         (work / 'build-play-bundle.py').write_text(script)
+        (work / 'tools').mkdir()
+        (work / 'tools/aab_manifest_identity.py').write_bytes(
+            (ROOT / 'tools/aab_manifest_identity.py').read_bytes())
         cmd = ['python3', 'build-play-bundle.py', '--sdk', 'mock-sdk', '--jdk', str(work / 'jdk'),
                '--gradle', str(work / 'gradle'), '--signing-dir', str(keydir), '--offline']
         output = work / 'dist/Thornhaven-1.0.67.aab'
@@ -97,6 +130,9 @@ with zipfile.ZipFile(out, 'w') as z:
         assert output.is_file() and output.stat().st_size > 0
         print('PASS: correctly signed mock AAB is published')
         previous = output.read_bytes()
+        valid_collision = invoke({'FAKE_DIFFERENT_VALID_BUNDLE': '1'})
+        assert valid_collision.returncode != 0, 'different valid AAB replaced published release'
+        assert output.read_bytes() == previous, 'valid collision replaced signed AAB'
         for label, overrides in [
             ('jarsigner failure', {'FAKE_FAIL_SIGN': '1'}),
             ('verification failure', {'FAKE_BAD_VERIFY': '1'}),
@@ -107,6 +143,12 @@ with zipfile.ZipFile(out, 'w') as z:
             ('signed AAB certificate mismatch', {'FAKE_AAB_CERT': 'ff' * 32}),
             ('AAB contains multiple signers', {'FAKE_EXTRA_SIGNER': '1'}),
             ('AAB contains no signer', {'FAKE_NO_SIGNER': '1'}),
+            ('AAB wrong package', {'FAKE_MANIFEST_PACKAGE': 'com.other.package'}),
+            ('AAB wrong versionCode', {'FAKE_MANIFEST_CODE': '168'}),
+            ('AAB compiled code differs', {'FAKE_MANIFEST_COMPILED_CODE': '168'}),
+            ('AAB wrong versionName', {'FAKE_MANIFEST_VERSION': '1.0.66'}),
+            ('AAB missing manifest', {'FAKE_MISSING_MANIFEST': '1'}),
+            ('AAB duplicate manifest', {'FAKE_DUPLICATE_MANIFEST': '1'}),
         ]:
             failed = invoke(overrides)
             assert failed.returncode != 0, label + ': unexpectedly accepted'
@@ -117,6 +159,18 @@ with zipfile.ZipFile(out, 'w') as z:
         wrong = invoke()
         assert wrong.returncode != 0 and output.read_bytes() == previous
         print('PASS: changed Android application ID blocked')
+        # A preexisting symlink must not be treated as a replaceable release.
+        output.unlink()
+        victim = work / 'victim-do-not-touch.aab'
+        victim.write_bytes(b'previous owner data')
+        output.symlink_to(victim)
+        # Restore valid source identity to reach the publication gate.
+        (work / 'app/build.gradle').write_text(
+            "applicationId 'com.vaelbrink.ashvale.newjourney'\nversionCode 169\nversionName '1.0.67'\n")
+        blocked = invoke()
+        assert blocked.returncode != 0, 'symlink output replaced'
+        assert output.is_symlink() and victim.read_bytes() == b'previous owner data'
+        print('PASS: symlink release output cannot be overwritten')
     print('PASS: eleven isolated AAB release-safety scenarios; no real signing or Android install')
 
 
