@@ -32,6 +32,24 @@ def main():
                              'documented package')
     if documented_package != package:
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md package {documented_package} != {package}')
+    # Preserve both historic developer-signing identities in operator instructions.
+    # Different signing certificates block in-place Android updates, so losing
+    # this warning in a release handoff could lead to irreversible save deletion.
+    dev_certificates = {
+        'Thornhaven-1.0.57-dev-test.apk':
+            '09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099',
+        'Thornhaven-1.0.57-fixes-dev-test.apk':
+            'eba47475cc63815c8d16bbf7819a32dcd3991438e5c2336df2bbe10eb9e423b5',
+    }
+    for filename, certificate in dev_certificates.items():
+        if filename not in guide or certificate not in guide:
+            raise SystemExit(f'FAIL: missing signed-development migration warning for {filename}')
+    maintained_certificate = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
+    if maintained_certificate not in guide:
+        raise SystemExit('FAIL: release documentation lost the maintained signer identity')
+    if 'CANNOT perform an in-place update' not in guide or 'NEVER advise uninstalling' not in guide:
+        raise SystemExit('FAIL: release instructions no longer warn against data-loss migration')
+    print('PASS: both historical development signing identities and save-preservation warning retained')
     print(f'PASS: documented Android release is {package}, version {version}, versionCode {code}')
     print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
 
