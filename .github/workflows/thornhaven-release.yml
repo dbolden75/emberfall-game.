@@ -45,6 +45,28 @@ jobs:
             app/src/main/java/com/emberfall/ashvale/BillingSignature.java \
             tools/BillingSignatureTest.java
           java -cp "$TEST_CLASSES" com.emberfall.ashvale.BillingSignatureTest
+      - name: Verify privileged WebView navigation is restricted to the game origin
+        run: |
+          set -eu
+          TEST_CLASSES="$(mktemp -d)"
+          trap 'rm -rf "$TEST_CLASSES"' EXIT
+          javac -d "$TEST_CLASSES" \
+            app/src/main/java/com/emberfall/ashvale/TrustedGameNavigation.java \
+            tools/TrustedGameNavigationTest.java
+          java -cp "$TEST_CLASSES" com.emberfall.ashvale.TrustedGameNavigationTest
+      - name: Verify native Cloud Save import/export integrity
+        run: |
+          set -eu
+          TEST_CLASSES="$(mktemp -d)"
+          trap 'rm -rf "$TEST_CLASSES"' EXIT
+          javac -d "$TEST_CLASSES" \
+            app/src/main/java/com/emberfall/ashvale/BackupDocumentIntegrity.java \
+            tools/BackupDocumentIntegrityTest.java
+          java -cp "$TEST_CLASSES" com.emberfall.ashvale.BackupDocumentIntegrityTest
+      - name: Verify purchase completion after receipt persistence failures
+        run: node tools/native-billing-completion-test.cjs
+      - name: Verify no delivery survives a failed native receipt commit
+        run: node tools/native-billing-delivery-test.cjs
       - uses: android-actions/setup-android@v3
         with:
           packages: ''
