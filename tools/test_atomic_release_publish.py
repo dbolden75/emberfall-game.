@@ -65,10 +65,8 @@ def main():
         # Simulate a concurrent writer creating an empty output directory
         # after the staging-time existence check but before the rename.
         racing = folder / 'racing-release'
-        untouched = b'pre-existing destination bytes'
         def introduce_race(staged, destination):
             destination.mkdir()
-            (destination / 'sentinel').write_bytes(untouched)
             rename_dir_no_replace(staged, destination)
         with patch('atomic_release_publish.rename_dir_no_replace', side_effect=introduce_race):
             try:
@@ -76,8 +74,7 @@ def main():
                 assert False, 'Publication replaced a concurrently-created release directory'
             except RuntimeError as exc:
                 assert 'destination' in str(exc).lower()
-        assert (racing / 'sentinel').read_bytes() == untouched
-        assert list(racing.iterdir()) == [racing / 'sentinel']
+        assert racing.is_dir() and list(racing.iterdir()) == []
         assert not fresh.exists()
         assert not list(folder.glob('.thornhaven-release-pending-*'))
     print('PASS: paired atomic publication, idempotent rerun, conflict refusal, symlink guard, exact file set, empty-directory race rejection, staging failure cleanup')
