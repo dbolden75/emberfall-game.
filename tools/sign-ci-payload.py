@@ -13,6 +13,7 @@ Example:
 """
 from __future__ import annotations
 import argparse
+from collections import Counter
 import hashlib
 import os
 from pathlib import Path
@@ -85,7 +86,21 @@ def extract_selected(zip_path: Path, folder: Path, names: tuple[str, ...]) -> No
     with zipfile.ZipFile(zip_path) as z:
         if z.testzip() is not None:
             raise RuntimeError(f'Damaged archive: {zip_path.name}')
+        # A duplicate ZIP member is ambiguous: ZipFile.read(name) silently
+        # chooses the last copy. Never let an unsigned CI payload or private
+        # signing-key backup supply conflicting files under one path.
+        counts = Counter(info.filename for info in z.infolist())
+        repeated = sorted(name for name, count in counts.items() if count > 1)
+        if repeated:
+            raise RuntimeError(f'Archive has duplicate entries: {repeated[:8]}')
+        # Validate the entire requested set *before* extracting any member,
+        # so a missing file cannot leave a partial private signing directory.
+        missing = sorted(name for name in names if counts[name] != 1)
+        if missing:
+            raise RuntimeError(f'Archive missing required entries: {missing}')
         for name in names:
+            if z.getinfo(name).is_dir():
+                raise RuntimeError(f'Required archive entry is a directory: {name}')
             target = (folder / name).resolve()
             if not target.is_relative_to(folder.resolve()):
                 raise RuntimeError('Unsafe archive path')

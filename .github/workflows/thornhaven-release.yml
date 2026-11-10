@@ -27,6 +27,7 @@ jobs:
           python3 tools/test-play-bundle-signing.py
           python3 tools/test-release-native-parity.py
           python3 tools/test_atomic_release_publish.py
+          python3 tools/test-ci-artifact-extraction.py
           for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-java@v4
         with:
