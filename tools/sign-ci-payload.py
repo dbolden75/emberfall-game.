@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+from atomic_release_publish import publish_verified_release
 
 EXPECTED_CERT = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
 PACKAGE = 'com.vaelbrink.ashvale.newjourney'
@@ -170,13 +171,9 @@ def main() -> None:
             asset_count = verify_cross_package_assets(apk_zip, aab_zip)
             print(f'PASS: all {asset_count} APK/AAB game assets are byte-identical')
 
-        opts.output.mkdir(parents=True, exist_ok=True)
-        target_apk = opts.output / f'Thornhaven-{version}-maintained-key.apk'
-        target_aab = opts.output / f'Thornhaven-{version}-maintained-key.aab'
-        shutil.copy2(apk, target_apk)
-        shutil.copy2(aab, target_aab)
-        sums = '\n'.join(f'{digest(path)}  {path.name}' for path in (target_apk, target_aab)) + '\n'
-        (opts.output / 'SHA256SUMS.txt').write_text(sums)
+        # Publish APK, AAB and checksum as one staged directory. Refuse any
+        # incomplete or mismatched existing release instead of clobbering it.
+        target_apk, target_aab, sums = publish_verified_release(opts.output, apk, aab, version)
         print(f'PASS: verified maintained-key Thornhaven {version} (versionCode {code}) APK and AAB')
         print('Maintained certificate SHA-256:', EXPECTED_CERT)
         print('Release candidates:', target_apk, target_aab)
