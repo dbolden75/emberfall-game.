@@ -266,7 +266,8 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             if(profile==null)profile="";
             JSONObject existing=receipts.optJSONObject(id);
             boolean trusted=trustworthySavedReceipt(existing,p);
-            // Every successfully committed verification is new evidence that can\n            // invalidate a previously dispatched Play ownership query.
+            // Every successfully committed verification is new evidence that can
+            // invalidate a previously dispatched Play ownership query.
             if(!trusted){
                 // A corrupt old record must never permanently hide a real Play
                 // purchase. Character save receipt IDs still prevent replay.
@@ -280,7 +281,10 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             if(!consumable(product)&&p.isAcknowledged())existing.put("finished",true);
             if(!persist()){receipts=previous;message="Cannot save purchase receipt. Free device storage and restore purchases.";}
             else {
-                // Even a previously active, already-delivered receipt must make\n                // older in-flight ownership queries stale; otherwise a query\n                // started before this verified callback could revoke the item.\n                acceptedReceiptEpoch++;
+                // Even a previously active, already-delivered receipt must make
+                // older in-flight ownership queries stale; otherwise a query
+                // started before this verified callback could revoke the item.
+                acceptedReceiptEpoch++;
                 message="Verified purchase ready for delivery.";
             }
             publish();
