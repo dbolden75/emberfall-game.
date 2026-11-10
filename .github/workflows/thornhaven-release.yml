@@ -28,6 +28,8 @@ jobs:
           python3 tools/test-release-native-parity.py
           python3 tools/test_atomic_release_publish.py
           python3 tools/test-ci-artifact-extraction.py
+          python3 tools/test-aab-manifest-identity.py
+          python3 tools/test-release-payload-duplicates.py
           for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-java@v4
         with:
@@ -72,6 +74,9 @@ jobs:
           apk=release-output/Thornhaven-1.0.67-maintained-key.apk
           aab=app/build/outputs/bundle/release/app-release.aab
           test -s "$unsigned" && test -s "$aab"
+          # Fail closed if the built Play bundle has an unexpected package or version.
+          # The same check is repeated after signing; an APK badge alone is insufficient.
+          PYTHONPATH=tools python3 -c "from pathlib import Path; from aab_manifest_identity import verify_aab_file; verify_aab_file(Path('$aab'), 'com.vaelbrink.ashvale.newjourney', 169, '1.0.67')"
           "$ANDROID_HOME/build-tools/36.0.0/zipalign" -P 16 -f 4 "$unsigned" "$aligned"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign --ks "$RUNNER_TEMP/thornhaven-signing/maintained.jks" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:KEY_PASSWORD --v2-signing-enabled true --v3-signing-enabled true --out "$apk" "$aligned"
           rm "$aligned"
@@ -87,6 +92,7 @@ jobs:
           cp "$aab" release-output/pre-sign-unsigned.aab
           jarsigner -keystore "$RUNNER_TEMP/thornhaven-signing/maintained.jks" -storepass:env STORE_PASSWORD -keypass:env KEY_PASSWORD "$aab" "$KEY_ALIAS"
           jarsigner -verify "$aab" | grep -q 'jar verified'
+          PYTHONPATH=tools python3 -c "from pathlib import Path; from aab_manifest_identity import verify_aab_file; verify_aab_file(Path('$aab'), 'com.vaelbrink.ashvale.newjourney', 169, '1.0.67')"
           # The AAB is uploaded to Play, so independently check its actual
           # certificate, not just the APK certificate or keystore alias.
           keytool -printcert -jarfile "$aab" > release-output/aab-signing-cert.txt
