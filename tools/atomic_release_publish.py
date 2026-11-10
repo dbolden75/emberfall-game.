@@ -6,6 +6,8 @@ already contain exactly the newly verified artifacts.
 """
 from __future__ import annotations
 
+import ctypes
+import errno
 import hashlib
 import os
 from pathlib import Path
@@ -19,6 +21,27 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b''):
             h.update(block)
     return h.hexdigest()
+
+def rename_dir_no_replace(staged: Path, output: Path) -> None:
+    """Linux atomic rename that *cannot* replace even an empty racing output.
+
+    Plain os.rename() silently replaces an existing EMPTY directory on Linux,
+    leaving a last-moment creation race in our previous release publisher.
+    Fail closed if renameat2(RENAME_NOREPLACE) is unavailable.
+    """
+    libc = ctypes.CDLL(None, use_errno=True)
+    renameat2 = getattr(libc, 'renameat2', None)
+    if renameat2 is None:
+        raise RuntimeError('Linux renameat2(RENAME_NOREPLACE) unavailable; release unpublished')
+    renameat2.argtypes = [ctypes.c_int, ctypes.c_char_p,
+                          ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    renameat2.restype = ctypes.c_int
+    at_fdcwd, rename_noreplace = -100, 1
+    if renameat2(at_fdcwd, os.fsencode(staged), at_fdcwd, os.fsencode(output), rename_noreplace):
+        code = ctypes.get_errno()
+        if code in (errno.EEXIST, errno.ENOTEMPTY):
+            raise RuntimeError('Destination appeared during staging; previous release untouched')
+        raise OSError(code, os.strerror(code), os.fspath(output))
 
 
 def publish_verified_release(output: Path, apk: Path, aab: Path, version: str) -> tuple[Path, Path, str]:
@@ -43,6 +66,7 @@ def publish_verified_release(output: Path, apk: Path, aab: Path, version: str) -
     if output.exists():
         expected = ((apk_name, apk_hash), (aab_name, aab_hash))
         correct = (output.is_dir()
+                   and {entry.name for entry in output.iterdir()} == {apk_name, aab_name, 'SHA256SUMS.txt'}
                    and all((output / name).is_file() and not (output / name).is_symlink()
                            and sha256(output / name) == digest for name, digest in expected)
                    and (output / 'SHA256SUMS.txt').is_file()
@@ -63,9 +87,10 @@ def publish_verified_release(output: Path, apk: Path, aab: Path, version: str) -
                 raise RuntimeError(f'Staged {name} differs from verified signed candidate')
         (staged / 'SHA256SUMS.txt').write_text(sums)
         (staged / 'SHA256SUMS.txt').chmod(0o600)
-        # Rename a populated directory on the same filesystem. Existing
-        # nonempty releases cannot be replaced by this operation on Linux.
+        # The prior os.rename could replace an empty directory that appeared
+        # after the existence check. Linux RENAME_NOREPLACE fails atomically
+        # for *any* existing destination, including an empty directory.
         if output.exists() or output.is_symlink():
             raise RuntimeError('Destination appeared during staging; no previous release replaced')
-        os.rename(staged, output)
+        rename_dir_no_replace(staged, output)
     return output / apk_name, output / aab_name, sums
