@@ -9,6 +9,7 @@ import hashlib
 import re
 import subprocess
 import zipfile
+from collections import Counter
 from pathlib import Path
 
 PACKAGE = 'com.vaelbrink.ashvale.newjourney'
@@ -26,8 +27,15 @@ def required(condition, message):
 
 
 def bundled_assets(archive, prefix):
-    return {name[len(prefix):] for name in archive.namelist()
-            if name.startswith(prefix) and not name.endswith('/')}
+    # Sets silently discard duplicate ZIP members. A duplicate can carry a
+    # different payload even if ZipFile.read() returns the expected last entry.
+    # Check the raw archive members before comparing source asset manifests.
+    paths = [info.filename[len(prefix):] for info in archive.infolist()
+             if info.filename.startswith(prefix) and not info.is_dir()]
+    duplicates = sorted(name for name, count in Counter(paths).items() if count > 1)
+    required(not duplicates,
+             f'duplicate ZIP game assets under {prefix}: {duplicates}')
+    return set(paths)
 
 
 def main():
