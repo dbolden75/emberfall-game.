@@ -84,6 +84,10 @@ def main():
         result = invoke()
         assert result.returncode == 0, result.stdout + result.stderr
         assert signed.read_bytes() == apk.read_bytes(), 'mock signed output missing'
+        # An identical retry may succeed, but must never rewrite signed bytes.
+        identical = invoke()
+        assert identical.returncode == 0, identical.stdout + identical.stderr
+        assert signed.read_bytes() == apk.read_bytes()
         assert not apk.with_name('app-release-aligned.apk').exists(), 'temporary aligned file leaked'
         # Failed retries must preserve an existing verified release artifact.
         previous = b'PREVIOUS VERIFIED RELEASE (mock fixture)'
@@ -115,11 +119,28 @@ def main():
             assert not list((work / 'dist').glob('*.pending-*.apk')), label + ': pending output leaked'
         write_unsigned()
 
+        # A valid newly signed candidate may NOT replace a differently signed
+        # file with the same version/name, even when every validation passes.
+        collision = invoke()
+        assert collision.returncode != 0, 'valid signing replaced a different release'
+        assert signed.read_bytes() == previous, 'valid signing destroyed existing release'
+        assert not list((work / 'dist').glob('*.pending-*.apk'))
+
         gradle.write_text("defaultConfig {\n applicationId 'com.changed.identity'\n versionName '1.0.67'\n versionCode 169\n}")
         result = invoke()
         assert result.returncode != 0 and 'maintained applicationId changed' in (
             result.stdout + result.stderr), 'changed app identity accepted'
         assert signed.read_bytes() == previous
+        # An attacker or second process may create a symlink at publication.
+        # Neither the target nor the symlink can be replaced.
+        signed.unlink()
+        victim = work / 'victim-do-not-touch.apk'
+        victim.write_bytes(b'prior owner data')
+        signed.symlink_to(victim)
+        gradle.write_text("defaultConfig {\\n applicationId 'com.vaelbrink.ashvale.newjourney'\\n versionName '1.0.67'\\n versionCode 169\\n}")
+        blocked_symlink = invoke()
+        assert blocked_symlink.returncode != 0, 'symlink release was accepted'
+        assert signed.is_symlink() and victim.read_bytes() == b'prior owner data'
     print('PASS: SDK36 16KiB, APK identity, v2/v3, source asset parity, and atomic signing cleanup')
     print('NOTE: mocked commands only; no APK was cryptographically signed or installed')
 
