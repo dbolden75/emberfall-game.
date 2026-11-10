@@ -5,6 +5,7 @@ This helper never generates signing credentials or establishes Play acceptance.
 It requires Android SDK build-tools 36.0.0 and preserves the maintained app ID.
 """
 import argparse
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -48,6 +49,24 @@ def verify_game_assets(apk):
                 raise RuntimeError(f'APK game asset must appear exactly once: {name} (found {counts[name]})')
             if archive.read(name) != source.read_bytes():
                 raise RuntimeError(f'APK game asset differs from source: {name}')
+
+
+def publish_verified_apk(pending, output):
+    """Atomically publish a new APK, without replacing a different release.
+
+    The pending APK and destination share a filesystem. os.link either creates
+    the complete release name at once or fails if anyone has created it.
+    """
+    try:
+        os.link(pending, output)
+    except FileExistsError:
+        if output.is_symlink() or not output.is_file():
+            raise RuntimeError('Refusing to replace an existing non-file APK release')
+        if pending.stat().st_size != output.stat().st_size:
+            raise RuntimeError('Existing APK release differs; use a new output path')
+        with pending.open('rb') as fresh, output.open('rb') as existing:
+            if hashlib.file_digest(fresh, 'sha256').digest() != hashlib.file_digest(existing, 'sha256').digest():
+                raise RuntimeError('Existing APK release differs; use a new output path')
 
 
 def main():
@@ -116,7 +135,7 @@ def main():
         if embedded_identity(pending, aapt, env) != expected:
             raise RuntimeError(f'Signed APK identity does not match Gradle release {expected}')
         verify_game_assets(pending)
-        os.replace(pending, output)
+        publish_verified_apk(pending, output)
     finally:
         aligned.unlink(missing_ok=True)
         pending.unlink(missing_ok=True)
