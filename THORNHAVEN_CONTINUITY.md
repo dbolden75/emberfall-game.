@@ -6,18 +6,18 @@ Updated 2026-11-11. This document is safe for the public repository. **Never** a
 
 - Player-facing title: **Thornhaven**; historical project names are Emberfall and Vaelbrink. The repository name is `dbolden75/emberfall-game.` (the trailing period is intentional).
 - Existing Google Play application ID: `com.vaelbrink.ashvale.newjourney`. **Do not change the application ID, WebView origin, established save keys or maintained signing certificate.**
-- Latest independently verified maintained-key signed candidate: **1.0.67**, Android `versionCode 169`; compiled game from commit [`3bedd23d`](https://github.com/dbolden75/emberfall-game./commit/3bedd23d126de76611ab157c7e04b6d8cde86ca2). Includes the PR #253 Play Billing stale-offer refresh fix; previously signed 1.0.67 binaries from `3dc2ac0b` are superseded.
+- Latest independently verified maintained-key signed candidate: **1.0.67**, Android `versionCode 169`; compiled game from [`b7378a9d`](https://github.com/dbolden75/emberfall-game./commit/b7378a9d4494a6b40da0fd08a4f1c937d88de008), merged via PR #256 into main at `df0544aa`. Includes PR #253's stale-offer refresh fix and PR #256's late BillingClient reconnection-callback guard; the older signed `3bedd23d` archives are superseded.
 - Historical maintained-key **1.0.57** release APK used for certificate comparison: versionCode 159.
 - Maintained certificate SHA-256: `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22`. This is the public certificate fingerprint, **not** the private signing key.
-- Canonical signed 1.0.67 APK SHA-256: `ac10f36f992a2721c763b06df05fc1a2306f2f2d7c726cef38edd5d6b15dd4cd`.
-- Canonical signed 1.0.67 AAB SHA-256: `24e898f0b9a79f732c75ba20177c5448a68090d35c3e488f4d8c5f4228834c1c`.
+- Canonical signed 1.0.67 APK SHA-256: `6ee4170c08889a556673c2a427a576d7f618ffee5ea9115cea6636f037c2074c`.
+- Canonical signed 1.0.67 AAB SHA-256: `1399f8ecf45624b48e8ef0484afa4efd15ebbe04eb42fb702838e73b47ef01bb`.
 - Current release evidence and Drive provenance: [release issue #6](https://github.com/dbolden75/emberfall-game./issues/6), plus [BUILD-WORKFLOW.md](BUILD-WORKFLOW.md). [BUILD-STATUS.txt](BUILD-STATUS.txt) is a historical log, not the authority for the current candidate.
 
 ## What has actually passed
 
-- [Main Android build #43026599320](https://github.com/dbolden75/emberfall-game./actions/runs/43026599320) completed successfully at commit `3bedd23d`. Ordinary GitHub CI produces unsigned artifacts; the candidate packages were subsequently signed offline using the maintained certificate.
-- [Seven-job emulator matrix #43026599074](https://github.com/dbolden75/emberfall-game./actions/runs/43026599074) passed with **temporary QA signatures**, covering simulated device startup and automated regressions. It did **not** install the maintained-signed APK or perform a Play-delivered upgrade.
-- The historical 1.0.57 maintained signing certificate matched the independently verified 1.0.67 signed APK/AAB. APK v2/v3, AAB signature, 16 KiB alignment, game-asset parity and archive checks passed. The exact signed file SHA-256 values were rechecked on November 11, 2026.
+- [PR-head Android build #43088537603](https://github.com/dbolden75/emberfall-game./actions/runs/43088537603) completed successfully at signed-source commit `b7378a9d`. GitHub produced unsigned archives; the exact candidate packages were subsequently signed offline using the original maintained certificate and uploaded to private Drive.
+- [Seven-job PR-head emulator matrix #43088537638](https://github.com/dbolden75/emberfall-game./actions/runs/43088537638) passed with **temporary QA signatures**, covering simulated device startup and automated regressions. It did **not** install the maintained-signed APK or perform a Play-delivered upgrade.
+- The historical 1.0.57 maintained signing certificate matched the independently verified 1.0.67 signed APK/AAB. APK v2/v3, AAB signature, 16 KiB alignment, game-asset parity and archive checks passed. The exact new signed file SHA-256 values were rechecked after Google Drive round-trip on November 11, 2026.
 - This does **not** prove Play Console acceptance, production app-signing compatibility, physical-device behavior, live purchase flows, or actual personal save retention.
 
 ## Open production gates — do not mark as Play-ready
