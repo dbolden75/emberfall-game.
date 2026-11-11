@@ -32,6 +32,47 @@ def main():
                              'documented package')
     if documented_package != package:
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md package {documented_package} != {package}')
+    # CI cannot see private signing keys, but inconsistent public hashes or
+    # source commits could advertise a stale/unsafe APK after a native rebuild.
+    readme = (ROOT / 'README.md').read_text(encoding='utf-8')
+    continuity = (ROOT / 'THORNHAVEN_CONTINUITY.md').read_text(encoding='utf-8')
+
+    def pinned_sha(body, marker, label):
+        rows = [line for line in body.splitlines() if marker in line]
+        if len(rows) != 1:
+            raise SystemExit(f'FAIL: expected one {label} release hash, found {len(rows)}')
+        match = re.search(r'([a-f0-9]{64})', rows[0].split(marker, 1)[1])
+        if not match:
+            raise SystemExit(f'FAIL: missing canonical SHA-256 for {label}')
+        return match.group(1)
+
+    for kind in ('APK', 'AAB'):
+        digests = (
+            pinned_sha(readme, f'Maintained-signed {kind} SHA-256', f'README {kind}'),
+            pinned_sha(continuity, f'Canonical signed {version} {kind} SHA-256', f'continuity {kind}'),
+            pinned_sha(guide, f'{"canonical signed APK SHA-256 is" if kind == "APK" else "AAB SHA-256 is"}',
+                       f'build instructions {kind}'),
+        )
+        if len(set(digests)) != 1:
+            raise SystemExit(f'FAIL: mismatched signed {kind} hashes across release handovers')
+
+    candidate_rows = (
+        (readme, 'Maintained-key signed game source:', 'README'),
+        (continuity, 'Latest independently verified maintained-key signed candidate:', 'continuity'),
+        (guide, 'maintained-key-signed APK/AAB', 'build instructions'),
+    )
+    commits = []
+    for body, marker, label in candidate_rows:
+        rows = [line for line in body.splitlines() if marker in line]
+        if len(rows) != 1:
+            raise SystemExit(f'FAIL: expected one {label} signed candidate reference, found {len(rows)}')
+        match = re.search(r'(?<![a-f0-9])([a-f0-9]{8})(?![a-f0-9])', rows[0])
+        if not match:
+            raise SystemExit(f'FAIL: missing signed candidate source commit in {label}')
+        commits.append(match.group(1))
+    if len(set(commits)) != 1:
+        raise SystemExit('FAIL: mismatched signed candidate source commits across handovers')
+    print('PASS: three release handovers agree on signed artifact hashes and source commit')
     # Preserve both historic developer-signing identities in operator instructions.
     # Different signing certificates block in-place Android updates, so losing
     # this warning in a release handoff could lead to irreversible save deletion.
