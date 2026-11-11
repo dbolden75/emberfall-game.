@@ -25,6 +25,8 @@ badging() {
   "$AAPT" dump badging "$1" | awk '
     /^package: / { package_count++; if (package_count == 1) print; next }
     /^sdkVersion:/ { sdk_count++; if (sdk_count == 1) print; next }
+    /^application-debuggable([[:space:]]|$)/ { print; next }
+    /^application-testOnly([[:space:]]|$)/ { print; next }
     END { if (package_count != 1 || sdk_count != 1) exit 1 }
   '
 }
@@ -53,6 +55,12 @@ candidate_min_sdk=$(printf '%s\n' "$candidate_badging" | sed -n "s/^sdkVersion:'
 [[ "$candidate_min_sdk" =~ ^[0-9]+$ ]] || {
   echo 'BLOCKED: candidate APK has no valid minimum Android SDK' >&2; exit 1;
 }
+# Release candidates must never be debuggable or installed via the test-only
+# path. Check the binary manifest before consulting a connected device.
+if grep -Eq '^application-(debuggable|testOnly)([[:space:]]|$)' <<< "$candidate_badging"; then
+  echo 'BLOCKED: candidate APK is debuggable or testOnly; refusing release upgrade preflight' >&2
+  exit 1
+fi
 candidate_pkg=$(package_field "$candidate_badging" name) || exit 1
 candidate_code=$(package_field "$candidate_badging" versionCode) || exit 1
 [[ "$candidate_pkg" == "$PACKAGE" && "$candidate_code" =~ ^[0-9]+$ ]] || {

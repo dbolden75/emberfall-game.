@@ -27,6 +27,8 @@ try {
     'if [[ "$3" == *installed-base.apk ]]; then',
     'echo "package: name=\'com.vaelbrink.ashvale.newjourney\' versionCode=\'$INSTALLED_CODE\' versionName=\'1.0.57\'"; echo "sdkVersion:\'$INSTALLED_MIN_SDK\'"',
     'else echo "package: name=\'$CANDIDATE_PACKAGE\' versionCode=\'$CANDIDATE_CODE\' versionName=\'1.0.64\'"; echo "sdkVersion:\'$CANDIDATE_MIN_SDK\'"; fi',
+    'if [[ "$3" != *installed-base.apk && "${CANDIDATE_DEBUGGABLE:-0}" == 1 ]]; then echo "application-debuggable"; fi',
+    'if [[ "$3" != *installed-base.apk && "${CANDIDATE_TEST_ONLY:-0}" == 1 ]]; then echo "application-testOnly"; fi',
     'if [[ "${BADGING_EXTRA_LINES:-0}" -gt 0 ]]; then',
     "  awk -v n=\"$BADGING_EXTRA_LINES\" 'BEGIN { for(i=0;i<n;i++) print \"application-label-en: Thornhaven\" }'",
     'fi'
@@ -41,7 +43,7 @@ try {
     'fi'
   ]);
   const script=path.join(__dirname,'maintained-upgrade-preflight.sh');
-  function check(label,override,pass,match){
+  function check(label,override,pass,match,expectNoAdb=false){
     const log=path.join(tmp,'calls');fs.writeFileSync(log,'');
     const env={...process.env,ADB_BIN:path.join(bin,'adb'),AAPT_BIN:path.join(bin,'aapt'),APKSIGNER_BIN:path.join(bin,'apksigner'),TEST_LOG:log,
       CANDIDATE_PACKAGE:'com.vaelbrink.ashvale.newjourney',CANDIDATE_CODE:'169',INSTALLED_CODE:'159',
@@ -50,11 +52,14 @@ try {
     assert.equal(run.status===0,pass,label+' '+run.stderr+' '+run.stdout);
     assert((run.stdout+run.stderr).includes(match),label+' expected message not found');
     assert.doesNotMatch(fs.readFileSync(log,'utf8'),/(^| )(install|uninstall|clear)( |$)/m,label+' wrote to device');
+    if(expectNoAdb)assert.equal(fs.readFileSync(log,'utf8').trim(),'','Rejected candidate must never consult the device');
     console.log('PASS:',label);
   }
   check('maintained signer 159->169',{},true,'PASS: candidate signer matches');
   check('large aapt dump under pipefail',{BADGING_EXTRA_LINES:'20000'},true,'PASS: candidate signer matches');
   check('Play-signed base blocks sideload',{INSTALLED_CERT:'0'.repeat(64)},false,'different certificate');
+  check('debuggable candidate rejected before device access',{CANDIDATE_DEBUGGABLE:'1'},false,'debuggable or testOnly',true);
+  check('testOnly candidate rejected before device access',{CANDIDATE_TEST_ONLY:'1'},false,'debuggable or testOnly',true);
   check('candidate missing v2 signature blocked',{CANDIDATE_V2:'false'},false,'candidate signature failed verification');
   check('candidate missing v3 signature blocked',{CANDIDATE_V3:'false'},false,'candidate signature failed verification');
   check('equal version blocked',{INSTALLED_CODE:'169'},false,'not newer');
@@ -66,5 +71,5 @@ try {
   check('device API cannot be determined is blocked',{DEVICE_SDK:''},false,'device SDK level is missing');
   check('multiline device API cannot be reinterpreted',{DEVICE_SDK:'3\n4'},false,'device SDK level is missing');
   check('candidate missing minimum SDK blocks',{CANDIDATE_MIN_SDK:''},false,'no valid minimum Android SDK');
-  console.log('PASS: all fourteen read-only preflight checks (mock Android commands; no device)');
+  console.log('PASS: all sixteen read-only preflight checks (mock Android commands; no device)');
 } finally {fs.rmSync(tmp,{recursive:true,force:true});}
