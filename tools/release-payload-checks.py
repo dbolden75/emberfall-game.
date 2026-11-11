@@ -86,6 +86,10 @@ def main():
                               capture_output=True, text=True, check=True)
         required(f"package: name='{PACKAGE}' versionCode='{code[1]}' versionName='{version[1]}'" in proc.stdout,
                  'APK package/version disagrees with Gradle source')
+        # Release WebViews and purchase bridges must not be shipped as debuggable.
+        # aapt prints this flag only when android:debuggable is enabled.
+        required(not re.search(r'(?m)^application-debuggable(?:\s|$)', proc.stdout),
+                 'production APK is debuggable')
     else:
         print('NOTE: aapt omitted; APK binary package/version must be checked separately.')
     print(f'PASS: {len(source)} release game assets match source, APK and AAB byte-for-byte')
