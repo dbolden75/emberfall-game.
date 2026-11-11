@@ -92,7 +92,9 @@ code=os.environ.get('FAKE_MANIFEST_CODE','169')
 manifest=field(1, text(3,'manifest')+
                attribute('package',os.environ.get('FAKE_MANIFEST_PACKAGE','com.vaelbrink.ashvale.newjourney'))+
                attribute('versionCode',code,ns,int(os.environ.get('FAKE_MANIFEST_COMPILED_CODE',code)))+
-               attribute('versionName',os.environ.get('FAKE_MANIFEST_VERSION','1.0.67'),ns))
+               attribute('versionName',os.environ.get('FAKE_MANIFEST_VERSION','1.0.67'),ns)+
+               (b'' if os.environ.get('FAKE_MISSING_APPLICATION') == '1'
+                else field(5, field(1, text(3,'application')))))
 with zipfile.ZipFile(out, 'w') as z:
     if os.environ.get('FAKE_MISSING_MANIFEST') != '1':
         z.writestr('base/manifest/AndroidManifest.xml', manifest)
@@ -149,6 +151,7 @@ with zipfile.ZipFile(out, 'w') as z:
             ('AAB wrong versionName', {'FAKE_MANIFEST_VERSION': '1.0.66'}),
             ('AAB missing manifest', {'FAKE_MISSING_MANIFEST': '1'}),
             ('AAB duplicate manifest', {'FAKE_DUPLICATE_MANIFEST': '1'}),
+            ('AAB missing application', {'FAKE_MISSING_APPLICATION': '1'}),
         ]:
             failed = invoke(overrides)
             assert failed.returncode != 0, label + ': unexpectedly accepted'
@@ -171,7 +174,7 @@ with zipfile.ZipFile(out, 'w') as z:
         assert blocked.returncode != 0, 'symlink output replaced'
         assert output.is_symlink() and victim.read_bytes() == b'previous owner data'
         print('PASS: symlink release output cannot be overwritten')
-    print('PASS: eleven isolated AAB release-safety scenarios; no real signing or Android install')
+    print('PASS: isolated AAB release-safety scenarios; no real signing or Android install')
 
 
 if __name__ == '__main__':
