@@ -43,7 +43,7 @@ try {
     'fi'
   ]);
   const script=path.join(__dirname,'maintained-upgrade-preflight.sh');
-  function check(label,override,pass,match){
+  function check(label,override,pass,match,expectNoAdb=false){
     const log=path.join(tmp,'calls');fs.writeFileSync(log,'');
     const env={...process.env,ADB_BIN:path.join(bin,'adb'),AAPT_BIN:path.join(bin,'aapt'),APKSIGNER_BIN:path.join(bin,'apksigner'),TEST_LOG:log,
       CANDIDATE_PACKAGE:'com.vaelbrink.ashvale.newjourney',CANDIDATE_CODE:'169',INSTALLED_CODE:'159',
@@ -52,13 +52,14 @@ try {
     assert.equal(run.status===0,pass,label+' '+run.stderr+' '+run.stdout);
     assert((run.stdout+run.stderr).includes(match),label+' expected message not found');
     assert.doesNotMatch(fs.readFileSync(log,'utf8'),/(^| )(install|uninstall|clear)( |$)/m,label+' wrote to device');
+    if(expectNoAdb)assert.equal(fs.readFileSync(log,'utf8').trim(),'','Rejected candidate must never consult the device');
     console.log('PASS:',label);
   }
   check('maintained signer 159->169',{},true,'PASS: candidate signer matches');
   check('large aapt dump under pipefail',{BADGING_EXTRA_LINES:'20000'},true,'PASS: candidate signer matches');
   check('Play-signed base blocks sideload',{INSTALLED_CERT:'0'.repeat(64)},false,'different certificate');
-  check('debuggable candidate rejected before device access',{CANDIDATE_DEBUGGABLE:'1'},false,'debuggable or testOnly');
-  check('testOnly candidate rejected before device access',{CANDIDATE_TEST_ONLY:'1'},false,'debuggable or testOnly');
+  check('debuggable candidate rejected before device access',{CANDIDATE_DEBUGGABLE:'1'},false,'debuggable or testOnly',true);
+  check('testOnly candidate rejected before device access',{CANDIDATE_TEST_ONLY:'1'},false,'debuggable or testOnly',true);
   check('candidate missing v2 signature blocked',{CANDIDATE_V2:'false'},false,'candidate signature failed verification');
   check('candidate missing v3 signature blocked',{CANDIDATE_V3:'false'},false,'candidate signature failed verification');
   check('equal version blocked',{INSTALLED_CODE:'169'},false,'not newer');
