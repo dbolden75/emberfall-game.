@@ -44,6 +44,17 @@ def check_failure(root, label, entries, selected, message):
 
 
 def main():
+    # No real aapt or signing key needed: exercise both fail-closed flags used
+    # by offline CI artifact signing before it touches the keystore.
+    signer.reject_non_release_badging("package: name='com.vaelbrink.ashvale.newjourney'\n")
+    for flag in ('application-debuggable', 'application-testOnly'):
+        try:
+            signer.reject_non_release_badging("package: name='com.vaelbrink.ashvale.newjourney'\n" + flag + "\n")
+        except RuntimeError as error:
+            assert 'debuggable or test-only' in str(error)
+        else:
+            raise AssertionError(f'Unsafe release manifest flag accepted: {flag}')
+    print('PASS: offline CI signer refuses debug/test-only manifest flags')
     with tempfile.TemporaryDirectory(prefix='thornhaven-ci-archive-fixtures-') as temp:
         root = Path(temp)
         archive = root / 'valid.zip'
