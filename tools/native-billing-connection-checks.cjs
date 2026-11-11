@@ -29,7 +29,7 @@ public class BillingConnectionHarness {
  final BillingClient client=new BillingClient();
  final java.util.Set<String> finishing=new java.util.HashSet<>();
  final java.util.Map<String,String> catalog=new java.util.HashMap<>();
- int refreshEpoch,billingSessionEpoch,published,refreshed;
+ int refreshEpoch,billingSessionEpoch,connectionEpoch,published,refreshed;
  boolean connecting,closed,busy;String message="";
  void publish(){published++;}
  void refresh(){refreshed++;}
@@ -53,7 +53,30 @@ public class BillingConnectionHarness {
   h=new BillingConnectionHarness();h.connect();h.busy=true;h.finishing.add("r");h.catalog.put("p","v");
   h.client.callback.onBillingServiceDisconnected();
   check(!h.busy&&!h.connecting&&h.finishing.isEmpty()&&h.catalog.isEmpty()&&h.refreshEpoch==1&&h.billingSessionEpoch==1,"Disconnect invalidates session");
-  System.out.println("PASS: 9 production Java billing connection tests; no Play transaction or device test");
+  // Old BillingClient callbacks can arrive after a disconnect and a newer
+  // startConnection. Neither a late success nor a late failure may cancel
+  // the newer attempt or turn its catalog into a stale/ready offer.
+  h=new BillingConnectionHarness();h.connect();
+  BillingClientStateListener obsolete=h.client.callback;
+  obsolete.onBillingServiceDisconnected();
+  h.connect();BillingClientStateListener newest=h.client.callback;
+  int currentConnection=h.connectionEpoch,currentRefresh=h.refreshEpoch,currentSession=h.billingSessionEpoch;
+  obsolete.onBillingSetupFinished(new BillingResult(0));
+  check(h.connecting&&h.refreshed==0&&h.connectionEpoch==currentConnection,
+        "Late OK from old connection must not refresh or end a newer attempt");
+  obsolete.onBillingSetupFinished(new BillingResult(6));
+  check(h.connecting&&h.published==1,"Late failure from old connection must not hide a newer attempt");
+  obsolete.onBillingServiceDisconnected();
+  check(h.connectionEpoch==currentConnection&&h.refreshEpoch==currentRefresh&&h.billingSessionEpoch==currentSession,
+        "Late old disconnect must not invalidate a new Play session");
+  h.client.ready=true;newest.onBillingSetupFinished(new BillingResult(0));
+  check(!h.connecting&&h.refreshed==1,"Latest Play callback still refreshes normally");
+  // A startConnection exception invalidates any listener it registered
+  // before throwing; the subsequent Restore attempt must remain authoritative.
+  h=new BillingConnectionHarness();h.client.throwStart=true;h.connect();
+  int afterThrow=h.connectionEpoch;h.client.throwStart=false;h.connect();
+  check(h.connectionEpoch>afterThrow&&h.connecting,"Failure permits a new authoritative connection");
+  System.out.println("PASS: production Java billing connection tests including stale callbacks; no Play transaction or device test");
  }
 }
 `;
