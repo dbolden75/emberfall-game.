@@ -67,9 +67,18 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             publish();
         }
     }
+    private void invalidateCatalogForRefresh(){
+        catalog.clear();
+        message="Refreshing Google Play prices and purchase options. Checkout is temporarily unavailable.";
+        publish(); // Keep verified ownership and deliveries visible, but hide stale offers.
+    }
     private void refresh(){
         if(closed||!client.isReady())return;
         final int epoch=++refreshEpoch;
+        // Previous prices and tokens may belong to an earlier Play session or account.
+        // Invalidate them before starting any asynchronous query; a Restore tap
+        // must never leave stale checkout choices visible while Play responds.
+        invalidateCatalogForRefresh();
         List<QueryProductDetailsParams.Product> products=new ArrayList<>();
         for(String id:PRODUCT_IDS)if(!RETIRED_SALE_IDS.contains(id))products.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
         // Play may disconnect after isReady() and before this query is dispatched.
