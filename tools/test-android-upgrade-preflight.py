@@ -67,5 +67,87 @@ class PreflightTests(unittest.TestCase):
             preflight.parse_installed_base('package:/data/app/org/split_config.arm64_v8a.apk\npackage:/data/app/org/other.apk\n')
 
 
+
+# Full CLI dispatch rehearsal: mocks adb/aapt/apksigner and therefore never
+# accesses a physical phone. Protect against accidentally destructive adb
+# commands or false PASS outcomes when Play signers and local copies differ.
+import contextlib
+import io
+import tempfile
+from unittest import mock
+
+
+class UpgradePreflightCliTests(unittest.TestCase):
+    def exercise_cli(self, *, bad_candidate=False, bad_installed=False,
+                     ambiguous_path=False, pull_fails=False):
+        with tempfile.TemporaryDirectory() as tmp:
+            candidate = pathlib.Path(tmp) / 'candidate.apk'
+            candidate.write_bytes(b'mocked-candidate')
+            calls = []
+
+            def fake_command(args):
+                calls.append(tuple(args))
+                if args[0] == 'aapt':
+                    code = 169 if str(candidate) == args[-1] else 159
+                    return f"package: name='{preflight.PACKAGE}' versionCode='{code}' versionName='1.0.67'\n"
+                if args[0] == 'apksigner':
+                    wrong = ((bad_candidate and str(candidate) == args[-1])
+                             or (bad_installed and args[-1] != str(candidate)))
+                    digest = 'f' * 64 if wrong else preflight.EXPECTED_RELEASE_SIGNER
+                    return f'Signer #1 certificate SHA-256 digest: {digest}\n'
+                if args[0] == 'adb' and args[1:4] == ['-s', 'mock-serial', 'shell']:
+                    if ambiguous_path:
+                        return 'package:/data/app/test/split_config.apk\npackage:/data/app/test/split_en.apk\n'
+                    return 'package:/data/app/test/base.apk\npackage:/data/app/test/split_config.apk\n'
+                if args[0] == 'adb' and args[1:4] == ['-s', 'mock-serial', 'pull']:
+                    if pull_fails:
+                        raise preflight.PreflightError('Read-only installed APK copy failed')
+                    return '1 file pulled'
+                raise AssertionError(f'Unexpected external command: {args!r}')
+
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with mock.patch.object(preflight, 'command', side_effect=fake_command), \
+                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = preflight.main([str(candidate), '--serial', 'mock-serial'])
+            for args in calls:
+                if args[0] == 'adb':
+                    self.assertEqual(args[1:3], ('-s', 'mock-serial'))
+                    self.assertIn(args[3], ('shell', 'pull'))
+                    self.assertNotIn('install', args)
+                    self.assertNotIn('uninstall', args)
+                    self.assertNotIn('clear', args)
+            return result, calls, stdout.getvalue(), stderr.getvalue()
+
+    def test_cli_good_sideload_preflight_uses_only_read_commands(self):
+        result, calls, out, err = self.exercise_cli()
+        self.assertEqual(result, 0, err)
+        self.assertIn('NO UPDATE PERFORMED', out)
+        self.assertEqual(sum('pull' in cmd for cmd in calls), 1)
+
+    def test_cli_bad_candidate_rejected_before_device_access(self):
+        result, calls, out, err = self.exercise_cli(bad_candidate=True)
+        self.assertEqual(result, 1)
+        self.assertIn('Candidate has incorrect package or signing certificate', err)
+        self.assertFalse(any(cmd[0] == 'adb' for cmd in calls))
+
+    def test_cli_play_signer_mismatch_blocks_without_mutation(self):
+        result, calls, out, err = self.exercise_cli(bad_installed=True)
+        self.assertEqual(result, 1)
+        self.assertIn('Installed signer differs', err)
+        self.assertEqual(sum('pull' in cmd for cmd in calls), 1)
+
+    def test_cli_ambiguous_install_paths_block_before_pull(self):
+        result, calls, out, err = self.exercise_cli(ambiguous_path=True)
+        self.assertEqual(result, 1)
+        self.assertIn('Could not uniquely locate', err)
+        self.assertFalse(any('pull' in cmd for cmd in calls))
+
+    def test_cli_pull_failure_never_claims_success(self):
+        result, calls, out, err = self.exercise_cli(pull_fails=True)
+        self.assertEqual(result, 1)
+        self.assertIn('Read-only installed APK copy failed', err)
+        self.assertNotIn('PASS:', out)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
