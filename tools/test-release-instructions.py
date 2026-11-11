@@ -41,7 +41,7 @@ def main():
         rows = [line for line in body.splitlines() if marker in line]
         if len(rows) != 1:
             raise SystemExit(f'FAIL: expected one {label} release hash, found {len(rows)}')
-        match = re.search(r'\\x60([a-f0-9]{64})\\x60', rows[0].split(marker, 1)[1])
+        match = re.search(r'([a-f0-9]{64})', rows[0].split(marker, 1)[1])
         if not match:
             raise SystemExit(f'FAIL: missing canonical SHA-256 for {label}')
         return match.group(1)
@@ -66,7 +66,7 @@ def main():
         rows = [line for line in body.splitlines() if marker in line]
         if len(rows) != 1:
             raise SystemExit(f'FAIL: expected one {label} signed candidate reference, found {len(rows)}')
-        match = re.search(r'\\[\\x60([a-f0-9]{8})\\x60\\]', rows[0])
+        match = re.search(r'(?<![a-f0-9])([a-f0-9]{8})(?![a-f0-9])', rows[0])
         if not match:
             raise SystemExit(f'FAIL: missing signed candidate source commit in {label}')
         commits.append(match.group(1))
