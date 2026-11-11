@@ -33,6 +33,9 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     // or the activity is destroyed. A finishing response must belong to
     // the same billing session that started the request.
     private int billingSessionEpoch;
+    // A delayed callback from an earlier startConnection must never clear the
+    // latest Play session or change a newer connection attempt's busy state.
+    private int connectionEpoch;
     // A new verified receipt can arrive while an earlier asynchronous Play
     // ownership query is in flight. Never let that stale query revoke it.
     private int acceptedReceiptEpoch;
@@ -49,19 +52,21 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
         if(closed||connecting)return;
         if(client.isReady()){refresh();return;}
         connecting=true;
+        final int attempt=++connectionEpoch;
         try{
             client.startConnection(new BillingClientStateListener(){
                 public void onBillingSetupFinished(BillingResult result){activity.runOnUiThread(()->{
-                    if(closed)return;
+                    if(closed||attempt!=connectionEpoch)return;
                     connecting=false;
                     if(result!=null&&result.getResponseCode()==BillingClient.BillingResponseCode.OK)refresh();
                     else {message="Google Play purchases are unavailable. Install the Play test release and retry.";publish();}
                 });}
-                public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{if(closed)return;refreshEpoch++;billingSessionEpoch++;connecting=false;busy=false;finishing.clear();catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
+                public void onBillingServiceDisconnected(){activity.runOnUiThread(()->{if(closed||attempt!=connectionEpoch)return;connectionEpoch++;refreshEpoch++;billingSessionEpoch++;connecting=false;busy=false;finishing.clear();catalog.clear();message="Google Play disconnected. Tap Restore purchases to retry.";publish();});}
             });
         }catch(RuntimeException unavailable){
             // A Play service/BillingClient startup failure must not prevent the
             // offline game from launching or permanently block Restore retries.
+            connectionEpoch++;
             connecting=false;
             message="Google Play purchases could not start. Game play remains available. Tap Restore purchases to retry.";
             publish();
@@ -516,5 +521,5 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
             :"Items saved. Google Play confirmation will retry when you restore purchases.";
         publish();
     }
-    void close(){closed=true;refreshEpoch++;billingSessionEpoch++;finishing.clear();busy=false;catalog.clear();client.endConnection();}
+    void close(){closed=true;connectionEpoch++;refreshEpoch++;billingSessionEpoch++;finishing.clear();busy=false;catalog.clear();client.endConnection();}
 }
