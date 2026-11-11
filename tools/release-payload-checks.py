@@ -90,6 +90,8 @@ def main():
         # aapt prints this flag only when android:debuggable is enabled.
         required(not re.search(r'(?m)^application-debuggable(?:\s|$)', proc.stdout),
                  'production APK is debuggable')
+        required(not re.search(r'(?m)^application-testOnly(?:\s|$)', proc.stdout),
+                 'production APK is test-only')
     else:
         print('NOTE: aapt omitted; APK binary package/version must be checked separately.')
     print(f'PASS: {len(source)} release game assets match source, APK and AAB byte-for-byte')
