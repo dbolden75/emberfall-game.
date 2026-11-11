@@ -67,14 +67,7 @@ def _string(data: bytes) -> str:
     return data.decode('utf-8', 'strict')
 
 
-def _root_attributes(data: bytes) -> dict[tuple[str, str], tuple[str, bytes | None]]:
-    if len(data) > MAX_MANIFEST_BYTES:
-        raise ValueError('AAB manifest is unexpectedly large')
-    root = list(_fields(data))
-    element = _one(root, 1, 2)
-    contents = list(_fields(element))
-    if _string(_one(contents, 3, 2)) != 'manifest':
-        raise ValueError('AAB XML root is not manifest')
+def _attribute_map(contents) -> dict[tuple[str, str], tuple[str, bytes | None]]:
     attributes = {}
     for field, wire_type, entry in contents:
         if field != 4:
@@ -93,6 +86,39 @@ def _root_attributes(data: bytes) -> dict[tuple[str, str], tuple[str, bytes | No
         attributes[key] = (value, compiled[0] if compiled else None)
     return attributes
 
+
+def _root_attributes(data: bytes) -> dict[tuple[str, str], tuple[str, bytes | None]]:
+    if len(data) > MAX_MANIFEST_BYTES:
+        raise ValueError('AAB manifest is unexpectedly large')
+    root = list(_fields(data))
+    element = _one(root, 1, 2)
+    contents = list(_fields(element))
+    if _string(_one(contents, 3, 2)) != 'manifest':
+        raise ValueError('AAB XML root is not manifest')
+    attributes = _attribute_map(contents)
+    # The bundle (not just the APK) must never request testOnly or debuggable
+    # installation. Treat even explicit false flags as release-configuration
+    # drift; production currently does not declare either attribute.
+    for flag in ('testOnly', 'debuggable'):
+        if (ANDROID_NAMESPACE, flag) in attributes:
+            raise ValueError('Release AAB root declares android:' + flag)
+    applications = 0
+    for field, wire_type, node in contents:
+        if field != 5:
+            continue
+        if wire_type != 2:
+            raise ValueError('Invalid AAB XML child element wire type')
+        child = list(_fields(_one(list(_fields(node)), 1, 2)))
+        if _string(_one(child, 3, 2)) != 'application':
+            continue
+        applications += 1
+        app_attributes = _attribute_map(child)
+        for flag in ('debuggable', 'testOnly'):
+            if (ANDROID_NAMESPACE, flag) in app_attributes:
+                raise ValueError('Release AAB application declares android:' + flag)
+    if applications > 1:
+        raise ValueError('Release AAB has duplicate application elements')
+    return attributes
 
 def _compiled_code(data: bytes) -> int:
     """Read Item.primitive (field 7), then Primitive.int_decimal (field 6)."""
