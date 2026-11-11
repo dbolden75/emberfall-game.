@@ -29,6 +29,7 @@ jobs:
         run: |
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
+          python3 tools/test-android-upgrade-preflight.py
           python3 tools/test-offline-signing.py
           python3 tools/test-play-bundle-signing.py
           python3 tools/test-aab-manifest-identity.py
