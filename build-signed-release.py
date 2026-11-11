@@ -21,6 +21,10 @@ ROOT = Path(__file__).resolve().parent
 def embedded_identity(apk, aapt, env):
     """Read the built APK rather than assuming it matches the Gradle project."""
     badging = run([aapt, 'dump', 'badging', apk], env, capture_output=True, text=True).stdout
+    # Check the packaged Android manifest before signing and again after it.
+    # Matching package/version is insufficient for a release-capable APK.
+    if re.search(r'(?m)^application-(?:debuggable|testOnly)(?:\s|$)', badging):
+        raise RuntimeError('Refusing debuggable or test-only APK release')
     match = re.search(r"(?m)^package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'(?:\s|$)", badging)
     if not match:
         raise RuntimeError(f'Cannot read package, versionCode and versionName from {apk}')

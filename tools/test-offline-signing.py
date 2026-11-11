@@ -24,6 +24,8 @@ if os.environ.get('FAKE_BAD_PACKAGE') == '1' or (os.environ.get('FAKE_BAD_SIGNED
 code = '168' if os.environ.get('FAKE_BAD_CODE') == '1' else '169'
 name = '1.0.66' if os.environ.get('FAKE_BAD_VERSION') == '1' else '1.0.67'
 print("package: name='%s' versionCode='%s' versionName='%s' platformBuildVersionName=''" % (pkg, code, name))
+if os.environ.get('FAKE_DEBUGGABLE') == '1': print('application-debuggable')
+if os.environ.get('FAKE_TEST_ONLY') == '1': print('application-testOnly')
 """
 APKSIGNER = """#!/usr/bin/env python3
 import os, shutil, sys, zipfile
@@ -94,6 +96,8 @@ def main():
         signed.write_bytes(previous)
         for overrides, reason in [
             ({'FAKE_NO_V3': '1'}, 'missing v3 accepted'),
+            ({'FAKE_DEBUGGABLE': '1'}, 'debuggable release accepted'),
+            ({'FAKE_TEST_ONLY': '1'}, 'test-only release accepted'),
             ({'FAKE_CERT': '00' * 32}, 'different certificate accepted'),
             ({'FAKE_BAD_PACKAGE': '1'}, 'stale package accepted'),
             ({'FAKE_BAD_CODE': '1'}, 'stale versionCode accepted'),
