@@ -75,11 +75,12 @@ def main():
         # The same static artifact verification must fail closed when Android's
         # actual packaged manifest is debuggable, regardless of build.gradle.
         mock_aapt = root / 'mock-aapt'
-        def write_badging(debuggable):
+        def write_badging(debuggable=False, test_only=False):
             mock_aapt.write_text(
                 "#!/bin/sh\ncat <<'EOF'\n"
                 "package: name='com.vaelbrink.ashvale.newjourney' versionCode='169' versionName='1.0.67'\n"
                 + ("application-debuggable\n" if debuggable else "")
+                + ("application-testOnly\n" if test_only else "")
                 + "EOF\n")
             mock_aapt.chmod(0o755)
         write_badging(False)
@@ -88,6 +89,9 @@ def main():
         write_badging(True)
         verify(root, apk, aab, False, 'production APK is debuggable', aapt=mock_aapt)
         print('PASS: debuggable production APK rejected')
+        write_badging(test_only=True)
+        verify(root, apk, aab, False, 'production APK is test-only', aapt=mock_aapt)
+        print('PASS: Android test-only production APK rejected')
 
 
         package(apk, 'assets/', source, duplicate='index.html')
