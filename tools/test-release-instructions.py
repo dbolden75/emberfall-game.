@@ -32,131 +32,47 @@ def main():
                              'documented package')
     if documented_package != package:
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md package {documented_package} != {package}')
-    # All three public handovers must refer to the SAME maintained-signed bytes.
-    # CI cannot access private signing material, but can prevent old signed
-    # packages from silently becoming the documented default after a rebuild.
+    # CI cannot see private signing keys, but inconsistent public hashes or
+    # source commits could advertise a stale/unsafe APK after a native rebuild.
     readme = (ROOT / 'README.md').read_text(encoding='utf-8')
     continuity = (ROOT / 'THORNHAVEN_CONTINUITY.md').read_text(encoding='utf-8')
-    for kind, patterns in {
-        'APK': (
-            r'^- \\*\\*Maintained-signed APK SHA-256:\\*\\* \`([a-f0-9]{64})\`\\.    # Different signing certificates block in-place Android updates, so losing
-    # this warning in a release handoff could lead to irreversible save deletion.
-    dev_certificates = {
-        'Thornhaven-1.0.57-dev-test.apk':
-            '09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099',
-        'Thornhaven-1.0.57-fixes-dev-test.apk':
-            'eba47475cc63815c8d16bbf7819a32dcd3991438e5c2336df2bbe10eb9e423b5',
-    }
-    for filename, certificate in dev_certificates.items():
-        if filename not in guide or certificate not in guide:
-            raise SystemExit(f'FAIL: missing signed-development migration warning for {filename}')
-    maintained_certificate = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
-    if maintained_certificate not in guide:
-        raise SystemExit('FAIL: release documentation lost the maintained signer identity')
-    if 'CANNOT perform an in-place update' not in guide or 'NEVER advise uninstalling' not in guide:
-        raise SystemExit('FAIL: release instructions no longer warn against data-loss migration')
-    print('PASS: both historical development signing identities and save-preservation warning retained')
-    print(f'PASS: documented Android release is {package}, version {version}, versionCode {code}')
-    print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
 
+    def pinned_sha(body, marker, label):
+        rows = [line for line in body.splitlines() if marker in line]
+        if len(rows) != 1:
+            raise SystemExit(f'FAIL: expected one {label} release hash, found {len(rows)}')
+        match = re.search(r'\\x60([a-f0-9]{64})\\x60', rows[0].split(marker, 1)[1])
+        if not match:
+            raise SystemExit(f'FAIL: missing canonical SHA-256 for {label}')
+        return match.group(1)
 
-if __name__ == '__main__':
-    main()
-,
-            r'^- Canonical signed [^\\n]+ APK SHA-256: \`([a-f0-9]{64})\`\\.    # Different signing certificates block in-place Android updates, so losing
-    # this warning in a release handoff could lead to irreversible save deletion.
-    dev_certificates = {
-        'Thornhaven-1.0.57-dev-test.apk':
-            '09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099',
-        'Thornhaven-1.0.57-fixes-dev-test.apk':
-            'eba47475cc63815c8d16bbf7819a32dcd3991438e5c2336df2bbe10eb9e423b5',
-    }
-    for filename, certificate in dev_certificates.items():
-        if filename not in guide or certificate not in guide:
-            raise SystemExit(f'FAIL: missing signed-development migration warning for {filename}')
-    maintained_certificate = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
-    if maintained_certificate not in guide:
-        raise SystemExit('FAIL: release documentation lost the maintained signer identity')
-    if 'CANNOT perform an in-place update' not in guide or 'NEVER advise uninstalling' not in guide:
-        raise SystemExit('FAIL: release instructions no longer warn against data-loss migration')
-    print('PASS: both historical development signing identities and save-preservation warning retained')
-    print(f'PASS: documented Android release is {package}, version {version}, versionCode {code}')
-    print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
-
-
-if __name__ == '__main__':
-    main()
-,
-            r'^Current main development source: [^\\n]+?canonical signed APK SHA-256 is \`([a-f0-9]{64})\`;',
-        ),
-        'AAB': (
-            r'^- \\*\\*Maintained-signed AAB SHA-256:\\*\\* \`([a-f0-9]{64})\`\\.    # Different signing certificates block in-place Android updates, so losing
-    # this warning in a release handoff could lead to irreversible save deletion.
-    dev_certificates = {
-        'Thornhaven-1.0.57-dev-test.apk':
-            '09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099',
-        'Thornhaven-1.0.57-fixes-dev-test.apk':
-            'eba47475cc63815c8d16bbf7819a32dcd3991438e5c2336df2bbe10eb9e423b5',
-    }
-    for filename, certificate in dev_certificates.items():
-        if filename not in guide or certificate not in guide:
-            raise SystemExit(f'FAIL: missing signed-development migration warning for {filename}')
-    maintained_certificate = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
-    if maintained_certificate not in guide:
-        raise SystemExit('FAIL: release documentation lost the maintained signer identity')
-    if 'CANNOT perform an in-place update' not in guide or 'NEVER advise uninstalling' not in guide:
-        raise SystemExit('FAIL: release instructions no longer warn against data-loss migration')
-    print('PASS: both historical development signing identities and save-preservation warning retained')
-    print(f'PASS: documented Android release is {package}, version {version}, versionCode {code}')
-    print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
-
-
-if __name__ == '__main__':
-    main()
-,
-            r'^- Canonical signed [^\\n]+ AAB SHA-256: \`([a-f0-9]{64})\`\\.    # Different signing certificates block in-place Android updates, so losing
-    # this warning in a release handoff could lead to irreversible save deletion.
-    dev_certificates = {
-        'Thornhaven-1.0.57-dev-test.apk':
-            '09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099',
-        'Thornhaven-1.0.57-fixes-dev-test.apk':
-            'eba47475cc63815c8d16bbf7819a32dcd3991438e5c2336df2bbe10eb9e423b5',
-    }
-    for filename, certificate in dev_certificates.items():
-        if filename not in guide or certificate not in guide:
-            raise SystemExit(f'FAIL: missing signed-development migration warning for {filename}')
-    maintained_certificate = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
-    if maintained_certificate not in guide:
-        raise SystemExit('FAIL: release documentation lost the maintained signer identity')
-    if 'CANNOT perform an in-place update' not in guide or 'NEVER advise uninstalling' not in guide:
-        raise SystemExit('FAIL: release instructions no longer warn against data-loss migration')
-    print('PASS: both historical development signing identities and save-preservation warning retained')
-    print(f'PASS: documented Android release is {package}, version {version}, versionCode {code}')
-    print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
-
-
-if __name__ == '__main__':
-    main()
-,
-            r'^Current main development source: [^\\n]+?AAB SHA-256 is \`([a-f0-9]{64})\`\\.',
-        ),
-    }.items():
-        digests = [one(pattern, body, f'{source} signed {kind} hash')
-                   for pattern, body, source in zip(
-                       patterns, (readme, continuity, guide),
-                       ('README', 'continuity', 'build workflow'))]
+    for kind in ('APK', 'AAB'):
+        digests = (
+            pinned_sha(readme, f'Maintained-signed {kind} SHA-256', f'README {kind}'),
+            pinned_sha(continuity, f'Canonical signed {version} {kind} SHA-256', f'continuity {kind}'),
+            pinned_sha(guide, f'{"canonical signed APK SHA-256 is" if kind == "APK" else "AAB SHA-256 is"}',
+                       f'build instructions {kind}'),
+        )
         if len(set(digests)) != 1:
-            raise SystemExit(f'FAIL: contradictory maintained-signed {kind} hashes across release handovers')
-    for pattern, body, label in (
-        (r'^- \\*\\*Maintained-key signed game source:\\*\\* \\[\`([a-f0-9]{8})\`\\]', readme, 'README'),
-        (r'^- Latest independently verified maintained-key signed candidate: [^\\n]+?commit \\[\`([a-f0-9]{8})\`\\]', continuity, 'continuity'),
-        (r'^Current main development source: [^\\n]+?maintained-key-signed APK/AAB\\*\\* from \\[\`([a-f0-9]{8})\`\\]', guide, 'build workflow'),
-    ):
-        current = one(pattern, body, f'{label} signed candidate commit')
-        if 'candidate_commit' in locals() and current != candidate_commit:
-            raise SystemExit('FAIL: signed candidate source commit differs across release handovers')
-        candidate_commit = current
-    print('PASS: three public release handovers agree on signed hashes and source commit')
+            raise SystemExit(f'FAIL: mismatched signed {kind} hashes across release handovers')
+
+    candidate_rows = (
+        (readme, 'Maintained-key signed game source:', 'README'),
+        (continuity, 'Latest independently verified maintained-key signed candidate:', 'continuity'),
+        (guide, 'maintained-key-signed APK/AAB', 'build instructions'),
+    )
+    commits = []
+    for body, marker, label in candidate_rows:
+        rows = [line for line in body.splitlines() if marker in line]
+        if len(rows) != 1:
+            raise SystemExit(f'FAIL: expected one {label} signed candidate reference, found {len(rows)}')
+        match = re.search(r'\\[\\x60([a-f0-9]{8})\\x60\\]', rows[0])
+        if not match:
+            raise SystemExit(f'FAIL: missing signed candidate source commit in {label}')
+        commits.append(match.group(1))
+    if len(set(commits)) != 1:
+        raise SystemExit('FAIL: mismatched signed candidate source commits across handovers')
+    print('PASS: three release handovers agree on signed artifact hashes and source commit')
     # Preserve both historic developer-signing identities in operator instructions.
     # Different signing certificates block in-place Android updates, so losing
     # this warning in a release handoff could lead to irreversible save deletion.
