@@ -35,7 +35,7 @@ def attribute(name, value, namespace='', code=None):
 def manifest(package=PACKAGE, code='169', compiled=169, version='1.0.67', *,
              duplicate=False, root='manifest', root_test_only=False,
              root_debuggable=False, app_debuggable=False, app_test_only=False,
-             duplicate_application=False):
+             duplicate_application=False, omit_application=False):
     body = field(3, root.encode()) + attribute('package', package)
     body += attribute('versionCode', code, ANDROID_NAMESPACE, compiled)
     body += attribute('versionName', version, ANDROID_NAMESPACE)
@@ -50,7 +50,8 @@ def manifest(package=PACKAGE, code='169', compiled=169, version='1.0.67', *,
         app += attribute('debuggable', 'true', ANDROID_NAMESPACE)
     if app_test_only:
         app += attribute('testOnly', 'true', ANDROID_NAMESPACE)
-    body += field(5, field(1, app))
+    if not omit_application:
+        body += field(5, field(1, app))
     if duplicate_application:
         body += field(5, field(1, app))
     return field(1, body)
@@ -88,6 +89,7 @@ def main():
         check(manifest(app_debuggable=True))
         check(manifest(app_test_only=True))
         check(manifest(duplicate_application=True))
+        check(manifest(omit_application=True))
         check(manifest(), repeated=True)
         check(b'not protobuf XML')
         with zipfile.ZipFile(path, 'w') as z:
@@ -97,7 +99,7 @@ def main():
             assert False, 'Missing manifest passed'
         except ValueError:
             pass
-    print('PASS: AAB manifest identity rejects 14 changed, unsafe, malformed, duplicate, or missing fixture cases')
+    print('PASS: AAB manifest identity rejects 15 changed, unsafe, malformed, duplicate, or missing fixture cases')
     print('NOTE: synthetic AAB XML; no actual signing keys or device testing')
 
 

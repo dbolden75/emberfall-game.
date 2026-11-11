@@ -116,8 +116,8 @@ def _root_attributes(data: bytes) -> dict[tuple[str, str], tuple[str, bytes | No
         for flag in ('debuggable', 'testOnly'):
             if (ANDROID_NAMESPACE, flag) in app_attributes:
                 raise ValueError('Release AAB application declares android:' + flag)
-    if applications > 1:
-        raise ValueError('Release AAB has duplicate application elements')
+    if applications != 1:
+        raise ValueError('Release AAB must contain exactly one application element')
     return attributes
 
 def _compiled_code(data: bytes) -> int:
