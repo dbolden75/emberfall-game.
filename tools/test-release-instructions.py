@@ -24,7 +24,7 @@ def main():
     code = one(r'^\s*versionCode\s+(\d+)\s*$', gradle, 'Android versionCode')
     if package != 'com.vaelbrink.ashvale.newjourney':
         raise SystemExit('FAIL: Android application ID changed, existing installs/saves at risk')
-    documented = one(r'^Current main development source: ([^,\n]+), Android versionCode (\d+)\.',
+    documented = one(r'^Current main development source: ([^,\n]+), Android versionCode (\d+)(?=[,.])',
                      guide, 'documented current release identity')
     if documented != (version, code):
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md says {documented}; Android source is {(version, code)}')
