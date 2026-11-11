@@ -28,11 +28,13 @@ def package(path, prefix, source, duplicate=None, include_dexopt=False):
                 archive.writestr(prefix + duplicate, source[duplicate])
 
 
-def verify(root, apk, aab, should_pass, expected):
+def verify(root, apk, aab, should_pass, expected, aapt=None):
     cmd = [sys.executable, str(CHECKER), '--apk', str(apk),
            '--aab', str(aab), '--assets', str(root / 'assets'),
            '--gradle', str(root / 'build.gradle'),
            '--activity', str(root / 'MainActivity.java')]
+    if aapt is not None:
+        cmd.extend(['--aapt', str(aapt)])
     process = subprocess.run(cmd, capture_output=True, text=True, check=False)
     output = process.stdout + process.stderr
     if (process.returncode == 0) != should_pass or expected not in output:
@@ -69,6 +71,24 @@ def main():
         package(aab, 'base/assets/', source)
         verify(root, apk, aab, True, 'release game assets match source')
         print('PASS: normal APK/AAB with one baseline profile metadata entry')
+
+        # The same static artifact verification must fail closed when Android's
+        # actual packaged manifest is debuggable, regardless of build.gradle.
+        mock_aapt = root / 'mock-aapt'
+        def write_badging(debuggable):
+            mock_aapt.write_text(
+                "#!/bin/sh\ncat <<'EOF'\n"
+                "package: name='com.vaelbrink.ashvale.newjourney' versionCode='169' versionName='1.0.67'\n"
+                + ("application-debuggable\n" if debuggable else "")
+                + "EOF\n")
+            mock_aapt.chmod(0o755)
+        write_badging(False)
+        verify(root, apk, aab, True, 'release game assets match source', aapt=mock_aapt)
+        print('PASS: non-debuggable APK badging accepted')
+        write_badging(True)
+        verify(root, apk, aab, False, 'production APK is debuggable', aapt=mock_aapt)
+        print('PASS: debuggable production APK rejected')
+
 
         package(apk, 'assets/', source, duplicate='index.html')
         verify(root, apk, aab, False, 'duplicate ZIP game assets under assets/')
