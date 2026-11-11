@@ -297,10 +297,12 @@ final class PlayBillingPreparation implements PurchasesUpdatedListener {
     private ProductDetails.OneTimePurchaseOfferDetails offer(ProductDetails p){
         if(p==null)return null;
         List<ProductDetails.OneTimePurchaseOfferDetails> offers=p.getOneTimePurchaseOfferDetailsList();
-        if(offers==null){
-            // Billing 9 returns a null multi-offer list for ordinary one-time
-            // products. Fall back only in that case, and only to an immediate
-            // purchase with a valid Play offer token.
+        if(offers==null||offers.isEmpty()){
+            // Some Play responses expose an ordinary backwards-compatible buy
+            // option through the legacy accessor, even when the eligible-offer
+            // list is null or empty. Both states mean no selectable multi-offer
+            // entry; fall back only to a non-rental, non-preorder, token-bearing
+            // immediate buy option. Never fabricate a price or an offer.
             ProductDetails.OneTimePurchaseOfferDetails legacy=p.getOneTimePurchaseOfferDetails();
             if(legacy==null||legacy.getRentalDetails()!=null||legacy.getPreorderDetails()!=null)return null;
             String token=legacy.getOfferToken();
