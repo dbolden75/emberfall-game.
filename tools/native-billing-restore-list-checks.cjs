@@ -17,6 +17,18 @@ for(let i=brace;i<source.length;i++){
 }
 assert(end>brace,'Production refresh method is not balanced');
 const production=source.slice(start,end);
+// Compile the production invalidation helper alongside production refresh().
+const invalidateMarker='private void invalidateCatalogForRefresh()';
+const invalidateStart=source.indexOf(invalidateMarker);
+assert(invalidateStart>=0,'Production stale-price invalidation method not found');
+const invalidateBrace=source.indexOf('{',invalidateStart);
+let invalidateDepth=0,invalidateEnd=-1;
+for(let i=invalidateBrace;i<source.length;i++){
+ if(source[i]==='{')invalidateDepth++;
+ else if(source[i]==='}'&&--invalidateDepth===0){invalidateEnd=i+1;break;}
+}
+assert(invalidateEnd>invalidateBrace,'Production price invalidation method is not balanced');
+const invalidate=source.slice(invalidateStart,invalidateEnd);
 const java=`
 import java.util.*;
 public class RestoreListHarness {
@@ -106,11 +118,15 @@ public class RestoreListHarness {
   // This harness tests the refresh callback's ownership/price flow. A separate
   // production-method Java harness exercises Billing 9 unfetched statuses.
   String unfetchedProductStatus(Details result){return "";}
+  ${invalidate}
   ${production}
   static void check(boolean ok,String msg){if(!ok)throw new AssertionError(msg);}
   static RestoreListHarness ready(){
     RestoreListHarness h=new RestoreListHarness();
+    h.catalog.put("stale_checkout",new ProductDetails("stale_checkout"));
     h.refresh();
+    check(h.catalog.isEmpty() && h.message.contains("temporarily unavailable") && h.publishCalls==1,
+      "Every Play refresh immediately invalidates stale offers while retaining verified ownership");
     check(h.client.purchasesCallback!=null,"A Play purchase query must be queued");
     return h;
   }
@@ -119,7 +135,7 @@ public class RestoreListHarness {
     h.client.purchasesCallback.complete(new Status(0),null);
     check(h.previouslyOwned && h.reconcileCalls==0 && h.acceptCalls==0,
       "OK plus null list must not revoke previously verified ownership");
-    check(h.retryCalls==0 && h.message.contains("incomplete") && h.publishCalls==1,
+    check(h.retryCalls==0 && h.message.contains("incomplete") && h.publishCalls==2,
       "Null list must explain retry without confirming a restore");
 
     h=ready();
@@ -210,13 +226,13 @@ public class RestoreListHarness {
     h=ready();
     h.catalog.put("old",new ProductDetails("old"));
     h.client.detailsCallback.complete(new Status(0),null);
-    check(h.catalog.isEmpty() && h.message.contains("incomplete") && h.publishCalls==1,
+    check(h.catalog.isEmpty() && h.message.contains("incomplete") && h.publishCalls==2,
       "Null OK product result must clear stale prices and explain an incomplete query");
 
     h=ready();
     h.catalog.put("stale",new ProductDetails("stale"));
     h.client.detailsCallback.complete(null,new Details(Arrays.asList(new ProductDetails("item_a"))));
-    check(h.catalog.isEmpty() && h.message.contains("status") && h.publishCalls==1,
+    check(h.catalog.isEmpty() && h.message.contains("status") && h.publishCalls==2,
       "Missing product-query status must not display stale or unverifiable prices");
 
     h=ready();
@@ -252,7 +268,7 @@ public class RestoreListHarness {
     BillingClient.DetailsCb staleDetails=h.client.detailsCallback;
     h.refresh();
     staleDetails.complete(new Status(0),new Details(Arrays.asList(new ProductDetails("old"))));
-    check(h.catalog.isEmpty() && h.publishCalls==0,
+    check(h.catalog.isEmpty() && h.publishCalls==2,
       "An obsolete product callback cannot publish outdated buyable prices");
     h.client.detailsCallback.complete(new Status(0),new Details(Arrays.asList(new ProductDetails("item_b"))));
     check(h.catalog.size()==1 && h.catalog.containsKey("item_b"),
@@ -261,7 +277,7 @@ public class RestoreListHarness {
     h=ready();
     h.closed=true;
     h.client.detailsCallback.complete(new Status(0),new Details(Arrays.asList(new ProductDetails("item_a"))));
-    check(h.catalog.isEmpty() && h.publishCalls==0,
+    check(h.catalog.isEmpty() && h.publishCalls==1,
       "Product callback after Activity destruction must be ignored");
 
     h=new RestoreListHarness();
@@ -285,13 +301,13 @@ public class RestoreListHarness {
     h.refresh();
     check(h.client.detailsCallback!=null && h.previouslyOwned && h.reconcileCalls==0,
       "Thrown ownership dispatch does not prevent catalog query or revoke purchases");
-    check(h.message.contains("restoration") && h.publishCalls==1,
+    check(h.message.contains("restoration") && h.publishCalls==2,
       "Thrown ownership dispatch reports a retriable failure");
 
     h=new RestoreListHarness();
     h.client.throwDetails=true;h.client.throwPurchases=true;
     h.refresh();
-    check(h.previouslyOwned && h.reconcileCalls==0 && h.publishCalls==2,
+    check(h.previouslyOwned && h.reconcileCalls==0 && h.publishCalls==3,
       "Both query dispatches throwing cannot break offline game or revoke purchases");
     h.client.throwDetails=false;h.client.throwPurchases=false;
     h.refresh();
