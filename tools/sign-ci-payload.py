@@ -45,6 +45,12 @@ def check_run(args, env, *, capture=False) -> str:
 
 
 
+def reject_non_release_badging(badging: str) -> None:
+    """Refuse Android manifests marked debuggable or installable only as tests."""
+    if re.search(r'(?m)^application-(?:debuggable|testOnly)(?:\s|$)', badging):
+        raise RuntimeError('Refusing debuggable or test-only APK release')
+
+
 def verify_aab_signing_identity(certificate_output: str) -> None:
     """Require one signer with Thornhaven's exact maintained-key certificate."""
     signers = re.findall(r'(?m)^Signer #[0-9]+:', certificate_output)
@@ -134,6 +140,14 @@ def main() -> None:
         extract_selected(opts.payload, private, staged_files)
         # Artifact identity is checked BEFORE touching private signing credentials.
         verify_aab_file(private / 'app-release.aab', PACKAGE, code, version)
+        # Validate the unsigned APK's binary manifest before even extracting
+        # the private release signing credentials.
+        unsigned_badging = check_run(
+            [private / 'tools/aapt', 'dump', 'badging', private / 'app-release-unsigned.apk'],
+            os.environ.copy(), capture=True)
+        if f"package: name='{PACKAGE}' versionCode='{code}' versionName='{version}'" not in unsigned_badging:
+            raise RuntimeError('Unsigned APK package/version differs from Gradle')
+        reject_non_release_badging(unsigned_badging)
         extract_selected(opts.backup, private, ('signing.properties', 'vaelbrink-maintained.jks'))
         props = dict(line.strip().split('=', 1) for line in (private / 'signing.properties').read_text().splitlines()
                      if '=' in line and not line.lstrip().startswith('#'))
@@ -170,6 +184,7 @@ def main() -> None:
         badging = check_run([aapt, 'dump', 'badging', apk], env, capture=True)
         if f"package: name='{PACKAGE}' versionCode='{code}' versionName='{version}'" not in badging:
             raise RuntimeError('APK package or version differs from local build.gradle')
+        reject_non_release_badging(badging)
 
         check_run(['jarsigner', '-keystore', key, '-storepass:env', 'THORNHAVEN_STORE_PASS',
                    '-keypass:env', 'THORNHAVEN_KEY_PASS', aab, props['keyAlias']], env)
