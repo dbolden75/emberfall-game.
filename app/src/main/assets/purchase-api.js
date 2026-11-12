@@ -87,8 +87,23 @@
   let raw;
   try{raw=localStorage.getItem(SAVE_SLOTS_KEY)}catch(_){return true;}
   if(raw===null)return false;
-  try{const slots=JSON.parse(raw);return !slots||typeof slots!=='object'||Array.isArray(slots);}
-  catch(_){return true;}
+  try{
+   const slots=JSON.parse(raw);
+   if(!slots||typeof slots!=='object'||Array.isArray(slots))return true;
+   // A syntactically valid map can still contain a damaged hero. Never replace
+   // that original slot (or another healthy hero alongside it) on a later save.
+   return ['slot1','slot2','slot3','slot4'].some(id=>{
+    if(!Object.prototype.hasOwnProperty.call(slots,id))return false;
+    const record=slots[id];
+    if(!record||typeof record!=='object'||Array.isArray(record))return true;
+    // Historical saves may store the state directly, without a .state wrapper.
+    const state=Object.prototype.hasOwnProperty.call(record,'state')?record.state:record;
+    const hero=state&&typeof state==='object'&&!Array.isArray(state)?state.player:null;
+    return !hero||typeof hero!=='object'||Array.isArray(hero)||
+     typeof hero.name!=='string'||!hero.name.trim()||
+     typeof hero.class!=='string'||!hero.class.trim();
+   });
+  }catch(_){return true;}
  }
  if(typeof window!=='undefined')window.ThornhavenDamagedSlots=damagedAuthoritativeSlots;
  function warnDamagedSlots(){
