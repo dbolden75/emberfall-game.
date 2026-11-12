@@ -10,6 +10,7 @@
    if(retiredSaleIds.has(id))return show(result('unavailable','XP and level packs are retired. Previous purchases can still be restored.'));
    if(!premiumProduct(id))return show(result('unavailable','This item is not in the shop.'));
    if(!hasStarted||titleMenuActive||switchingCharacter)return show(result('unavailable','Load your character before making a purchase.'));
+   if(window.ThornhavenDamagedSlots?.())return show(result('unavailable','Damaged character saves are protected. Restore a verified backup before checkout.'));
    if(danTesting())return show(result('test-character','Real payments are disabled for TheDanCode. Load a normal character to use Google Play checkout.'));
    if(!window.ThornhavenPlayPurchases)return show(result('unavailable','Google Play checkout requires the Android Play release.'));
    try{
@@ -89,6 +90,7 @@
   try{const slots=JSON.parse(raw);return !slots||typeof slots!=='object'||Array.isArray(slots);}
   catch(_){return true;}
  }
+ if(typeof window!=='undefined')window.ThornhavenDamagedSlots=damagedAuthoritativeSlots;
  function warnDamagedSlots(){
   let warning=document.getElementById('saveFailureWarning');
   if(!warning){
