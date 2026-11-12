@@ -14,12 +14,15 @@ try {
   function mock(name,lines){fs.writeFileSync(path.join(bin,name),lines.join('\n')+'\n',{mode:0o755});}
   mock('adb',[
     '#!/bin/bash','set -eu','echo "$*" >> "$TEST_LOG"',
+    'if [[ "$1" == "-s" ]]; then shift 2; fi',
     'case "$1" in',
-    'devices) printf "List of devices attached\\nemulator-5554\\tdevice\\n";;',
-    '-s) shift 2; case "$1" in',
-    'shell) if [[ "$2" == getprop ]]; then printf "%s\\n" "$DEVICE_SDK"; else echo "package:/data/app/com.vaelbrink.ashvale.newjourney/base.apk"; fi;;',
-    'pull) echo installed > "$3";;',
+    'shell) case "$2" in',
+    'getprop) printf "%s\\n" "$DEVICE_SDK";;',
+    'pm) if [[ "${DUPLICATE_BASE:-0}" == 1 ]]; then',
+    '      echo "package:/data/app/pkg/base.apk"; echo "package:/data/app/pkg-copy/base.apk";',
+    '    else echo "package:/data/app/pkg/base.apk"; fi;;',
     '*) exit 71;; esac;;',
+    'pull) echo installed > "$3";;',
     '*) exit 72;; esac'
   ]);
   mock('aapt',[
@@ -55,21 +58,22 @@ try {
     if(expectNoAdb)assert.equal(fs.readFileSync(log,'utf8').trim(),'','Rejected candidate must never consult the device');
     console.log('PASS:',label);
   }
-  check('maintained signer 159->169',{},true,'PASS: candidate signer matches');
-  check('large aapt dump under pipefail',{BADGING_EXTRA_LINES:'20000'},true,'PASS: candidate signer matches');
-  check('Play-signed base blocks sideload',{INSTALLED_CERT:'0'.repeat(64)},false,'different certificate');
+  check('maintained signer 159->169',{},true,'PASS: installed com.vaelbrink.ashvale.newjourney versionCode 159');
+  check('large aapt dump under pipefail',{BADGING_EXTRA_LINES:'20000'},true,'PASS: installed com.vaelbrink.ashvale.newjourney versionCode 159');
+  check('Play-signed base blocks sideload',{INSTALLED_CERT:'0'.repeat(64)},false,'Installed signer differs');
   check('debuggable candidate rejected before device access',{CANDIDATE_DEBUGGABLE:'1'},false,'debuggable or testOnly',true);
   check('testOnly candidate rejected before device access',{CANDIDATE_TEST_ONLY:'1'},false,'debuggable or testOnly',true);
-  check('candidate missing v2 signature blocked',{CANDIDATE_V2:'false'},false,'candidate signature failed verification');
-  check('candidate missing v3 signature blocked',{CANDIDATE_V3:'false'},false,'candidate signature failed verification');
+  check('candidate missing v2 signature blocked',{CANDIDATE_V2:'false'},false,'Candidate APK does not verify with Android');
+  check('candidate missing v3 signature blocked',{CANDIDATE_V3:'false'},false,'Candidate APK does not verify with Android');
   check('equal version blocked',{INSTALLED_CODE:'169'},false,'not newer');
   check('installed version newer than candidate blocked',{INSTALLED_CODE:'170'},false,'not newer');
-  check('wrong app id blocked',{CANDIDATE_PACKAGE:'org.example.wrong'},false,'candidate package/version wrong');
-  check('wrong candidate signing key blocked',{CANDIDATE_CERT:'f'.repeat(64)},false,'not signed with the historical');
-  check('minimum supported API is allowed',{DEVICE_SDK:'24'},true,'PASS: candidate signer matches');
+  check('wrong app id blocked',{CANDIDATE_PACKAGE:'org.example.wrong'},false,'Candidate has incorrect package or signing certificate');
+  check('wrong candidate signing key blocked',{CANDIDATE_CERT:'f'.repeat(64)},false,'Candidate has incorrect package or signing certificate');
+  check('minimum supported API is allowed',{DEVICE_SDK:'24'},true,'PASS: installed com.vaelbrink.ashvale.newjourney versionCode 159');
   check('candidate too new for device is blocked',{CANDIDATE_MIN_SDK:'35'},false,'requires Android API 35');
-  check('device API cannot be determined is blocked',{DEVICE_SDK:''},false,'device SDK level is missing');
-  check('multiline device API cannot be reinterpreted',{DEVICE_SDK:'3\n4'},false,'device SDK level is missing');
-  check('candidate missing minimum SDK blocks',{CANDIDATE_MIN_SDK:''},false,'no valid minimum Android SDK');
-  console.log('PASS: all sixteen read-only preflight checks (mock Android commands; no device)');
+  check('device API cannot be determined is blocked',{DEVICE_SDK:''},false,'Could not identify device Android SDK');
+  check('multiline device API cannot be reinterpreted',{DEVICE_SDK:'3\n4'},false,'Could not identify device Android SDK');
+  check('candidate missing minimum SDK blocks',{CANDIDATE_MIN_SDK:''},false,'Candidate has no unambiguous minimum Android SDK');
+  check('ambiguous installed base APKs are rejected', {DUPLICATE_BASE:'1'}, false, 'Could not uniquely locate');
+  console.log('PASS: all seventeen read-only preflight checks (mock Android commands; no device)');
 } finally {fs.rmSync(tmp,{recursive:true,force:true});}
