@@ -244,7 +244,7 @@ class LegacyWrapperTests(unittest.TestCase):
         self.candidate = self.root / 'safe candidate.apk'
         self.candidate.write_bytes(b'fixture: not installed')
         self.mock_python = self.root / 'fake-python'
-        self.mock_python.write_text('#!/usr/bin/env python3\\nimport json,sys\\nprint(json.dumps(sys.argv[1:]))\\n')
+        self.mock_python.write_text('#!/usr/bin/env python3\nimport json,sys\nprint(json.dumps(sys.argv[1:]))\n')
         self.mock_python.chmod(0o700)
 
     def run_wrapper(self, candidate=None, **kwargs):
