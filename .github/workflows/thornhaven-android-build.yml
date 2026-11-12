@@ -33,6 +33,7 @@ jobs:
           python3 tools/test-offline-signing.py
           python3 tools/test-play-bundle-signing.py
           python3 tools/test-aab-manifest-identity.py
+          python3 tools/test-android-billing-manifest.py
           python3 tools/test-release-native-parity.py
           python3 tools/test_atomic_release_publish.py
           python3 tools/test-ci-artifact-extraction.py
@@ -135,6 +136,11 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      - name: Verify compiled release Billing manifest and installation identity
+        run: |
+          python3 tools/check-android-billing-manifest.py \
+            --apk app/build/outputs/apk/release/app-release-unsigned.apk \
+            --version-code 169
       - name: Verify release payload asset and save-origin compatibility
         run: |
           python3 tools/release-payload-checks.py \
