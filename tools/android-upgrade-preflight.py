@@ -22,9 +22,18 @@ class PreflightError(Exception):
 
 
 def command(args):
+    # An offline ADB server or disconnected USB device must not stall upgrade
+    # verification indefinitely. APK transfers need more time than metadata.
+    timeout_seconds = 240 if 'pull' in args else 60
     try:
         return subprocess.run(args, text=True, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE, check=True).stdout
+                              stderr=subprocess.PIPE, check=True,
+                              timeout=timeout_seconds).stdout
+    except subprocess.TimeoutExpired as exc:
+        raise PreflightError(
+            f'Timed out running {args[0]} after {timeout_seconds}s; '
+            'check the Android device connection; no installation or data changes made'
+        ) from exc
     except (OSError, subprocess.CalledProcessError) as exc:
         error = getattr(exc, 'stderr', None)
         raise PreflightError(f'Could not run {args[0]}: {(error or str(exc)).strip()}') from exc
@@ -69,8 +78,8 @@ def parse_installed_base(output):
     bases = [p for p in paths if p.endswith('/base.apk')]
     if len(bases) == 1:
         return bases[0]
-    if len(paths) == 1 and paths[0].endswith('.apk'):
-        return paths[0]
+    # A single split APK is not the installed base and does not establish
+    # that this package can be upgraded while preserving its saved data.
     raise PreflightError('Could not uniquely locate the installed base APK; no changes made')
 
 
