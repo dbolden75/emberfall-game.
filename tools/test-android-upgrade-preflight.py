@@ -286,5 +286,29 @@ class LegacyWrapperTests(unittest.TestCase):
 
 
 
+class InstalledBaseStrictnessTests(unittest.TestCase):
+    def test_single_split_only_path_does_not_masquerade_as_base(self):
+        with self.assertRaisesRegex(preflight.PreflightError, 'installed base APK'):
+            preflight.parse_installed_base(
+                'package:/data/app/org/split_config.arm64_v8a.apk\n')
+
+
+class CommandTimeoutTests(unittest.TestCase):
+    def test_unresponsive_adb_metadata_fails_closed(self):
+        with mock.patch.object(preflight.subprocess, 'run',
+                               side_effect=preflight.subprocess.TimeoutExpired('adb', 60)) as runner:
+            with self.assertRaisesRegex(preflight.PreflightError, 'Timed out running adb after 60s'):
+                preflight.command(['adb', 'shell', 'getprop', 'ro.build.version.sdk'])
+            self.assertEqual(runner.call_args.kwargs['timeout'], 60)
+
+    def test_large_installed_base_copy_uses_longer_bounded_timeout(self):
+        with mock.patch.object(preflight.subprocess, 'run',
+                               side_effect=preflight.subprocess.TimeoutExpired('adb', 240)) as runner:
+            with self.assertRaisesRegex(preflight.PreflightError, 'Timed out running adb after 240s'):
+                preflight.command(['adb', '-s', 'mock', 'pull',
+                                   '/data/app/base.apk', '/tmp/installed-base.apk'])
+            self.assertEqual(runner.call_args.kwargs['timeout'], 240)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
