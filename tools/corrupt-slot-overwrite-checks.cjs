@@ -23,7 +23,7 @@ for(const malformed of ['{broken','null','[]','1','"string"']){
  const document={getElementById:id=>elements.get(id)||null,
    createElement:()=>({setAttribute(){},style:{},remove(){elements.delete(this.id)}}),
    body:{appendChild:el=>elements.set(el.id,el)}};
- const context={SAVE_SLOTS_KEY:KEY,SAVE_KEY:'emberfall_singleplayer_v1',
+ const context={window:{},SAVE_SLOTS_KEY:KEY,SAVE_KEY:'emberfall_singleplayer_v1',
    ACTIVE_SLOT_KEY:'emberfall_active_character_slot_v1',
    hasStarted:true,titleMenuActive:false,switchingCharacter:false,
    activeSlotId:'slot1',saveSlots:{},player:state.player,
@@ -36,6 +36,7 @@ for(const malformed of ['{broken','null','[]','1','"string"']){
  vm.createContext(context);
  vm.runInContext(html.slice(a,b),context,{timeout:1000});
  vm.runInContext(guard,context,{timeout:1000});
+ assert.equal(context.window.ThornhavenDamagedSlots(),true,'Checkout must be able to detect corrupted slots');
  context.saveGame();
  assert.equal(storage.get(KEY),malformed,'Ordinary save must preserve malformed bytes');
  assert.throws(()=>context.purchaseCommit(state),/Damaged character slots/);
@@ -44,6 +45,7 @@ for(const malformed of ['{broken','null','[]','1','"string"']){
  assert.match(elements.get('saveFailureWarning').textContent,/Restore a verified backup/);
  // After an explicitly restored, parseable slot, saves/purchases are allowed.
  storage.set(KEY,JSON.stringify({slot1:{id:'slot1',state}}));
+ assert.equal(context.window.ThornhavenDamagedSlots(),false,'Verified recovery permits checkout');
  context.saveGame();
  assert.equal(JSON.parse(storage.get(KEY)).slot1.state.player.level,12);
  assert.equal(elements.has('saveFailureWarning'),false,'Successful retry should clear warning');
