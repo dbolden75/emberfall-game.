@@ -31,10 +31,28 @@ def command(args):
 
 
 def parse_badging(output):
-    match = re.search(r"^package:\s+name='([^']+)'\s+versionCode='(\d+)'", output, re.M)
-    if not match:
-        raise PreflightError('Could not identify APK package/version using aapt')
-    return match.group(1), int(match.group(2))
+    matches = re.findall(r"^package:\s+name='([^']+)'\s+versionCode='(\d+)'", output, re.M)
+    if len(matches) != 1:
+        raise PreflightError('Could not uniquely identify APK package/version using aapt')
+    return matches[0][0], int(matches[0][1])
+
+
+def validate_release_candidate(badging, certificate_report):
+    """Reject non-release APKs before contacting a phone or reporting upgrade safety."""
+    pkg, code = parse_badging(badging)
+    if pkg != PACKAGE or parse_certificates(certificate_report) != EXPECTED_RELEASE_SIGNER:
+        raise PreflightError('Candidate has incorrect package or signing certificate')
+    sdk = re.findall(r"^sdkVersion:'(\d+)'\s*$", badging, re.M)
+    if len(sdk) != 1:
+        raise PreflightError('Candidate has no unambiguous minimum Android SDK')
+    if re.search(r'^application-(?:debuggable|testOnly)(?:\s|$)', badging, re.M):
+        raise PreflightError('Candidate is debuggable or testOnly, not a release APK')
+    for version in (2, 3):
+        flag = (f'Verified using v{version} scheme '
+                f'(APK Signature Scheme v{version}): true')
+        if not re.search(r'^' + re.escape(flag) + r'\s*$', certificate_report, re.M):
+            raise PreflightError(f'Candidate APK does not verify with Android v{version} signing')
+    return code, int(sdk[0])
 
 
 def parse_certificates(output):
@@ -85,11 +103,16 @@ def main(argv=None):
     prefix = [args.adb] + (['-s', args.serial] if args.serial else [])
     try:
         candidate_badging = command([args.aapt, 'dump', 'badging', str(args.candidate)])
-        candidate_cert = command([args.apksigner, 'verify', '--print-certs', str(args.candidate)])
-        # Reject an incorrect or damaged candidate even if no device is connected.
-        new_pkg, _ = parse_badging(candidate_badging)
-        if new_pkg != PACKAGE or parse_certificates(candidate_cert) != EXPECTED_RELEASE_SIGNER:
-            raise PreflightError('Candidate has incorrect package or signing certificate')
+        candidate_cert = command([args.apksigner, 'verify', '--verbose', '--print-certs',
+                                  str(args.candidate)])
+        # Fail closed on a non-release candidate, even before contacting a device.
+        _, minimum_sdk = validate_release_candidate(candidate_badging, candidate_cert)
+        sdk_report = command(prefix + ['shell', 'getprop', 'ro.build.version.sdk']).strip()
+        if not re.fullmatch(r'\d+', sdk_report):
+            raise PreflightError('Could not identify device Android SDK level')
+        if minimum_sdk > int(sdk_report):
+            raise PreflightError(f'Candidate requires Android API {minimum_sdk}; '
+                                 f'device supports API {sdk_report}')
         paths = command(prefix + ['shell', 'pm', 'path', PACKAGE])
         base = parse_installed_base(paths)
         with tempfile.TemporaryDirectory(prefix='thornhaven-readonly-preflight-') as temp:

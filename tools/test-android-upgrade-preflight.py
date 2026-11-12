@@ -79,7 +79,9 @@ from unittest import mock
 
 class UpgradePreflightCliTests(unittest.TestCase):
     def exercise_cli(self, *, bad_candidate=False, bad_installed=False,
-                     ambiguous_path=False, pull_fails=False):
+                     ambiguous_path=False, pull_fails=False,
+                     missing_v2=False, missing_v3=False, debuggable=False,
+                     test_only=False, device_sdk='35'):
         with tempfile.TemporaryDirectory() as tmp:
             candidate = pathlib.Path(tmp) / 'candidate.apk'
             candidate.write_bytes(b'mocked-candidate')
@@ -89,16 +91,33 @@ class UpgradePreflightCliTests(unittest.TestCase):
                 calls.append(tuple(args))
                 if args[0] == 'aapt':
                     code = 169 if str(candidate) == args[-1] else 159
-                    return f"package: name='{preflight.PACKAGE}' versionCode='{code}' versionName='1.0.67'\n"
+                    extra = ''
+                    if str(candidate) == args[-1]:
+                        if debuggable:
+                            extra += 'application-debuggable\n'
+                        if test_only:
+                            extra += 'application-testOnly\n'
+                    return (f"package: name='{preflight.PACKAGE}' versionCode='{code}' "
+                            "versionName='1.0.67'\nsdkVersion:'24'\n" + extra)
                 if args[0] == 'apksigner':
-                    wrong = ((bad_candidate and str(candidate) == args[-1])
-                             or (bad_installed and args[-1] != str(candidate)))
+                    is_candidate = str(candidate) == args[-1]
+                    wrong = ((bad_candidate and is_candidate)
+                             or (bad_installed and not is_candidate))
                     digest = 'f' * 64 if wrong else preflight.EXPECTED_RELEASE_SIGNER
-                    return f'Signer #1 certificate SHA-256 digest: {digest}\n'
+                    v2 = 'false' if is_candidate and missing_v2 else 'true'
+                    v3 = 'false' if is_candidate and missing_v3 else 'true'
+                    return (f'Verified using v2 scheme (APK Signature Scheme v2): {v2}\n'
+                            f'Verified using v3 scheme (APK Signature Scheme v3): {v3}\n'
+                            f'Signer #1 certificate SHA-256 digest: {digest}\n')
                 if args[0] == 'adb' and args[1:4] == ['-s', 'mock-serial', 'shell']:
-                    if ambiguous_path:
-                        return 'package:/data/app/test/split_config.apk\npackage:/data/app/test/split_en.apk\n'
-                    return 'package:/data/app/test/base.apk\npackage:/data/app/test/split_config.apk\n'
+                    if args[4:] == ['getprop', 'ro.build.version.sdk']:
+                        return device_sdk
+                    if args[4:] == ['pm', 'path', preflight.PACKAGE]:
+                        if ambiguous_path:
+                            return ('package:/data/app/test/split_config.apk\n'
+                                    'package:/data/app/test/split_en.apk\n')
+                        return ('package:/data/app/test/base.apk\n'
+                                'package:/data/app/test/split_config.apk\n')
                 if args[0] == 'adb' and args[1:4] == ['-s', 'mock-serial', 'pull']:
                     if pull_fails:
                         raise preflight.PreflightError('Read-only installed APK copy failed')
@@ -147,6 +166,66 @@ class UpgradePreflightCliTests(unittest.TestCase):
         self.assertEqual(result, 1)
         self.assertIn('Read-only installed APK copy failed', err)
         self.assertNotIn('PASS:', out)
+
+
+    def test_cli_unsigned_v2_or_v3_candidate_blocked_before_device_access(self):
+        for key in ('missing_v2', 'missing_v3'):
+            with self.subTest(key=key):
+                result, calls, out, err = self.exercise_cli(**{key: True})
+                self.assertEqual(result, 1)
+                self.assertIn('does not verify with Android', err)
+                self.assertNotIn('PASS:', out)
+                self.assertFalse(any(cmd[0] == 'adb' for cmd in calls))
+
+    def test_cli_debug_or_test_only_candidate_blocked_before_device_access(self):
+        for key in ('debuggable', 'test_only'):
+            with self.subTest(key=key):
+                result, calls, out, err = self.exercise_cli(**{key: True})
+                self.assertEqual(result, 1)
+                self.assertIn('not a release APK', err)
+                self.assertNotIn('PASS:', out)
+                self.assertFalse(any(cmd[0] == 'adb' for cmd in calls))
+
+    def test_cli_too_old_android_device_blocked_before_installed_apk_pull(self):
+        result, calls, out, err = self.exercise_cli(device_sdk='23')
+        self.assertEqual(result, 1)
+        self.assertIn('Candidate requires Android API 24', err)
+        self.assertNotIn('PASS:', out)
+        self.assertFalse(any('pull' in cmd for cmd in calls))
+
+    def test_cli_invalid_android_sdk_response_blocks(self):
+        result, calls, out, err = self.exercise_cli(device_sdk='unknown')
+        self.assertEqual(result, 1)
+        self.assertIn('Could not identify device Android SDK', err)
+        self.assertNotIn('PASS:', out)
+        self.assertFalse(any('pull' in cmd for cmd in calls))
+
+
+class ReleaseCandidateValidationTests(unittest.TestCase):
+    def report(self, v2='true', v3='true'):
+        return (f'Verified using v2 scheme (APK Signature Scheme v2): {v2}\n'
+                f'Verified using v3 scheme (APK Signature Scheme v3): {v3}\n'
+                f'Signer #1 certificate SHA-256 digest: {preflight.EXPECTED_RELEASE_SIGNER}\n')
+
+    def badge(self, extra=''):
+        return (f"package: name='{preflight.PACKAGE}' versionCode='169' "
+                "versionName='1.0.67'\nsdkVersion:'24'\n" + extra)
+
+    def test_valid_release_metadata(self):
+        self.assertEqual(preflight.validate_release_candidate(self.badge(), self.report()),
+                         (169, 24))
+
+    def test_missing_or_ambiguous_minimum_sdk_rejected(self):
+        for bad in (self.badge().replace("sdkVersion:'24'\n", ''),
+                    self.badge("sdkVersion:'27'\n")):
+            with self.subTest(bad=bad), self.assertRaisesRegex(
+                    preflight.PreflightError, 'minimum Android SDK'):
+                preflight.validate_release_candidate(bad, self.report())
+
+    def test_duplicate_package_identity_rejected(self):
+        with self.assertRaisesRegex(preflight.PreflightError, 'uniquely identify'):
+            preflight.validate_release_candidate(self.badge() + self.badge(), self.report())
+
 
 
 if __name__ == '__main__':
