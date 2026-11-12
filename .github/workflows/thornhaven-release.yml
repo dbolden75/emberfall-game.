@@ -29,6 +29,8 @@ jobs:
           python3 tools/test_atomic_release_publish.py
           python3 tools/test-ci-artifact-extraction.py
           python3 tools/test-aab-manifest-identity.py
+          python3 tools/test-android-billing-manifest.py
+          python3 tools/test-bug-report-version.py
           python3 tools/test-release-payload-duplicates.py
           for test in tools/*checks.cjs; do node "$test"; done
       - uses: actions/setup-java@v4
@@ -106,6 +108,9 @@ jobs:
           apk=release-output/Thornhaven-1.0.67-maintained-key.apk
           aab=app/build/outputs/bundle/release/app-release.aab
           test -s "$unsigned" && test -s "$aab"
+          # Enforce compiled package/save identity and Play Billing component safety
+          # in this manually dispatched release path, not only regular Android CI.
+          python3 tools/check-android-billing-manifest.py --apk "$unsigned" --version-code 169
           # Fail closed if the built Play bundle has an unexpected package or version.
           # The same check is repeated after signing; an APK badge alone is insufficient.
           PYTHONPATH=tools python3 -c "from pathlib import Path; from aab_manifest_identity import verify_aab_file; verify_aab_file(Path('$aab'), 'com.vaelbrink.ashvale.newjourney', 169, '1.0.67')"
@@ -119,6 +124,7 @@ jobs:
           grep -qi '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22' release-output/apk-signature.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | tee release-output/apk-badging.txt
           grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='169' versionName='1.0.67'" release-output/apk-badging.txt
+          python3 tools/check-android-billing-manifest.py --apk "$apk" --version-code 169
           unzip -t "$apk" >/dev/null
           unzip -p "$apk" assets/playtest-update.js | grep THORNHAVEN_157_GEAR_BEGIN >/dev/null
           cp "$aab" release-output/pre-sign-unsigned.aab
