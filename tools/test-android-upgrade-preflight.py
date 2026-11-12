@@ -228,5 +228,63 @@ class ReleaseCandidateValidationTests(unittest.TestCase):
 
 
 
+
+# The older Bash operator entry point must use the same audited implementation
+# as the Python CLI. Mock only the Python executable: no adb/SDK or device used.
+import os
+import subprocess
+import json
+
+
+class LegacyWrapperTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = pathlib.Path(self.temp.name)
+        self.candidate = self.root / 'safe candidate.apk'
+        self.candidate.write_bytes(b'fixture: not installed')
+        self.mock_python = self.root / 'fake-python'
+        self.mock_python.write_text('#!/usr/bin/env python3\nimport json,sys\nprint(json.dumps(sys.argv[1:]))\n')
+        self.mock_python.chmod(0o700)
+
+    def run_wrapper(self, candidate=None, **kwargs):
+        env = {**os.environ, 'PYTHON_BIN': str(self.mock_python)}
+        for name in ('ADB_BIN', 'AAPT_BIN', 'APKSIGNER_BIN', 'ADB_SERIAL'):
+            env.pop(name, None)
+        env.update(kwargs)
+        return subprocess.run(['bash', str(modpath.with_name('maintained-upgrade-preflight.sh')),
+                               str(candidate or self.candidate)],
+                              text=True, capture_output=True, env=env, check=False)
+
+    def test_delegates_to_readonly_python_preflight(self):
+        proc = self.run_wrapper()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        args = json.loads(proc.stdout)
+        self.assertEqual(pathlib.Path(args[0]).name, 'android-upgrade-preflight.py')
+        self.assertEqual(args[1:], [str(self.candidate), '--adb', 'adb', '--aapt',
+                                    'aapt', '--apksigner', 'apksigner'])
+        self.assertFalse(any(a in ('install', 'uninstall', 'clear') for a in args))
+
+    def test_explicit_device_and_sdk_paths_passed_through(self):
+        proc = self.run_wrapper(ADB_BIN='/opt/sdk/adb', AAPT_BIN='/opt/sdk/aapt',
+                                APKSIGNER_BIN='/opt/sdk/apksigner', ADB_SERIAL='device-A')
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        args = json.loads(proc.stdout)
+        self.assertEqual(args[-8:], ['--adb', '/opt/sdk/adb', '--aapt', '/opt/sdk/aapt',
+                                     '--apksigner', '/opt/sdk/apksigner', '--serial', 'device-A'])
+
+    def test_invalid_inputs_rejected_before_any_device_interaction(self):
+        for filename, data in (('missing.apk', None), ('empty.apk', b''), ('wrong.aab', b'abc')):
+            with self.subTest(filename=filename):
+                candidate = self.root / filename
+                if data is not None:
+                    candidate.write_bytes(data)
+                proc = self.run_wrapper(candidate)
+                self.assertEqual(proc.returncode, 2)
+                self.assertIn('Usage:', proc.stderr)
+                self.assertNotIn('android-upgrade-preflight.py', proc.stdout)
+
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
