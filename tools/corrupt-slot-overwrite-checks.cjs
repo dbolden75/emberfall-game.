@@ -17,7 +17,7 @@ assert(begin!==-1&&end>begin,'Missing save durability guard');
 const guard=client.slice(begin,end+'/* THORNHAVEN_SAVE_DURABILITY_GUARD_END */'.length);
 const KEY='emberfall_character_slots_v1';
 let tests=0;
-for(const malformed of ['{broken','null','[]','1','"string"']){
+for(const malformed of ["{broken","null","[]","1","\"string\"","{\"slot1\":null}","{\"slot1\":7}","{\"slot1\":{}}","{\"slot1\":{\"state\":null}}","{\"slot1\":{\"state\":{\"mapId\":\"ashvale\"}}}","{\"slot1\":{\"state\":{\"player\":{\"name\":\"\",\"class\":\"warrior\"}}}}","{\"slot1\":{\"id\":\"slot1\",\"name\":\"Ava\",\"state\":{\"player\":{\"name\":\"Ava\",\"class\":\"warrior\"}}},\"slot2\":{\"state\":{\"player\":null}}}"]){
  const storage=new Map([[KEY,malformed]]),elements=new Map(),deliveryCalls=[];
  const state={player:{name:'Ava',class:'warrior',level:12,inventory:[{id:'ore',count:3}]},mapId:'ashvale'};
  const document={getElementById:id=>elements.get(id)||null,
@@ -43,6 +43,11 @@ for(const malformed of ['{broken','null','[]','1','"string"']){
  assert.equal(storage.get(KEY),malformed,'Paid delivery must not overwrite damaged bytes');
  assert.equal(deliveryCalls.length,0,'Purchase callback must be rejected before writing');
  assert.match(elements.get('saveFailureWarning').textContent,/Restore a verified backup/);
+ // An intentional empty roster and an unwrapped historical state are valid.
+ storage.set(KEY,'{}');
+ assert.equal(context.window.ThornhavenDamagedSlots(),false,'Empty character list must remain valid');
+ storage.set(KEY,JSON.stringify({slot1:state}));
+ assert.equal(context.window.ThornhavenDamagedSlots(),false,'Historical unwrapped saves must remain valid');
  // After an explicitly restored, parseable slot, saves/purchases are allowed.
  storage.set(KEY,JSON.stringify({slot1:{id:'slot1',state}}));
  assert.equal(context.window.ThornhavenDamagedSlots(),false,'Verified recovery permits checkout');
@@ -53,7 +58,7 @@ for(const malformed of ['{broken','null','[]','1','"string"']){
  assert.equal(deliveryCalls.length,1);
  tests++;
 }
-console.log('PASS: '+tests+' malformed character-slot formats block saves and purchase delivery until verified recovery; no original bytes overwritten. Mocked WebView only.');
+console.log('PASS: '+tests+' syntactic and structural corrupt-slot cases block saves and purchase delivery, including inactive-slot damage; empty and historical unwrapped slots remain valid. Mocked WebView only.');
 
 // Exercise the public checkout UI, not merely the exported guard.
 (async()=>{
