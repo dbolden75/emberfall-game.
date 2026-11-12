@@ -353,6 +353,21 @@ for old, new in label_changes:
     content = content.replace(old, new, 1)
 assert hashlib.sha256(content).hexdigest() == '12f8a29e6e1973b3d580a9f0f5b108e2564470f50993963a0c2e688c91dbf123', 'Version-label-only release payload hash mismatch'
 
+# Jarvis bug reports must advertise the Android release actually producing them.
+# Do this AFTER the historical game/save lineage hash gate; keep the narrow
+# diagnostic mutation explicitly pinned so a source change cannot go unnoticed.
+import re
+gradle_source = (root / 'app/build.gradle').read_text()
+build_versions = re.findall(r"(?m)^\s*versionName\s+'([^']+)'\s*$", gradle_source)
+assert len(build_versions) == 1, 'Expected one Android release versionName'
+report_version = build_versions[0].encode('ascii')
+assert b'Version ' + report_version + b' \xc2\xb7 Ashvale Reach' in content, 'Android and title-screen release versions differ'
+stale_bug_context = b"const context=()=>({build:'1.0.49',map:"
+updated_bug_context = b"const context=()=>({build:'" + report_version + b"',map:"
+assert content.count(stale_bug_context) == 1, 'Expected exactly one historical Jarvis report build field'
+content = content.replace(stale_bug_context, updated_bug_context, 1)
+assert hashlib.sha256(content).hexdigest() == '058da04291d2c5c4de83a194f5bceb47b38a2c5d4d3b084ca379371b3afe0e8e', 'Jarvis build metadata patch hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
