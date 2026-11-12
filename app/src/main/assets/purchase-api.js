@@ -10,6 +10,7 @@
    if(retiredSaleIds.has(id))return show(result('unavailable','XP and level packs are retired. Previous purchases can still be restored.'));
    if(!premiumProduct(id))return show(result('unavailable','This item is not in the shop.'));
    if(!hasStarted||titleMenuActive||switchingCharacter)return show(result('unavailable','Load your character before making a purchase.'));
+   if(window.ThornhavenDamagedSlots?.())return show(result('unavailable','Damaged character saves are protected. Restore a verified backup before checkout.'));
    if(danTesting())return show(result('test-character','Real payments are disabled for TheDanCode. Load a normal character to use Google Play checkout.'));
    if(!window.ThornhavenPlayPurchases)return show(result('unavailable','Google Play checkout requires the Android Play release.'));
    try{
@@ -79,8 +80,38 @@
  // Unit-test previews may load purchase-api.js without initializing the game.
  if(typeof saveGame!=='function')return;
  const saveWithoutReadback=saveGame;
+ // Startup recovery preserves malformed character slots for the user's consent.
+ // The game must not subsequently overwrite those bytes with a new character
+ // or a Play purchase just because its in-memory slot map is empty.
+ function damagedAuthoritativeSlots(){
+  let raw;
+  try{raw=localStorage.getItem(SAVE_SLOTS_KEY)}catch(_){return true;}
+  if(raw===null)return false;
+  try{const slots=JSON.parse(raw);return !slots||typeof slots!=='object'||Array.isArray(slots);}
+  catch(_){return true;}
+ }
+ if(typeof window!=='undefined')window.ThornhavenDamagedSlots=damagedAuthoritativeSlots;
+ function warnDamagedSlots(){
+  let warning=document.getElementById('saveFailureWarning');
+  if(!warning){
+   warning=document.createElement('div');warning.id='saveFailureWarning';
+   warning.setAttribute('role','alert');
+   warning.style.cssText='position:fixed;bottom:70px;left:10%;right:10%;z-index:9999;padding:12px;background:#5c2020;color:white';
+   document.body.appendChild(warning);
+  }
+  warning.textContent='Damaged character saves detected. Saving and purchase delivery are blocked to protect the original data. Restore a verified backup before continuing; do not uninstall or clear app data.';
+ }
+ const purchaseWithoutGuard=typeof purchaseCommit==='function'?purchaseCommit:null;
+ if(purchaseWithoutGuard)purchaseCommit=function(...args){
+  if(damagedAuthoritativeSlots()){
+   warnDamagedSlots();
+   throw new Error('Damaged character slots: purchase delivery cannot overwrite existing data');
+  }
+  return purchaseWithoutGuard(...args);
+ };
  saveGame=function(...args){
   if(!hasStarted||titleMenuActive||switchingCharacter)return saveWithoutReadback(...args);
+  if(damagedAuthoritativeSlots()){warnDamagedSlots();return;}
   // snapshotGameState makes a plain JSON copy, the same serialization as saveGame.
   // Do not make a new failure mode for a damaged state snapshot: let the
   // original save routine handle it and display its usual error.
