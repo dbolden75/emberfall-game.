@@ -290,7 +290,7 @@ class InstalledBaseStrictnessTests(unittest.TestCase):
     def test_single_split_only_path_does_not_masquerade_as_base(self):
         with self.assertRaisesRegex(preflight.PreflightError, 'installed base APK'):
             preflight.parse_installed_base(
-                'package:/data/app/org/split_config.arm64_v8a.apk\\n')
+                'package:/data/app/org/split_config.arm64_v8a.apk\n')
 
 
 class CommandTimeoutTests(unittest.TestCase):
