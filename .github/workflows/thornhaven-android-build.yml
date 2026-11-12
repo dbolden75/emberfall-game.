@@ -34,6 +34,7 @@ jobs:
           python3 tools/test-play-bundle-signing.py
           python3 tools/test-aab-manifest-identity.py
           python3 tools/test-android-billing-manifest.py
+          python3 tools/test-bug-report-version.py
           python3 tools/test-release-native-parity.py
           python3 tools/test_atomic_release_publish.py
           python3 tools/test-ci-artifact-extraction.py
