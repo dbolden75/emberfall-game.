@@ -54,3 +54,26 @@ for(const malformed of ['{broken','null','[]','1','"string"']){
  tests++;
 }
 console.log('PASS: '+tests+' malformed character-slot formats block saves and purchase delivery until verified recovery; no original bytes overwritten. Mocked WebView only.');
+
+// Exercise the public checkout UI, not merely the exported guard.
+(async()=>{
+ const attempts=[],summary={textContent:''},restoreButton={},shopButton={textContent:''};
+ const context={window:{ThornhavenPlayPurchases:{buy:(...args)=>attempts.push(args),restore(){}},
+                  ThornhavenDamagedSlots:()=>true},
+  document:{getElementById:id=>({premiumSummary:summary,restorePurchasesButton:restoreButton,premiumShopButton:shopButton})[id]||{},
+   querySelectorAll:()=>[],querySelector:()=>null},
+  PREMIUM_PRODUCTS:[{id:'test_cosmetic'}],premiumProduct:id=>id==='test_cosmetic'?{id}:null,
+  hasStarted:true,titleMenuActive:false,switchingCharacter:false,danTesting:()=>false,
+  pollPlayStore(){},playStore:{busy:false,products:{test_cosmetic:{price:'Play price'}}},
+  ensurePurchaseProfile:()=> 'a'.repeat(64),townQuestState:{},
+  renderPremiumShop(){},premiumCategory:'all',buyPlayProduct(){}
+ };
+ vm.createContext(context);vm.runInContext(client,context,{timeout:1000});
+ assert.equal((await context.window.ThornhavenMonetization.purchase('test_cosmetic')).status,'unavailable');
+ assert.match(summary.textContent,/Restore a verified backup/);
+ assert.equal(attempts.length,0,'Never open checkout while authoritative save is damaged');
+ context.window.ThornhavenDamagedSlots=()=>false;
+ assert.equal((await context.window.ThornhavenMonetization.purchase('test_cosmetic')).status,'requested');
+ assert.equal(attempts.length,1,'Valid restored slots permit native checkout');
+ console.log('PASS: public Google Play checkout blocks damaged slots and allows verified recovery. Mocked Play bridge.');
+})().catch(error=>{console.error(error);process.exitCode=1});
