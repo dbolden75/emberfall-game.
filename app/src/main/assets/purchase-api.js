@@ -92,7 +92,7 @@
   for(const item of items){
    if(!item||typeof item!=='object'||Array.isArray(item)||
       typeof item.id!=='string'||!item.id.trim()||
-      Object.prototype.hasOwnProperty.call(Object.prototype,item.id)||
+      (item.id==='prototype'||Object.prototype.hasOwnProperty.call(Object.prototype,item.id))||
       !Number.isSafeInteger(item.count)||item.count<=0||seen.has(item.id))return false;
    seen.add(item.id);
   }
