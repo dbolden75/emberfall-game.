@@ -103,7 +103,13 @@
     // bytes instead of silently converting and overwriting a damaged character.
     return !hero||typeof hero!=='object'||Array.isArray(hero)||
      typeof hero.name!=='string'||!hero.name.trim()||
-     typeof hero.class!=='string'||!['warrior','rogue','mage','cleric'].includes(hero.class);
+     typeof hero.class!=='string'||!['warrior','rogue','mage','cleric'].includes(hero.class)||
+     // An explicit non-array inventory or malformed entry can crash the game
+     // after Object.assign(player, save.player). Preserve the source bytes.
+     (Object.prototype.hasOwnProperty.call(hero,'inventory')&&
+      (!Array.isArray(hero.inventory)||hero.inventory.some(item=>
+       !item||typeof item!=='object'||Array.isArray(item)||
+       typeof item.id!=='string'||!item.id.trim())));
    });
   }catch(_){return true;}
  }
