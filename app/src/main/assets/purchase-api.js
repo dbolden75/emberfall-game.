@@ -98,10 +98,28 @@
   }
   return true;
  }
+ function safeSavedHero(hero){
+  return !!(hero&&typeof hero==='object'&&!Array.isArray(hero)&&
+   typeof hero.name==='string'&&hero.name.trim()&&
+   typeof hero.class==='string'&&['warrior','rogue','mage','cleric'].includes(hero.class)&&
+   (!Object.prototype.hasOwnProperty.call(hero,'inventory')||safeStoredInventory(hero.inventory)));
+ }
  function damagedAuthoritativeSlots(){
   let raw;
   try{raw=localStorage.getItem(SAVE_SLOTS_KEY)}catch(_){return true;}
-  if(raw===null)return false;
+  if(raw===null){
+   // Older installs can have only the legacy single-character save. A malformed
+   // legacy document must not be replaced by the next new-game save or purchase.
+   // A present slot store is authoritative; stale legacy mirrors are ignored.
+   let rawLegacy;
+   try{rawLegacy=localStorage.getItem(SAVE_KEY)}catch(_){return true;}
+   if(rawLegacy===null)return false; // Genuine first installation.
+   try{
+    const legacy=JSON.parse(rawLegacy);
+    return !legacy||typeof legacy!=='object'||Array.isArray(legacy)||
+     !safeSavedHero(legacy.player);
+   }catch(_){return true;}
+  }
   try{
    const slots=JSON.parse(raw);
    if(!slots||typeof slots!=='object'||Array.isArray(slots))return true;
@@ -116,13 +134,7 @@
     const hero=state&&typeof state==='object'&&!Array.isArray(state)?state.player:null;
     // Unknown classes are normalized to Warrior on load. Preserve their original
     // bytes instead of silently converting and overwriting a damaged character.
-    return !hero||typeof hero!=='object'||Array.isArray(hero)||
-     typeof hero.name!=='string'||!hero.name.trim()||
-     typeof hero.class!=='string'||!['warrior','rogue','mage','cleric'].includes(hero.class)||
-     // An explicit non-array inventory or malformed entry can crash the game
-     // after Object.assign(player, save.player). Preserve the source bytes.
-     (Object.prototype.hasOwnProperty.call(hero,'inventory')&&
-      !safeStoredInventory(hero.inventory));
+    return !safeSavedHero(hero);
    });
   }catch(_){return true;}
  }
