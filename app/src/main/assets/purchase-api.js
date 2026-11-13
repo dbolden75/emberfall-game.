@@ -162,7 +162,7 @@
    // Legacy pet migration returns known gear to inventory and clears its slot.
    // Unknown items would be silently discarded instead; preserve the raw save.
    if(p.petVersion!==1&&gearSlots.some(slot=>
-      p[slot]!=null&&!Object.prototype.hasOwnProperty.call(itemDefs,p[slot])))return false;
+      p[slot]&&!Object.prototype.hasOwnProperty.call(itemDefs,p[slot])))return false;
    if(!['hp','max'].every(field=>p[field]===undefined||
       (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0)))return false;
    if(p.hp!=null&&p.max!=null&&p.hp>p.max)return false;
