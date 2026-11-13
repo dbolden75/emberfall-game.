@@ -115,11 +115,25 @@
   if(typeof hero.hp==='number'&&typeof hero.max==='number'&&hero.hp>hero.max)return false;
   return true;
  }
+ // Loading a malformed level, XP or coin total can coerce the value during
+ // combat/quest arithmetic (or concatenate string coins on rewards). A later
+ // save would then overwrite the original bytes. Accept omitted legacy fields,
+ // but never reinterpret explicit null, strings, negatives or unsafe totals.
+ function safeStoredProgress(hero){
+  for(const key of ['level','xp','coins']){
+   if(!Object.prototype.hasOwnProperty.call(hero,key))continue;
+   const value=hero[key];
+   if(typeof value!=='number'||!Number.isFinite(value)||value<0||
+      value>Number.MAX_SAFE_INTEGER)return false;
+   if(key==='level'&&(!Number.isSafeInteger(value)||value<1))return false;
+  }
+  return true;
+ }
  function safeSavedHero(hero){
   return !!(hero&&typeof hero==='object'&&!Array.isArray(hero)&&
    typeof hero.name==='string'&&hero.name.trim()&&
    typeof hero.class==='string'&&['warrior','rogue','mage','cleric'].includes(hero.class)&&
-   safeStoredVitals(hero)&&
+   safeStoredVitals(hero)&&safeStoredProgress(hero)&&
    (!Object.prototype.hasOwnProperty.call(hero,'inventory')||safeStoredInventory(hero.inventory)));
  }
  function damagedAuthoritativeSlots(){
