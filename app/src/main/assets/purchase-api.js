@@ -233,6 +233,14 @@
   }
   warning.textContent='Damaged character saves detected. Saving and purchase delivery are blocked to protect the original data. Restore a verified backup before continuing; do not uninstall or clear app data.';
  }
+ // Stored bytes can be healthy even when live game state becomes invalid.
+ // Never replace a valid character with a normalized null or invalid progress,
+ // including when a confirmed purchase is about to be acknowledged.
+ function warnInvalidLiveState(){
+  warnDamagedSlots();
+  document.getElementById('saveFailureWarning').textContent=
+   'Invalid current character data detected. Existing saves are protected. Saving and purchase delivery are blocked. Do not uninstall or clear app data; restore a verified backup.';
+ }
  // The save menu writes slot storage directly, even when no character has
  // started and saveGame() is disabled. Guard that destructive path as well.
  const deleteWithoutGuard=typeof deleteSaveSlot==='function'?deleteSaveSlot:null;
@@ -246,6 +254,10 @@
    warnDamagedSlots();
    throw new Error('Damaged character slots: purchase delivery cannot overwrite existing data');
   }
+  if(args.length && !safeSavedState(args[0])){
+   warnInvalidLiveState();
+   throw new Error('Invalid purchase delivery state: existing character save preserved');
+  }
   return purchaseWithoutGuard(...args);
  };
  saveGame=function(...args){
@@ -256,6 +268,10 @@
   // original save routine handle it and display its usual error.
   let expected;
   try{expected=snapshotGameState()}catch(_){return saveWithoutReadback(...args)}
+  if(!safeSavedState(expected)){
+   warnInvalidLiveState();
+   return;
+  }
   const slot=activeSlotId,result=saveWithoutReadback(...args);
   try{
    const saved=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
