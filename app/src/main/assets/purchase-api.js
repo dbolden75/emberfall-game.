@@ -83,6 +83,21 @@
  // Startup recovery preserves malformed character slots for the user's consent.
  // The game must not subsequently overwrite those bytes with a new character
  // or a Play purchase just because its in-memory slot map is empty.
+ // The live inventory is stack-based. Corrupt counts, duplicate IDs, or
+ // inherited Object property IDs can lose items during load/remove/save.
+ // Older characters may omit the inventory field; explicit lists must be safe.
+ function safeStoredInventory(items){
+  if(!Array.isArray(items))return false;
+  const seen=new Set();
+  for(const item of items){
+   if(!item||typeof item!=='object'||Array.isArray(item)||
+      typeof item.id!=='string'||!item.id.trim()||
+      (item.id==='prototype'||Object.prototype.hasOwnProperty.call(Object.prototype,item.id))||
+      !Number.isSafeInteger(item.count)||item.count<=0||seen.has(item.id))return false;
+   seen.add(item.id);
+  }
+  return true;
+ }
  function damagedAuthoritativeSlots(){
   let raw;
   try{raw=localStorage.getItem(SAVE_SLOTS_KEY)}catch(_){return true;}
@@ -107,9 +122,7 @@
      // An explicit non-array inventory or malformed entry can crash the game
      // after Object.assign(player, save.player). Preserve the source bytes.
      (Object.prototype.hasOwnProperty.call(hero,'inventory')&&
-      (!Array.isArray(hero.inventory)||hero.inventory.some(item=>
-       !item||typeof item!=='object'||Array.isArray(item)||
-       typeof item.id!=='string'||!item.id.trim())));
+      !safeStoredInventory(hero.inventory));
    });
   }catch(_){return true;}
  }
