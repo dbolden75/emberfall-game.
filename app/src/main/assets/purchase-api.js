@@ -218,11 +218,24 @@
   }
   return true;
  }
+ // On startup the game clears equipped items that are missing, incompatible,
+ // or not allowed in their saved slot. Stop the next save or purchase from
+ // silently replacing the original item ID with null. Old saves can omit slots.
+ function safeStoredHeroGear(hero){
+  for(const slot of ['weapon','armor','shield','earrings','necklace','legs','boots']){
+   if(!Object.prototype.hasOwnProperty.call(hero,slot))continue;
+   const id=hero[slot];
+   if(id==null||id==='')continue;
+   if(typeof id!=='string'||!Object.prototype.hasOwnProperty.call(itemDefs,id)||
+      itemDefs[id]?.slot!==slot||!gearRequirements(id,hero))return false;
+  }
+  return true;
+ }
  function safeSavedHero(hero){
   return !!(hero&&typeof hero==='object'&&!Array.isArray(hero)&&
    typeof hero.name==='string'&&hero.name.trim()&&
    typeof hero.class==='string'&&['warrior','rogue','mage','cleric'].includes(hero.class)&&
-   safeStoredVitals(hero)&&safeStoredProgress(hero)&&
+   safeStoredVitals(hero)&&safeStoredProgress(hero)&&safeStoredHeroGear(hero)&&
    (!Object.prototype.hasOwnProperty.call(hero,'inventory')||safeStoredInventory(hero.inventory)));
  }
  function damagedAuthoritativeSlots(){
