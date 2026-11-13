@@ -60,6 +60,67 @@ for(const malformed of ["{broken","null","[]","1","\"string\"","{\"slot1\":null}
 }
 console.log('PASS: '+tests+' syntactic and structural corrupt-slot cases block saves and purchase delivery, including inactive-slot damage; empty and historical unwrapped slots remain valid. Mocked WebView only.');
 
+// Deleting one character can also overwrite the authoritative slot map. At the
+// title screen confirmSaveBeforeSlotSwitch() returns true without calling saveGame.
+// Run the REAL deletion routine from the bundled HTML, not a synthetic delete.
+const deleteBegin=html.indexOf('function confirmSaveBeforeSlotSwitch(){');
+const deleteEnd=html.indexOf('function closeGameToSaveMenu()',deleteBegin);
+assert(deleteBegin!==-1&&deleteEnd>deleteBegin,'Missing real save-slot deletion routine');
+const deleteRoutine=html.slice(deleteBegin,deleteEnd);
+for(const brokenSlot of [
+ {state:{player:null}},
+ {state:{player:{name:'',class:'warrior'}}},
+]){
+ const healthy={id:'slot1',name:'Ava',state:{player:{name:'Ava',class:'warrior'}}};
+ const healthyToDelete={id:'slot2',name:'Ben',state:{player:{name:'Ben',class:'mage'}}};
+ // Damage in inactive slot3 must protect unrelated slot2 from deletion.
+ const slots={slot1:healthy,slot2:healthyToDelete,slot3:brokenSlot};
+ let raw=JSON.stringify(slots),writes=0,confirmations=0;
+ const elements=new Map();
+ const context={SAVE_SLOTS_KEY:KEY,SAVE_KEY:'emberfall_singleplayer_v1',
+  SAVE_SLOT_IDS:['slot1','slot2','slot3','slot4'],saveSlots:slots,
+  activeSlotId:'slot1',hasStarted:false,titleMenuActive:true,switchingCharacter:false,
+  saveGame(){},say(){},renderSaveSlots(){},Date,JSON,
+  window:{confirm:()=>{confirmations++;return true;}},
+  document:{getElementById:id=>elements.get(id)||null,
+   createElement:()=>({setAttribute(){},style:{},remove(){}}),
+   body:{appendChild:el=>elements.set(el.id,el)}},
+  localStorage:{getItem:k=>k===KEY?raw:null,setItem:(k,v)=>{if(k===KEY){raw=String(v);writes++;}},removeItem(){}},
+  console:{error(){},warn(){}}
+ };
+ vm.createContext(context);
+ vm.runInContext(deleteRoutine,context,{timeout:1000});
+ vm.runInContext(guard,context,{timeout:1000});
+ assert.equal(context.window.ThornhavenDamagedSlots(),true);
+ context.deleteSaveSlot('slot2');
+ assert.equal(raw,JSON.stringify(slots),'Delete of another slot must not overwrite damaged bytes');
+ assert.equal(writes,0,'No authoritative storage writes when any slot is damaged');
+ assert.equal(confirmations,0,'Deletion must be blocked before asking for destructive confirmation');
+ assert.match(elements.get('saveFailureWarning').textContent,/Restore a verified backup/);
+ tests++;
+}
+// Verified healthy roster must retain the ability to delete an inactive hero.
+{
+ const good={id:'slot1',state:{player:{name:'Ava',class:'warrior'}}};
+ const slots={slot1:good,slot2:{id:'slot2',name:'Ben',state:{player:{name:'Ben',class:'mage'}}}};
+ let raw=JSON.stringify(slots),writes=0;
+ const context={SAVE_SLOTS_KEY:KEY,SAVE_KEY:'emberfall_singleplayer_v1',
+  SAVE_SLOT_IDS:['slot1','slot2','slot3','slot4'],saveSlots:slots,
+  activeSlotId:'slot1',hasStarted:false,titleMenuActive:true,switchingCharacter:false,
+  saveGame(){},say(){},renderSaveSlots(){},Date,JSON,
+  window:{confirm:()=>true},document:{getElementById:()=>null,createElement:()=>({setAttribute(){},style:{}}),body:{appendChild(){}}},
+  localStorage:{getItem:k=>k===KEY?raw:null,setItem:(k,v)=>{if(k===KEY){raw=String(v);writes++;}},removeItem(){}},
+  console:{error(){},warn(){}}
+ };
+ vm.createContext(context);vm.runInContext(deleteRoutine,context,{timeout:1000});vm.runInContext(guard,context,{timeout:1000});
+ assert.equal(context.window.ThornhavenDamagedSlots(),false);
+ context.deleteSaveSlot('slot2');
+ assert.equal(writes,1,'Safe inactive slot can still be deleted');
+ assert.deepEqual(Object.keys(JSON.parse(raw)),['slot1']);
+ tests++;
+}
+console.log('PASS: title-screen deletion blocks all damaged character maps (including unrelated inactive slot damage); healthy inactive slot deletion still works. Mocked WebView.');
+
 // Exercise the public checkout UI, not merely the exported guard.
 (async()=>{
  const attempts=[],summary={textContent:''},restoreButton={},shopButton={textContent:''};

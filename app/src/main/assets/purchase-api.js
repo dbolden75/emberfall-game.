@@ -116,6 +116,13 @@
   }
   warning.textContent='Damaged character saves detected. Saving and purchase delivery are blocked to protect the original data. Restore a verified backup before continuing; do not uninstall or clear app data.';
  }
+ // The save menu writes slot storage directly, even when no character has
+ // started and saveGame() is disabled. Guard that destructive path as well.
+ const deleteWithoutGuard=typeof deleteSaveSlot==='function'?deleteSaveSlot:null;
+ if(deleteWithoutGuard)deleteSaveSlot=function(...args){
+  if(damagedAuthoritativeSlots()){warnDamagedSlots();return;}
+  return deleteWithoutGuard(...args);
+ };
  const purchaseWithoutGuard=typeof purchaseCommit==='function'?purchaseCommit:null;
  if(purchaseWithoutGuard)purchaseCommit=function(...args){
   if(damagedAuthoritativeSlots()){
