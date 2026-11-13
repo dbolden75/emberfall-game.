@@ -26,6 +26,9 @@ const trials=[
  ['prototype item property',[{...pet,boots:'constructor'}],true],
  ['healthy owned pet',[pet],false],
  ['valid legacy pet equipment',[{id:'sylvi',petVersion:0,boots:'iron_boots'}],false],
+ ['legacy pet equipped removed item',[{id:'sylvi',petVersion:0,weapon:'retired_quest_blade'}],true],
+ ['legacy pet with omitted version equipped removed item',[{id:'sylvi',boots:'retired_quest_boots'}],true],
+ ['legacy pet equipped known item',[{id:'sylvi',petVersion:0,weapon:'short_sword'}],false],
  ['empty companion roster',[],false]
 ];
 let cases=0;
@@ -36,6 +39,7 @@ function check(label,{stored,live,block,legacy=false,purchase=false}){
  const document={getElementById:id=>elements.get(id)||null,createElement:()=>({style:{},setAttribute(){},remove(){elements.delete(this.id)}}),body:{appendChild:e=>elements.set(e.id,e)}};
  const c={window:{},document,JSON,Date,SAVE_SLOTS_KEY:S,SAVE_KEY:L,ACTIVE_SLOT_KEY:'emberfall_active_character_slot_v1',
   activeSlotId:'slot1',saveSlots:legacy?{}:slot,player:structuredClone(live.player),hasStarted:true,titleMenuActive:false,switchingCharacter:false,
+  itemDefs:{iron_boots:{slot:'boots'},short_sword:{slot:'weapon'}},
   snapshotGameState:()=>structuredClone(live),console:{warn(){},error(){}},
   localStorage:{getItem:key=>disk.has(key)?disk.get(key):null,setItem:(key,v)=>disk.set(key,String(v))},
   purchaseCommit(next){deliveries++;disk.set(S,JSON.stringify({slot1:{state:next}}));}};
