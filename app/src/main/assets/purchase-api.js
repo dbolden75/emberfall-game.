@@ -131,9 +131,21 @@
   }
   return true;
  }
+ // Forge ranks are earned by spending crowns and gathered materials. The
+ // loader converts malformed ranks into zero or clamps them, so reject
+ // malformed *present* data before a normal save can erase those upgrades.
+ // Old characters may not have a gearUpgradeLevels field at all.
+ function safeStoredGearUpgrades(upgrades){
+  if(!upgrades||typeof upgrades!=='object'||Array.isArray(upgrades))return false;
+  for(const rank of Object.values(upgrades))
+   if(!Number.isSafeInteger(rank)||rank<0||rank>5)return false;
+  return true;
+ }
  function safeSavedState(state){
   return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
    safeSavedHero(state.player)&&
+   (!Object.prototype.hasOwnProperty.call(state,'gearUpgradeLevels')||
+     safeStoredGearUpgrades(state.gearUpgradeLevels))&&
    (!Object.prototype.hasOwnProperty.call(state,'houseStorage')||
      safeStoredHouseStorage(state.houseStorage))&&
    (!Object.prototype.hasOwnProperty.call(state,'gatheringSkills')||

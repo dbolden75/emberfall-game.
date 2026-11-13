@@ -14,7 +14,7 @@ const guard=client.slice(first,last+'/* THORNHAVEN_SAVE_DURABILITY_GUARD_END */'
 const S='emberfall_character_slots_v1',L='emberfall_singleplayer_v1';
 const healthy={player:{name:'Ava',class:'warrior',level:5,xp:12,coins:40,inventory:[{id:'ore',count:2}],hp:25,max:50,speed:120,x:480,y:500},
  houseStorage:{ashvale:{front_chest:[{id:'ore',count:3}],side_chest:[]},brackenford:{front_chest:[],side_chest:[]}},
- gatheringSkills:{mining:{xp:40,level:1},woodcutting:{xp:50,level:2},fishing:{xp:0,level:1}},mapId:'ashvale'};
+ gatheringSkills:{mining:{xp:40,level:1},woodcutting:{xp:50,level:2},fishing:{xp:0,level:1}},gearUpgradeLevels:{iron_blade:2,rare_sword:5},mapId:'ashvale'};
 let cases=0;
 function trial(label,change,blocked,legacy=false){
  const state=structuredClone(healthy);change(state);
@@ -68,10 +68,30 @@ const broken=[
  ['woodcutting XP unsafe',s=>s.gatheringSkills.woodcutting.xp=Number.MAX_SAFE_INTEGER+1]
 ];
 for(const [name,mutate] of broken){trial('slot '+name,mutate,true);trial('legacy '+name,mutate,true,true);}
+// Loading a damaged forge rank silently coerces it to zero/clamps to a cap.
+// Protect the original bytes instead of wiping paid-for/gathered upgrades.
+const brokenForge=[
+ ['upgrade map null',s=>s.gearUpgradeLevels=null],
+ ['upgrade map string',s=>s.gearUpgradeLevels='lost'],
+ ['upgrade map array',s=>s.gearUpgradeLevels=[]],
+ ['rank null',s=>s.gearUpgradeLevels.iron_blade=null],
+ ['rank numeric string',s=>s.gearUpgradeLevels.iron_blade='2'],
+ ['rank negative',s=>s.gearUpgradeLevels.iron_blade=-1],
+ ['rank decimal',s=>s.gearUpgradeLevels.iron_blade=1.5],
+ ['rank over max',s=>s.gearUpgradeLevels.iron_blade=6],
+ ['rank unsafe',s=>s.gearUpgradeLevels.iron_blade=Number.MAX_SAFE_INTEGER+1],
+ ['rank boolean',s=>s.gearUpgradeLevels.iron_blade=true],
+ ['rank nested array',s=>s.gearUpgradeLevels.iron_blade=[1]]
+];
+for(const [name,mutate] of brokenForge){trial('slot forge '+name,mutate,true);trial('legacy forge '+name,mutate,true,true);}
+trial('historical no forge field',s=>{delete s.gearUpgradeLevels},false);
+trial('historical empty forge map',s=>{s.gearUpgradeLevels={}},false);
+trial('forge rank zero',s=>{s.gearUpgradeLevels.iron_blade=0},false);
+trial('forge rank five',s=>{s.gearUpgradeLevels.iron_blade=5},false);
 trial('healthy unchanged',()=>{},false);
 trial('historical fields omitted',s=>{delete s.houseStorage;delete s.gatheringSkills},false);
 trial('historical empty storage and skills',s=>{s.houseStorage={};s.gatheringSkills={}},false);
 trial('historical missing XP',s=>{s.gatheringSkills.mining={level:1}},false);
 trial('legacy Brackenford chest',s=>{s.houseStorage={front_chest:[{id:'ore',count:1}]}},false);
 trial('zero XP valid',s=>{s.gatheringSkills.fishing.xp=0},false);
-console.log('PASS '+cases+'/'+cases+': malformed chests and gathering XP protected; older saves remain valid (mocked WebView)');
+console.log('PASS '+cases+'/'+cases+': malformed chests, gathering XP and forge ranks protected; older saves remain valid (mocked WebView)');
