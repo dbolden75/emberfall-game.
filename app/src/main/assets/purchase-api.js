@@ -156,8 +156,13 @@
    seen.add(p.id);
    if(p.petVersion!=null&&(!Number.isSafeInteger(p.petVersion)||
       (p.petVersion!==0&&p.petVersion!==1)))return false;
-   if(!['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>
+   const gearSlots=['weapon','armor','shield','earrings','necklace','legs','boots'];
+   if(!gearSlots.every(slot=>
       p[slot]==null||(typeof p[slot]==='string'&&!unsafeId(p[slot]))))return false;
+   // Legacy pet migration returns known gear to inventory and clears its slot.
+   // Unknown items would be silently discarded instead; preserve the raw save.
+   if(p.petVersion!==1&&gearSlots.some(slot=>
+      p[slot]!=null&&!Object.prototype.hasOwnProperty.call(itemDefs,p[slot])))return false;
    if(!['hp','max'].every(field=>p[field]===undefined||
       (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0)))return false;
    if(p.hp!=null&&p.max!=null&&p.hp>p.max)return false;
