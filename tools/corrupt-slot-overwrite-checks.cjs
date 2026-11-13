@@ -19,6 +19,14 @@ const KEY='emberfall_character_slots_v1';
 let tests=0;
 for(const malformed of [
  // Existing slots with unsupported class IDs cannot be silently normalized and overwritten.
+// An inventory explicitly present but not an array (or containing invalid rows)
+ // can crash inventory rendering and must not be overwritten by saving.
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:null}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:{id:'ore'}}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[null]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:['ore']}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{count:2}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[]}}},slot2:{state:{player:{name:'Mia',class:'mage',inventory:null}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'archer'}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'WARRIOR'}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior'}}},slot2:{state:{player:{name:'Mia',class:'unknown'}}}}),"{broken","null","[]","1","\"string\"","{\"slot1\":null}","{\"slot1\":7}","{\"slot1\":{}}","{\"slot1\":{\"state\":null}}","{\"slot1\":{\"state\":{\"mapId\":\"ashvale\"}}}","{\"slot1\":{\"state\":{\"player\":{\"name\":\"\",\"class\":\"warrior\"}}}}","{\"slot1\":{\"id\":\"slot1\",\"name\":\"Ava\",\"state\":{\"player\":{\"name\":\"Ava\",\"class\":\"warrior\"}}},\"slot2\":{\"state\":{\"player\":null}}}"]){
@@ -56,6 +64,12 @@ for(const malformed of [
   storage.set(KEY,JSON.stringify({slot1:{state:{player:{name:'Ava',class:supportedClass}}}}));
   assert.equal(context.window.ThornhavenDamagedSlots(),false,'Supported class must remain loadable: '+supportedClass);
  }
+ // Omitted inventories remain valid for historical characters; present valid rows
+ // must also permit ordinary saves and paid delivery after restoration.
+ storage.set(KEY,JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[]}}}}));
+ assert.equal(context.window.ThornhavenDamagedSlots(),false,'An empty inventory is valid');
+ storage.set(KEY,JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:2}]}}}}));
+ assert.equal(context.window.ThornhavenDamagedSlots(),false,'Valid inventory rows remain supported');
  // After an explicitly restored, parseable slot, saves/purchases are allowed.
  storage.set(KEY,JSON.stringify({slot1:{id:'slot1',state}}));
  assert.equal(context.window.ThornhavenDamagedSlots(),false,'Verified recovery permits checkout');
