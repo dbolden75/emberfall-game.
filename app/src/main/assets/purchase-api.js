@@ -141,9 +141,40 @@
    if(!Number.isSafeInteger(rank)||rank<0||rank>5)return false;
   return true;
  }
+ // Local saves must protect purchased and quest companions just as Cloud Save
+ // import does. normalizePets() silently drops unknown/duplicate pet IDs and
+ // migrates unsupported pet versions, otherwise erasing pets or their gear.
+ // Legacy saves legitimately omit companions; present lists must be lossless.
+ function safeStoredCompanions(pets){
+  if(!Array.isArray(pets))return false;
+  const known=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
+  const seen=new Set();
+  const unsafeId=id=>id==='prototype'||Object.prototype.hasOwnProperty.call(Object.prototype,id);
+  return pets.every(p=>{
+   if(!p||typeof p!=='object'||Array.isArray(p)||typeof p.id!=='string'||
+      !known.has(p.id)||seen.has(p.id))return false;
+   seen.add(p.id);
+   if(p.petVersion!=null&&(!Number.isSafeInteger(p.petVersion)||
+      (p.petVersion!==0&&p.petVersion!==1)))return false;
+   if(!['weapon','armor','shield','earrings','necklace','legs','boots'].every(slot=>
+      p[slot]==null||(typeof p[slot]==='string'&&!unsafeId(p[slot]))))return false;
+   if(!['hp','max'].every(field=>p[field]===undefined||
+      (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0)))return false;
+   if(p.hp!=null&&p.max!=null&&p.hp>p.max)return false;
+   if(!['x','y'].every(field=>p[field]===undefined||
+      (typeof p[field]==='number'&&Number.isFinite(p[field])&&Math.abs(p[field])<=10000)))return false;
+   if(!['faceX','faceY'].every(field=>p[field]===undefined||
+      (typeof p[field]==='number'&&Number.isFinite(p[field])&&Math.abs(p[field])<=1)))return false;
+   if(!['cool','skillCool','attack','castTime'].every(field=>p[field]===undefined||
+      (typeof p[field]==='number'&&Number.isFinite(p[field])&&p[field]>=0)))return false;
+   return p.active==null||typeof p.active==='boolean';
+  });
+ }
  function safeSavedState(state){
   return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
    safeSavedHero(state.player)&&
+   (!Object.prototype.hasOwnProperty.call(state,'companions')||
+     safeStoredCompanions(state.companions))&&
    (!Object.prototype.hasOwnProperty.call(state,'gearUpgradeLevels')||
      safeStoredGearUpgrades(state.gearUpgradeLevels))&&
    (!Object.prototype.hasOwnProperty.call(state,'houseStorage')||
