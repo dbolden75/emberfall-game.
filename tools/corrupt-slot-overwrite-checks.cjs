@@ -17,7 +17,11 @@ assert(begin!==-1&&end>begin,'Missing save durability guard');
 const guard=client.slice(begin,end+'/* THORNHAVEN_SAVE_DURABILITY_GUARD_END */'.length);
 const KEY='emberfall_character_slots_v1';
 let tests=0;
-for(const malformed of ["{broken","null","[]","1","\"string\"","{\"slot1\":null}","{\"slot1\":7}","{\"slot1\":{}}","{\"slot1\":{\"state\":null}}","{\"slot1\":{\"state\":{\"mapId\":\"ashvale\"}}}","{\"slot1\":{\"state\":{\"player\":{\"name\":\"\",\"class\":\"warrior\"}}}}","{\"slot1\":{\"id\":\"slot1\",\"name\":\"Ava\",\"state\":{\"player\":{\"name\":\"Ava\",\"class\":\"warrior\"}}},\"slot2\":{\"state\":{\"player\":null}}}"]){
+for(const malformed of [
+ // Existing slots with unsupported class IDs cannot be silently normalized and overwritten.
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'archer'}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'WARRIOR'}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior'}}},slot2:{state:{player:{name:'Mia',class:'unknown'}}}}),"{broken","null","[]","1","\"string\"","{\"slot1\":null}","{\"slot1\":7}","{\"slot1\":{}}","{\"slot1\":{\"state\":null}}","{\"slot1\":{\"state\":{\"mapId\":\"ashvale\"}}}","{\"slot1\":{\"state\":{\"player\":{\"name\":\"\",\"class\":\"warrior\"}}}}","{\"slot1\":{\"id\":\"slot1\",\"name\":\"Ava\",\"state\":{\"player\":{\"name\":\"Ava\",\"class\":\"warrior\"}}},\"slot2\":{\"state\":{\"player\":null}}}"]){
  const storage=new Map([[KEY,malformed]]),elements=new Map(),deliveryCalls=[];
  const state={player:{name:'Ava',class:'warrior',level:12,inventory:[{id:'ore',count:3}]},mapId:'ashvale'};
  const document={getElementById:id=>elements.get(id)||null,
@@ -48,6 +52,10 @@ for(const malformed of ["{broken","null","[]","1","\"string\"","{\"slot1\":null}
  assert.equal(context.window.ThornhavenDamagedSlots(),false,'Empty character list must remain valid');
  storage.set(KEY,JSON.stringify({slot1:state}));
  assert.equal(context.window.ThornhavenDamagedSlots(),false,'Historical unwrapped saves must remain valid');
+ for(const supportedClass of ['warrior','rogue','mage','cleric']){
+  storage.set(KEY,JSON.stringify({slot1:{state:{player:{name:'Ava',class:supportedClass}}}}));
+  assert.equal(context.window.ThornhavenDamagedSlots(),false,'Supported class must remain loadable: '+supportedClass);
+ }
  // After an explicitly restored, parseable slot, saves/purchases are allowed.
  storage.set(KEY,JSON.stringify({slot1:{id:'slot1',state}}));
  assert.equal(context.window.ThornhavenDamagedSlots(),false,'Verified recovery permits checkout');
