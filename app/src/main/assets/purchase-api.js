@@ -264,10 +264,18 @@
   if(!hasStarted||titleMenuActive||switchingCharacter)return saveWithoutReadback(...args);
   if(damagedAuthoritativeSlots()){warnDamagedSlots();return;}
   // snapshotGameState makes a plain JSON copy, the same serialization as saveGame.
-  // Do not make a new failure mode for a damaged state snapshot: let the
-  // original save routine handle it and display its usual error.
+  // Never retry a snapshot failure through the unguarded save routine.
+  // If the first snapshot throws transiently and the second returns invalid
+  // data, that fallback could silently replace a previously healthy save.
+  // Keep existing bytes untouched and let the player retry after recovery.
   let expected;
-  try{expected=snapshotGameState()}catch(_){return saveWithoutReadback(...args)}
+  try{expected=snapshotGameState()}catch(error){
+   warnInvalidLiveState();
+   document.getElementById('saveFailureWarning').textContent=
+    'Current character snapshot could not be verified. Existing saves are protected; saving is blocked. Keep the game open and retry. Do not uninstall or clear app data.';
+   console.error('Thornhaven snapshot validation failed:',error);
+   return;
+  }
   if(!safeSavedState(expected)){
    warnInvalidLiveState();
    return;
