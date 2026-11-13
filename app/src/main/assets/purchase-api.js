@@ -98,6 +98,47 @@
   }
   return true;
  }
+ // The game normalizes old house chests and gathering skills on load.
+ // A malformed *present* chest or XP record must not be quietly replaced
+ // by empty storage/zero XP on the next save or paid purchase delivery.
+ // Historical saves legitimately omit these optional fields.
+ function safeStoredHouseStorage(storage){
+  if(!storage||typeof storage!=='object'||Array.isArray(storage))return false;
+  const homes=['ashvale','brackenford','stonewatch','sunmere'];
+  const chests=['front_chest','side_chest'];
+  for(const id of homes){
+   if(!Object.prototype.hasOwnProperty.call(storage,id))continue;
+   const home=storage[id];
+   if(!home||typeof home!=='object'||Array.isArray(home))return false;
+   for(const chest of chests)
+    if(Object.prototype.hasOwnProperty.call(home,chest)&&
+       !safeStoredInventory(home[chest]))return false;
+  }
+  // Older Brackenford-only save formats stored the chests at the root.
+  for(const chest of chests)
+   if(Object.prototype.hasOwnProperty.call(storage,chest)&&
+      !safeStoredInventory(storage[chest]))return false;
+  return true;
+ }
+ function safeStoredGatheringSkills(skills){
+  if(!skills||typeof skills!=='object'||Array.isArray(skills))return false;
+  for(const id of ['mining','woodcutting','fishing']){
+   if(!Object.prototype.hasOwnProperty.call(skills,id))continue;
+   const row=skills[id];
+   if(!row||typeof row!=='object'||Array.isArray(row))return false;
+   if(!Object.prototype.hasOwnProperty.call(row,'xp'))continue;
+   if(!Number.isSafeInteger(row.xp)||row.xp<0)return false;
+  }
+  return true;
+ }
+ function safeSavedState(state){
+  return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
+   safeSavedHero(state.player)&&
+   (!Object.prototype.hasOwnProperty.call(state,'houseStorage')||
+     safeStoredHouseStorage(state.houseStorage))&&
+   (!Object.prototype.hasOwnProperty.call(state,'gatheringSkills')||
+     safeStoredGatheringSkills(state.gatheringSkills)));
+ }
  // Local WebView saves need the same lossless vital checks as Cloud Save.
  // applySavedGame() coerces bad HP/speed and teleports non-finite positions;
  // a later normal save would otherwise replace the original damaged bytes.
@@ -149,7 +190,7 @@
    try{
     const legacy=JSON.parse(rawLegacy);
     return !legacy||typeof legacy!=='object'||Array.isArray(legacy)||
-     !safeSavedHero(legacy.player);
+     !safeSavedState(legacy);
    }catch(_){return true;}
   }
   try{
@@ -163,10 +204,9 @@
     if(!record||typeof record!=='object'||Array.isArray(record))return true;
     // Historical saves may store the state directly, without a .state wrapper.
     const state=Object.prototype.hasOwnProperty.call(record,'state')?record.state:record;
-    const hero=state&&typeof state==='object'&&!Array.isArray(state)?state.player:null;
     // Unknown classes are normalized to Warrior on load. Preserve their original
     // bytes instead of silently converting and overwriting a damaged character.
-    return !safeSavedHero(hero);
+    return !safeSavedState(state);
    });
   }catch(_){return true;}
  }
