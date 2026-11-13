@@ -29,6 +29,7 @@ const trials=[
  ['legacy pet equipped removed item',[{id:'sylvi',petVersion:0,weapon:'retired_quest_blade'}],true],
  ['legacy pet with omitted version equipped removed item',[{id:'sylvi',boots:'retired_quest_boots'}],true],
  ['legacy pet equipped known item',[{id:'sylvi',petVersion:0,weapon:'short_sword'}],false],
+ ['legacy empty equipment sentinel',[{id:'sylvi',petVersion:0,weapon:''}],false],
  ['empty companion roster',[],false]
 ];
 let cases=0;
