@@ -98,10 +98,28 @@
   }
   return true;
  }
+ // Local WebView saves need the same lossless vital checks as Cloud Save.
+ // applySavedGame() coerces bad HP/speed and teleports non-finite positions;
+ // a later normal save would otherwise replace the original damaged bytes.
+ // Omitted vitals are allowed for older characters, but explicit null is not.
+ function safeStoredVitals(hero){
+  for(const key of ['hp','max','speed','x','y']){
+   if(!Object.prototype.hasOwnProperty.call(hero,key))continue;
+   const value=hero[key];
+   if(typeof value!=='number'||!Number.isFinite(value))return false;
+   if((key==='max'||key==='speed')&&value<=0)return false;
+   if(key==='speed'&&value>2000)return false;
+   if(key==='hp'&&value<0)return false;
+   if((key==='x'||key==='y')&&Math.abs(value)>10000)return false;
+  }
+  if(typeof hero.hp==='number'&&typeof hero.max==='number'&&hero.hp>hero.max)return false;
+  return true;
+ }
  function safeSavedHero(hero){
   return !!(hero&&typeof hero==='object'&&!Array.isArray(hero)&&
    typeof hero.name==='string'&&hero.name.trim()&&
    typeof hero.class==='string'&&['warrior','rogue','mage','cleric'].includes(hero.class)&&
+   safeStoredVitals(hero)&&
    (!Object.prototype.hasOwnProperty.call(hero,'inventory')||safeStoredInventory(hero.inventory)));
  }
  function damagedAuthoritativeSlots(){
