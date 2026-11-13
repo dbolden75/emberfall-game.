@@ -30,6 +30,7 @@ for(const malformed of [
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:2},{id:'ore',count:1}]}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'__proto__',count:1}]}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'constructor',count:1}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'prototype',count:1}]}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:null}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:{id:'ore'}}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[null]}}}}),
