@@ -21,6 +21,15 @@ for(const malformed of [
  // Existing slots with unsupported class IDs cannot be silently normalized and overwritten.
 // An inventory explicitly present but not an array (or containing invalid rows)
  // can crash inventory rendering and must not be overwritten by saving.
+ // A parseable but corrupt stack must never be treated as durable inventory.
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:'3'}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:null}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:-1}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:0}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:1.5}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'ore',count:2},{id:'ore',count:1}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'__proto__',count:1}]}}}}),
+ JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[{id:'constructor',count:1}]}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:null}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:{id:'ore'}}}}}),
  JSON.stringify({slot1:{state:{player:{name:'Ava',class:'warrior',inventory:[null]}}}}),
