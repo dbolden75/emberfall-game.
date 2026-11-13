@@ -99,9 +99,11 @@
     // Historical saves may store the state directly, without a .state wrapper.
     const state=Object.prototype.hasOwnProperty.call(record,'state')?record.state:record;
     const hero=state&&typeof state==='object'&&!Array.isArray(state)?state.player:null;
+    // Unknown classes are normalized to Warrior on load. Preserve their original
+    // bytes instead of silently converting and overwriting a damaged character.
     return !hero||typeof hero!=='object'||Array.isArray(hero)||
      typeof hero.name!=='string'||!hero.name.trim()||
-     typeof hero.class!=='string'||!hero.class.trim();
+     typeof hero.class!=='string'||!['warrior','rogue','mage','cleric'].includes(hero.class);
    });
   }catch(_){return true;}
  }
