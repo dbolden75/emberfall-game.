@@ -19,11 +19,18 @@ function config(){
  if(!window.ThornhavenPlaytest)throw Error('This feature requires the Android APK.');
  return {url:url.origin+'/frames',token};
 }
+// Read the installed package version, not a stale hard-coded report build.
+// Browser QA has no native device bridge, so show an explicit unknown version.
+function reportBuildVersion(){
+ try{const version=window.ThornhavenDevice?.getBuildVersion?.();
+  return typeof version==='string'&&/^[0-9]+(?:\.[0-9]+){1,3}$/.test(version)?version:'unknown';
+ }catch(_){return 'unknown';}
+}
 function capture(kind){
  const source=document.getElementById('world'),image=document.createElement('canvas');
  const ratio=Math.min(1,960/source.width);image.width=Math.round(source.width*ratio);image.height=Math.round(source.height*ratio);
  image.getContext('2d').drawImage(source,0,0,image.width,image.height);
- return {id:Date.now().toString(36)+'_'+Math.random().toString(36).slice(2),kind,time:new Date().toISOString(),image:image.toDataURL('image/jpeg',.65),context:{build:'1.0.49',map:mapId,mapName:activeMap.name,position:{x:Math.round(player.x),y:Math.round(player.y)},class:player.class,level:player.level,trackedQuest:townQuestState._tracking?.id||null,errors:errors.slice(),note:get('jarvisMessage').value.slice(0,2000)}};
+ return {id:Date.now().toString(36)+'_'+Math.random().toString(36).slice(2),kind,time:new Date().toISOString(),image:image.toDataURL('image/jpeg',.65),context:{build:reportBuildVersion(),map:mapId,mapName:activeMap.name,position:{x:Math.round(player.x),y:Math.round(player.y)},class:player.class,level:player.level,trackedQuest:townQuestState._tracking?.id||null,errors:errors.slice(),note:get('jarvisMessage').value.slice(0,2000)}};
 }
 function deliver(frame){
  const connection=config();pending={id:frame.id,kind:frame.kind,time:Date.now()};
