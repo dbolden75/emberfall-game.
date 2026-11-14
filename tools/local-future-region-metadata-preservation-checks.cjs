@@ -29,6 +29,13 @@ const cases=[
  ['string enemy respawn timestamp',s=>{s.mapStates.ashvale.enemies[0].respawnAt='500';},true],
  ['string enemy spawn position',s=>{s.mapStates.ashvale.enemies[0].spawnX='100';},true],
  ['negative enemy respawn time',s=>{s.mapStates.ashvale.enemies[0].respawnAt=-1;},true],
+ ['legacy forge upgrades omitted',s=>{delete s.gearUpgradeLevels;},false],
+ ['known low-tier forge rank at cap',s=>{s.gearUpgradeLevels={starterSword:3};},false],
+ ['known high-tier forge rank at cap',s=>{s.gearUpgradeLevels={epicSword:5};},false],
+ ['newer item rank within legacy cap',s=>{s.gearUpgradeLevels={futureSword:3};},false],
+ ['known low-tier rank would be clamped',s=>{s.gearUpgradeLevels={starterSword:5};},true],
+ ['newer unknown item rank would be clamped',s=>{s.gearUpgradeLevels={futureSword:4};},true],
+ ['newer unknown item rank five would be clamped',s=>{s.gearUpgradeLevels={futureSword:5};},true],
  ['old save omits optional region state',s=>{delete s.mapStates;},false],
 ];
 const S='emberfall_character_slots_v1',L='emberfall_singleplayer_v1';
@@ -43,7 +50,7 @@ for(const [label,mutate,unsafe] of cases)for(const legacy of [false,true]){
   saveGame(){saves++;store[S]=JSON.stringify({slot1:{state:structuredClone(base)}})},snapshotGameState:()=>structuredClone(base),purchaseCommit(){deliveries++},
   localStorage:{getItem:k=>Object.prototype.hasOwnProperty.call(store,k)?store[k]:null,setItem:(k,v)=>store[k]=String(v)},
   SAVE_SLOTS_KEY:S,SAVE_KEY:L,activeSlotId:'slot1',hasStarted:true,titleMenuActive:false,switchingCharacter:false,
-  maps:{ashvale:{enemies:[{}],runes:[{}],traps:[{}],gatherNodes:[{}],runeSequence:[]}},itemDefs:{},gearRequirements:()=>true};
+  maps:{ashvale:{enemies:[{}],runes:[{}],traps:[{}],gatherNodes:[{}],runeSequence:[]}},itemDefs:{starterSword:{tier:1},epicSword:{tier:3}},gearUpgradeCap:id=>id==='epicSword'?5:3,gearRequirements:()=>true};
  vm.createContext(context);vm.runInContext(source,context,{timeout:1500,filename:'purchase-api.js'});
  assert.equal(context.window.ThornhavenDamagedSlots(),unsafe,label+': classification; legacy='+legacy);checks++;
  context.saveGame();assert.equal(saves,unsafe?0:1,label+': ordinary save; legacy='+legacy);checks++;
