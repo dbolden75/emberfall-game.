@@ -10,7 +10,7 @@ Updated 2026-11-14. This document is safe for the public repository. **Never** a
 - Historical maintained-key **1.0.57** release APK used for certificate comparison: versionCode 159.
 - Maintained certificate SHA-256: `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22`. This is the public certificate fingerprint, **not** the private signing key.
 - Canonical signed 1.0.67 APK SHA-256: `1e8d8358aba8a7e058019ccec2b5beb443012281a992fc8ba9de6227c4843585`.
-- Canonical Drive signed 1.0.67 AAB SHA-256: `2e9fe6a1869dc69c7e191e8fda928f1790b1c3a310ede8b6897678cb56a60c27` (independently regenerated AABs may differ because JAR signing embeds timestamps; compare certificate and gameplay assets).
+- Canonical signed 1.0.67 AAB SHA-256: `2e9fe6a1869dc69c7e191e8fda928f1790b1c3a310ede8b6897678cb56a60c27` (independently regenerated AABs may differ because JAR signing embeds timestamps; compare certificate and gameplay assets).
 - Current release evidence and Drive provenance: [release issue #6](https://github.com/dbolden75/emberfall-game./issues/6), plus [BUILD-WORKFLOW.md](BUILD-WORKFLOW.md). [BUILD-STATUS.txt](BUILD-STATUS.txt) is a historical log, not the authority for the current candidate.
 
 ## What has actually passed
