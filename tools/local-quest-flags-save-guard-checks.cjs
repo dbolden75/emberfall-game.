@@ -42,26 +42,26 @@ for(const [label,value,unsafe] of [
  ['defeated decimal',2.5,true],['defeated null',null,true],['defeated healthy',4,false],['defeated omitted',undefined,false]]){
  cases.push([label,s=>{if(value===undefined)delete s.defeated;else s.defeated=value},unsafe]);
 }
-let assertions=0;
+let scenarios=0;
 for(const [label,mutate,unsafe] of cases){
  for(const legacy of [false,true]){
   const stored=clone(healthy);mutate(stored);const t=scenario(stored,healthy,legacy);
-  assert.equal(t.ctx.window.ThornhavenDamagedSlots(),unsafe,label+' persisted legacy='+legacy);assertions++;
-  t.ctx.saveGame();assert.equal(t.saves,unsafe?0:1,label+' save legacy='+legacy);assertions++;
+  assert.equal(t.ctx.window.ThornhavenDamagedSlots(),unsafe,label+' persisted legacy='+legacy);
+  t.ctx.saveGame();assert.equal(t.saves,unsafe?0:1,label+' save legacy='+legacy);
   if(unsafe){
    for(const [k,raw] of Object.entries(t.initial))assert.equal(t.data.get(k),raw,label+' preserves bytes');
    assert.throws(()=>t.ctx.purchaseCommit(healthy),/Damaged character slots/,label+' paid delivery blocked');
    assert.equal(t.paid,0);
   }else{t.ctx.purchaseCommit(healthy);assert.equal(t.paid,1);}
-  assertions+=3;
+  scenarios++;
  }
  const live=clone(healthy);mutate(live);const t=scenario(healthy,live);
- t.ctx.saveGame();assert.equal(t.saves,unsafe?0:1,label+' live save');assertions++;
+ t.ctx.saveGame();assert.equal(t.saves,unsafe?0:1,label+' live save');
  if(unsafe){
   assert.equal(t.data.get(S),t.initial[S],label+' safe previous bytes');
   assert.throws(()=>t.ctx.purchaseCommit(live),/Invalid purchase delivery state/,label+' paid delivery blocked');
   assert.equal(t.paid,0);
  }else{t.ctx.purchaseCommit(live);assert.equal(t.paid,1);}
- assertions+=3;
+ scenarios++;
 }
-console.log('PASS '+assertions+'/'+assertions+': quest flag and defeated-count guard validates stored/legacy/live saves and Play receipt commits (mocked WebView)');
+console.log('PASS '+scenarios+'/'+scenarios+' scenarios: quest flag and defeated-count guard validates stored/legacy/live saves and Play receipt commits (mocked WebView)');
