@@ -30,6 +30,16 @@ def main() -> None:
         except AssertionError:
             continue
         raise AssertionError('Regression test failed to reject mismatched bug-report build')
+    # The developer-only frame uploader is a separate bundled JS module.
+    # Its runtime report identity must come from the installed Android app,
+    # not from an independent literal that becomes stale after release.
+    editor = (ROOT / 'app/src/main/assets/playtest-editor.js').read_text()
+    native = (ROOT / 'app/src/main/java/com/emberfall/ashvale/MainActivity.java').read_text()
+    assert 'build:reportBuildVersion()' in editor
+    assert "build:'1.0.49'" not in editor
+    assert 'getBuildVersion?.()' in editor
+    assert 'getPackageManager().getPackageInfo(getPackageName(), 0).versionName' in native
+    print('PASS: developer bug reports derive release identity from installed Android package')
     print(f'PASS: Jarvis bug reports and title screen match Android {version}; stale-build mutations rejected')
 
 
