@@ -155,8 +155,14 @@
  // Old characters may not have a gearUpgradeLevels field at all.
  function safeStoredGearUpgrades(upgrades){
   if(!upgrades||typeof upgrades!=='object'||Array.isArray(upgrades))return false;
-  for(const rank of Object.values(upgrades))
-   if(!Number.isSafeInteger(rank)||rank<0||rank>5)return false;
+  for(const [id,rank] of Object.entries(upgrades)){
+   // applySavedGame() clamps every stored rank to gearUpgradeCap(id).
+   // A newer tier, or a known item's too-high rank, must not be silently
+   // downgraded by this older client when it next saves or delivers a purchase.
+   const cap=typeof gearUpgradeCap==='function'?gearUpgradeCap(id):5;
+   if(!Number.isSafeInteger(rank)||rank<0||!Number.isSafeInteger(cap)||
+      rank>cap)return false;
+  }
   return true;
  }
  // The loader projects town relics and owned houses onto only the four
