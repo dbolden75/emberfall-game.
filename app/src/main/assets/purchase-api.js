@@ -214,6 +214,10 @@
    if(!Object.prototype.hasOwnProperty.call(maps,id))return false;
    const row=states[id],map=maps[id];
    if(!row||typeof row!=='object'||Array.isArray(row))return false;
+   // snapshotGameState() serializes only these region members. Future
+   // per-region fields would disappear even if existing array lengths match.
+   const regionKeys=new Set(['enemies','runes','runeProgress','traps','chest','treasure','gatherNodes']);
+   if(Object.keys(row).some(key=>!regionKeys.has(key)))return false;
    // applySavedGame() only restores current indexes, while the next snapshot
    // emits exactly the current region's enemies, runes, traps and nodes.
    // Newer-build extra entries or present malformed arrays would be discarded.
@@ -224,6 +228,11 @@
     const current=Array.isArray(map[field])?map[field]:[];
     const knownCount=field==='enemies'?current.filter(e=>!e.catalogSummoned).length:current.length;
     if(entries.length>knownCount)return false;
+    if(field==='enemies'){
+     const enemyKeys=new Set(['x','y','spawnX','spawnY','hp','maxHp','alive','lootClaimed','respawnAt']);
+     if(entries.some(e=>!e||typeof e!=='object'||Array.isArray(e)||
+        Object.keys(e).some(key=>!enemyKeys.has(key))))return false;
+    }else if(entries.some(v=>v===null||typeof v==='object'))return false;
    }
    // Newer versions can add rune steps or chest/treasure metadata without
    // increasing the arrays above. The loader coerces/clamps these fields,
