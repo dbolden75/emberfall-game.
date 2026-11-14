@@ -197,6 +197,22 @@
     const knownCount=field==='enemies'?current.filter(e=>!e.catalogSummoned).length:current.length;
     if(entries.length>knownCount)return false;
    }
+   // Newer versions can add rune steps or chest/treasure metadata without
+   // increasing the arrays above. The loader coerces/clamps these fields,
+   // and snapshotGameState() drops future members on the next save.
+   if(Object.prototype.hasOwnProperty.call(row,'runeProgress')){
+    const progress=row.runeProgress;
+    const knownSteps=Array.isArray(map.runeSequence)?map.runeSequence.length:0;
+    if(!Number.isSafeInteger(progress)||progress<0||progress>knownSteps)return false;
+   }
+   for(const [field,flag] of [['chest','open'],['treasure','opened']]){
+    if(!Object.prototype.hasOwnProperty.call(row,field)||row[field]===null)continue;
+    const stored=row[field];
+    if(!map[field]||!stored||typeof stored!=='object'||Array.isArray(stored)||
+       !Object.prototype.hasOwnProperty.call(stored,flag)||
+       typeof stored[flag]!=='boolean'||
+       Object.keys(stored).some(key=>key!==flag))return false;
+   }
    return true;
   });
  }
