@@ -175,9 +175,20 @@
    return p.active==null||typeof p.active==='boolean';
   });
  }
+ // applySavedGame() restores map data only for regions known to this build.
+ // Unknown future region keys would vanish from the next snapshot and normal save,
+ // silently losing enemy, chest, or puzzle progress (including on paid delivery).
+ // Existing saves may omit mapStates; tests without map fixtures are unaffected.
+ function safeStoredMapStates(states){
+  if(!states||typeof states!=='object'||Array.isArray(states))return false;
+  if(typeof maps==='undefined')return true;
+  return Object.keys(states).every(id=>Object.prototype.hasOwnProperty.call(maps,id));
+ }
  function safeSavedState(state){
   return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
    safeSavedHero(state.player)&&
+   (!Object.prototype.hasOwnProperty.call(state,'mapStates')||
+     safeStoredMapStates(state.mapStates))&&
    (!Object.prototype.hasOwnProperty.call(state,'companions')||
      safeStoredCompanions(state.companions))&&
    (!Object.prototype.hasOwnProperty.call(state,'gearUpgradeLevels')||
