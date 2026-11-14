@@ -102,32 +102,50 @@
  // A malformed *present* chest or XP record must not be quietly replaced
  // by empty storage/zero XP on the next save or paid purchase delivery.
  // Historical saves legitimately omit these optional fields.
+ // normalizeHouseStorage() projects only the four known homes and two chest
+ // slots. Newer homes/chests would disappear on a legacy client's next save.
  function safeStoredHouseStorage(storage){
   if(!storage||typeof storage!=='object'||Array.isArray(storage))return false;
   const homes=['ashvale','brackenford','stonewatch','sunmere'];
   const chests=['front_chest','side_chest'];
+  const validRoots=new Set([...homes,...chests]);
+  if(Object.keys(storage).some(id=>!validRoots.has(id)))return false;
   for(const id of homes){
    if(!Object.prototype.hasOwnProperty.call(storage,id))continue;
    const home=storage[id];
-   if(!home||typeof home!=='object'||Array.isArray(home))return false;
+   if(!home||typeof home!=='object'||Array.isArray(home)||
+      Object.keys(home).some(chest=>!chests.includes(chest)))return false;
    for(const chest of chests)
     if(Object.prototype.hasOwnProperty.call(home,chest)&&
        !safeStoredInventory(home[chest]))return false;
   }
-  // Older Brackenford-only save formats stored the chests at the root.
-  for(const chest of chests)
-   if(Object.prototype.hasOwnProperty.call(storage,chest)&&
-      !safeStoredInventory(storage[chest]))return false;
+  // Older Brackenford-only saves may have root-level chests. The loader
+  // overrides nested Brackenford chests with these, so conflicting present
+  // records must not be silently discarded.
+  for(const chest of chests){
+   if(!Object.prototype.hasOwnProperty.call(storage,chest))continue;
+   if(!safeStoredInventory(storage[chest]))return false;
+   if(Object.prototype.hasOwnProperty.call(storage,'brackenford')&&
+      Object.prototype.hasOwnProperty.call(storage.brackenford,chest)&&
+      JSON.stringify(storage.brackenford[chest])!==JSON.stringify(storage[chest]))return false;
+  }
   return true;
  }
+ // normalizeGatheringSkills() rebuilds only three known skill rows, taking
+ // XP and recomputing level. Reject newer skill IDs and row metadata before
+ // ordinary saves or Play purchase delivery replace the newer save.
  function safeStoredGatheringSkills(skills){
   if(!skills||typeof skills!=='object'||Array.isArray(skills))return false;
-  for(const id of ['mining','woodcutting','fishing']){
-   if(!Object.prototype.hasOwnProperty.call(skills,id))continue;
+  const known=['mining','woodcutting','fishing'];
+  for(const id of Object.keys(skills)){
+   if(!known.includes(id))return false;
    const row=skills[id];
-   if(!row||typeof row!=='object'||Array.isArray(row))return false;
-   if(!Object.prototype.hasOwnProperty.call(row,'xp'))continue;
-   if(!Number.isSafeInteger(row.xp)||row.xp<0)return false;
+   if(!row||typeof row!=='object'||Array.isArray(row)||
+      Object.keys(row).some(key=>key!=='xp'&&key!=='level'))return false;
+   if(Object.prototype.hasOwnProperty.call(row,'xp')&&
+      (!Number.isSafeInteger(row.xp)||row.xp<0))return false;
+   if(Object.prototype.hasOwnProperty.call(row,'level')&&
+      (!Number.isSafeInteger(row.level)||row.level<1||row.level>10))return false;
   }
   return true;
  }
