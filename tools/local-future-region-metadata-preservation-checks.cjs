@@ -9,6 +9,7 @@ const source=fs.readFileSync(process.env.THORNHAVEN_CLIENT||'app/src/main/assets
 const cases=[
  ['current region state',()=>{},false],
  ['known enemy hit points',s=>{s.mapStates.ashvale.enemies[0].hp=3;},false],
+ ['future enemy spawn metadata',s=>{s.mapStates.ashvale.enemies[0].spawnX=105;},true],
  ['future enemy metadata',s=>{s.mapStates.ashvale.enemies[0].futureLoot='relic';},true],
  ['future rune object',s=>{s.mapStates.ashvale.runes[0]={on:true,step:2};},true],
  ['future trap object',s=>{s.mapStates.ashvale.traps[0]={armed:false,phase:3};},true],
@@ -17,7 +18,7 @@ const cases=[
  ['old save omits optional region state',s=>{delete s.mapStates;},false],
 ];
 const S='emberfall_character_slots_v1',L='emberfall_singleplayer_v1';
-const base={player:{name:'QA',class:'warrior'},mapId:'ashvale',mapStates:{ashvale:{enemies:[{x:100,y:200,spawnX:100,spawnY:200,hp:8,maxHp:10,alive:true,lootClaimed:false,respawnAt:0}],runes:[true],traps:[false],gatherNodes:[12],runeProgress:0}}};
+const base={player:{name:'QA',class:'warrior'},mapId:'ashvale',mapStates:{ashvale:{enemies:[{x:100,y:200,hp:8,maxHp:10,alive:true,lootClaimed:false,respawnAt:0}],runes:[true],traps:[false],gatherNodes:[12],runeProgress:0}}};
 let checks=0,blocked=0,permitted=0;
 for(const [label,mutate,unsafe] of cases)for(const legacy of [false,true]){
  const state=structuredClone(base);mutate(state);
