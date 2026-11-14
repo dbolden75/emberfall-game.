@@ -4,6 +4,10 @@ on:
   workflow_call:
   push:
     paths:
+      # Release documentation is validated against signed package hashes/source.
+      - 'README.md'
+      - 'BUILD-WORKFLOW.md'
+      - 'THORNHAVEN_CONTINUITY.md'
       - 'build-signed-release.py'
       - 'build-play-bundle.py'
       - 'app/**'
