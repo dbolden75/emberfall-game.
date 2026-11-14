@@ -28,7 +28,7 @@ function check(label,change,blocked,{legacy=false,fresh=false}={}){
  const context={window:{},document,JSON,Date,SAVE_SLOTS_KEY:S,SAVE_KEY:L,
   ACTIVE_SLOT_KEY:'emberfall_active_character_slot_v1',
   hasStarted:true,titleMenuActive:false,switchingCharacter:false,activeSlotId:'slot1',saveSlots:{},
-  player:base.player,snapshotGameState:()=>structuredClone(state),maps:{ashvale:{},stonewatch:{}},
+  player:base.player,snapshotGameState:()=>structuredClone(state),maps:{ashvale:{},stonewatch:{chest:{open:false}}},
   localStorage:{getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v))},
   console:{error(){},warn(){}},purchaseCommit(){deliveries++;}};
  vm.createContext(context);vm.runInContext(gameSave,context,{timeout:1500});
