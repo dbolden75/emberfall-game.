@@ -229,7 +229,7 @@
     const knownCount=field==='enemies'?current.filter(e=>!e.catalogSummoned).length:current.length;
     if(entries.length>knownCount)return false;
     if(field==='enemies'){
-     const enemyKeys=new Set(['x','y','hp','maxHp','alive','lootClaimed','respawnAt']);
+     const enemyKeys=new Set(['x','y','spawnX','spawnY','hp','maxHp','alive','lootClaimed','respawnAt']);
      if(entries.some(e=>!e||typeof e!=='object'||Array.isArray(e)||
         Object.keys(e).some(key=>!enemyKeys.has(key))))return false;
     }else if(entries.some(v=>v===null||typeof v==='object'))return false;
