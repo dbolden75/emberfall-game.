@@ -184,9 +184,18 @@
   if(typeof maps==='undefined')return true;
   return Object.keys(states).every(id=>Object.prototype.hasOwnProperty.call(maps,id));
  }
+ // applySavedGame() also ignores a saved active mapId that this build does not
+ // know. A later ordinary save or paid delivery would replace that region ID
+ // with the old client's default location. Do not erase newer-world progress.
+ function safeStoredActiveMapId(state){
+  if(!Object.prototype.hasOwnProperty.call(state,'mapId'))return true; // Legacy saves.
+  const id=state.mapId;
+  if(typeof id!=='string'||!id.trim())return false;
+  return typeof maps==='undefined'||Object.prototype.hasOwnProperty.call(maps,id);
+ }
  function safeSavedState(state){
   return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
-   safeSavedHero(state.player)&&
+   safeSavedHero(state.player)&&safeStoredActiveMapId(state)&&
    (!Object.prototype.hasOwnProperty.call(state,'mapStates')||
      safeStoredMapStates(state.mapStates))&&
    (!Object.prototype.hasOwnProperty.call(state,'companions')||
