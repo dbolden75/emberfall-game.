@@ -141,6 +141,16 @@
    if(!Number.isSafeInteger(rank)||rank<0||rank>5)return false;
   return true;
  }
+ // The loader projects town relics and owned houses onto only the four
+ // regions this client knows. Newer-region flags, or a malformed present
+ // value, would be silently replaced by that projection on the next save.
+ // Historical characters may legitimately omit either optional object.
+ function safeStoredTownRegionFlags(flags){
+  if(!flags||typeof flags!=='object'||Array.isArray(flags))return false;
+  const known=new Set(['ashvale','brackenford','stonewatch','sunmere']);
+  return Object.entries(flags).every(([id,owned])=>
+   known.has(id)&&typeof owned==='boolean');
+ }
  // Local saves must protect purchased and quest companions just as Cloud Save
  // import does. normalizePets() silently drops unknown/duplicate pet IDs and
  // migrates unsupported pet versions, otherwise erasing pets or their gear.
@@ -228,6 +238,10 @@
  function safeSavedState(state){
   return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
    safeSavedHero(state.player)&&safeStoredActiveMapId(state)&&
+   (!Object.prototype.hasOwnProperty.call(state,'townRelicState')||
+     safeStoredTownRegionFlags(state.townRelicState))&&
+   (!Object.prototype.hasOwnProperty.call(state,'ownedHomes')||
+     safeStoredTownRegionFlags(state.ownedHomes))&&
    (!Object.prototype.hasOwnProperty.call(state,'mapStates')||
      safeStoredMapStates(state.mapStates))&&
    (!Object.prototype.hasOwnProperty.call(state,'companions')||
