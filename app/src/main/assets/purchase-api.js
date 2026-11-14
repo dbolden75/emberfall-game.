@@ -182,7 +182,23 @@
  function safeStoredMapStates(states){
   if(!states||typeof states!=='object'||Array.isArray(states))return false;
   if(typeof maps==='undefined')return true;
-  return Object.keys(states).every(id=>Object.prototype.hasOwnProperty.call(maps,id));
+  return Object.keys(states).every(id=>{
+   if(!Object.prototype.hasOwnProperty.call(maps,id))return false;
+   const row=states[id],map=maps[id];
+   if(!row||typeof row!=='object'||Array.isArray(row))return false;
+   // applySavedGame() only restores current indexes, while the next snapshot
+   // emits exactly the current region's enemies, runes, traps and nodes.
+   // Newer-build extra entries or present malformed arrays would be discarded.
+   for(const field of ['enemies','runes','traps','gatherNodes']){
+    if(!Object.prototype.hasOwnProperty.call(row,field))continue;
+    const entries=row[field];
+    if(!Array.isArray(entries))return false;
+    const current=Array.isArray(map[field])?map[field]:[];
+    const knownCount=field==='enemies'?current.filter(e=>!e.catalogSummoned).length:current.length;
+    if(entries.length>knownCount)return false;
+   }
+   return true;
+  });
  }
  // applySavedGame() also ignores a saved active mapId that this build does not
  // know. A later ordinary save or paid delivery would replace that region ID
