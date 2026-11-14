@@ -348,11 +348,17 @@
   }
   return true;
  }
+ // applySavedGame() normalizes unknown genders to the class default.
+ // Protect future character appearances from an older client's next save
+ // or purchase receipt; legacy saves may omit gender or store null.
+ function safeStoredHeroGender(hero){
+  return hero.gender==null||hero.gender==='male'||hero.gender==='female';
+ }
  function safeSavedHero(hero){
   return !!(hero&&typeof hero==='object'&&!Array.isArray(hero)&&
    typeof hero.name==='string'&&hero.name.trim()&&
    typeof hero.class==='string'&&['warrior','rogue','mage','cleric'].includes(hero.class)&&
-   safeStoredVitals(hero)&&safeStoredProgress(hero)&&safeStoredHeroGear(hero)&&
+   safeStoredHeroGender(hero)&&safeStoredVitals(hero)&&safeStoredProgress(hero)&&safeStoredHeroGear(hero)&&
    (!Object.prototype.hasOwnProperty.call(hero,'inventory')||safeStoredInventory(hero.inventory)));
  }
  function damagedAuthoritativeSlots(){
