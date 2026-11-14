@@ -93,6 +93,12 @@ public class MainActivity extends Activity {
     }
 
     public class DevicePreferences {
+        // Expose this installed Android package's version for trusted in-game QA.
+        // Do not hardcode a version into the independent playtest editor script.
+        @JavascriptInterface public String getBuildVersion() {
+            try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+            catch (android.content.pm.PackageManager.NameNotFoundException e) { return "unknown"; }
+        }
         @JavascriptInterface public void openPrivacyPolicy() {
             runOnUiThread(() -> {
                 try { startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://thornhaven-community.blushbeech32.chatgpt.site/privacy"))); }
