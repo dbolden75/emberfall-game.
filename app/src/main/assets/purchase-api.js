@@ -232,6 +232,24 @@
      const enemyKeys=new Set(['x','y','spawnX','spawnY','hp','maxHp','alive','lootClaimed','respawnAt']);
      if(entries.some(e=>!e||typeof e!=='object'||Array.isArray(e)||
         Object.keys(e).some(key=>!enemyKeys.has(key))))return false;
+     // On load, malformed enemy coordinates/health/flags are coerced or
+     // normalized. Preserve the original save instead of those projections.
+     for(const enemy of entries){
+      for(const key of ['x','y','spawnX','spawnY','hp','maxHp','respawnAt']){
+       if(!Object.prototype.hasOwnProperty.call(enemy,key))continue;
+       const value=enemy[key];
+       if(typeof value!=='number'||!Number.isFinite(value))return false;
+       if((key==='hp'||key==='respawnAt')&&value<0)return false;
+       if(key==='maxHp'&&value<=0)return false;
+      }
+      for(const key of ['alive','lootClaimed'])
+       if(Object.prototype.hasOwnProperty.call(enemy,key)&&
+          typeof enemy[key]!=='boolean')return false;
+     }
+    }else if(field==='runes'||field==='traps'){
+     if(entries.some(v=>typeof v!=='boolean'))return false;
+    }else if(field==='gatherNodes'){
+     if(entries.some(v=>typeof v!=='number'||!Number.isFinite(v)||v<0))return false;
     }else if(entries.some(v=>v===null||typeof v==='object'))return false;
    }
    // Newer versions can add rune steps or chest/treasure metadata without
