@@ -1,24 +1,24 @@
 # Thornhaven — Continuity and Release Handover
 
-Updated 2026-11-11. This document is safe for the public repository. **Never** add passwords, keystores, signing-property files, access tokens, recovery codes or personal information.
+Updated 2026-11-14. This document is safe for the public repository. **Never** add passwords, keystores, signing-property files, access tokens, recovery codes or personal information.
 
-## Current Android release identity (verified 2026-11-11)
+## Current Android release identity (verified 2026-11-14)
 
 - Player-facing title: **Thornhaven**; historical project names are Emberfall and Vaelbrink. The repository name is `dbolden75/emberfall-game.` (the trailing period is intentional).
 - Existing Google Play application ID: `com.vaelbrink.ashvale.newjourney`. **Do not change the application ID, WebView origin, established save keys or maintained signing certificate.**
-- Latest independently verified maintained-key signed candidate: **1.0.67**, Android `versionCode 169`; compiled game from [`b7378a9d`](https://github.com/dbolden75/emberfall-game./commit/b7378a9d4494a6b40da0fd08a4f1c937d88de008), merged via PR #256 into main at `df0544aa`. Includes PR #253's stale-offer refresh fix and PR #256's late BillingClient reconnection-callback guard; the older signed `3bedd23d` archives are superseded.
+- Latest independently verified maintained-key signed candidate: **1.0.67**, Android `versionCode 169`, built from GitHub main commit [`e18b2e3b`](https://github.com/dbolden75/emberfall-game./commit/e18b2e3b285f424427deab25c89bae35aeaceb43) after PR #291 (protect future forge ranks from save/purchase downgrade). The original-key signed APK and AAB are [archived in the private Drive release folder](https://drive.google.com/drive/folders/144d4ZfjTPkylAne9tkf9fJTPLqIMWz0R). Prior PR #256 packages are superseded.
 - Historical maintained-key **1.0.57** release APK used for certificate comparison: versionCode 159.
 - Maintained certificate SHA-256: `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22`. This is the public certificate fingerprint, **not** the private signing key.
-- Canonical signed 1.0.67 APK SHA-256: `6ee4170c08889a556673c2a427a576d7f618ffee5ea9115cea6636f037c2074c`.
-- Canonical signed 1.0.67 AAB SHA-256: `1399f8ecf45624b48e8ef0484afa4efd15ebbe04eb42fb702838e73b47ef01bb`.
+- Canonical signed 1.0.67 APK SHA-256: `1e8d8358aba8a7e058019ccec2b5beb443012281a992fc8ba9de6227c4843585`.
+- Canonical Drive signed 1.0.67 AAB SHA-256: `2e9fe6a1869dc69c7e191e8fda928f1790b1c3a310ede8b6897678cb56a60c27` (independently regenerated AABs may differ because JAR signing embeds timestamps; compare certificate and gameplay assets).
 - Current release evidence and Drive provenance: [release issue #6](https://github.com/dbolden75/emberfall-game./issues/6), plus [BUILD-WORKFLOW.md](BUILD-WORKFLOW.md). [BUILD-STATUS.txt](BUILD-STATUS.txt) is a historical log, not the authority for the current candidate.
 
 ## What has actually passed
 
-- [PR-head Android build #43088537603](https://github.com/dbolden75/emberfall-game./actions/runs/43088537603) completed successfully at signed-source commit `b7378a9d`. GitHub produced unsigned archives; the exact candidate packages were subsequently signed offline using the original maintained certificate and uploaded to private Drive.
-- [Seven-job PR-head emulator matrix #43088537638](https://github.com/dbolden75/emberfall-game./actions/runs/43088537638) passed with **temporary QA signatures**, covering simulated device startup and automated regressions. It did **not** install the maintained-signed APK or perform a Play-delivered upgrade.
-- The historical 1.0.57 maintained signing certificate matched the independently verified 1.0.67 signed APK/AAB. APK v2/v3, AAB signature, 16 KiB alignment, game-asset parity and archive checks passed. The exact new signed file SHA-256 values were rechecked after Google Drive round-trip on November 11, 2026.
-- This does **not** prove Play Console acceptance, production app-signing compatibility, physical-device behavior, live purchase flows, or actual personal save retention.
+- [Main Android CI #43612167596](https://github.com/dbolden75/emberfall-game./actions/runs/43612167596) passed on November 14, 2026 at `e18b2e3b`; its outputs are **unsigned**.
+- [Seven-job emulator CI #43612167592](https://github.com/dbolden75/emberfall-game./actions/runs/43612167592) passed at that same commit with disposable QA signatures. These are emulator tests, **not** original-key APK installation or Samsung testing.
+- Original maintained-key signed APK v2/v3, AAB JAR signature, 16 KiB APK alignment, package identity, save identifiers, archive integrity and 25 shared game assets were verified in the PR #291 release audit.
+- On November 14, an independent audit of the actual signed APK, the canonical Drive AAB, the exact historical 1.0.56 build kit and both 1.0.57 development APKs reconfirmed all five ZIP archives, the maintained certificate on the latest APK/AAB, 11 JavaScript syntax checks, 25/25 shared assets, and 15/15 additional Cloud Save compatibility assertions. The two 1.0.57 **development APKs** use different certificates, so do not sideload the maintained build as an in-place update over those installations without a verified save recovery route.
 
 ## Open production gates — do not mark as Play-ready
 
