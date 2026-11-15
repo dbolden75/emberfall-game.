@@ -333,7 +333,8 @@ class CommandTimeoutTests(unittest.TestCase):
 class OfflineArchivePreflightTests(unittest.TestCase):
     """Real CLI dispatch with mocked SDK metadata; never queries Android/ADB."""
 
-    def run_archive(self, *, current_signer=None, installed_package=None, legacy_only=False):
+    def run_archive(self, *, current_signer=None, installed_package=None, legacy_only=False,
+                    v1_only_accepted_without_error=False):
         with tempfile.TemporaryDirectory() as temp:
             candidate = pathlib.Path(temp) / 'candidate.apk'
             installed = pathlib.Path(temp) / 'archived-1.0.57.apk'
@@ -355,8 +356,10 @@ class OfflineArchivePreflightTests(unittest.TestCase):
                         raise preflight.PreflightError('Modern Android verification rejected v1-only APK')
                     signer = preflight.EXPECTED_RELEASE_SIGNER if is_candidate else (
                         current_signer or preflight.EXPECTED_RELEASE_SIGNER)
-                    return ('Verified using v2 scheme (APK Signature Scheme v2): true\n'
-                            'Verified using v3 scheme (APK Signature Scheme v3): true\n'
+                    modern = not (v1_only_accepted_without_error and not is_candidate)
+                    vflag = 'true' if modern else 'false'
+                    return (f'Verified using v2 scheme (APK Signature Scheme v2): {vflag}\n'
+                            f'Verified using v3 scheme (APK Signature Scheme v3): {vflag}\n'
                             f'Signer #1 certificate SHA-256 digest: {signer}\n')
                 raise AssertionError(f'Unexpected tool: {argv!r}')
 
@@ -390,6 +393,25 @@ class OfflineArchivePreflightTests(unittest.TestCase):
         self.assertIn('verifies only under legacy v1 signing', err)
         self.assertNotIn('PASS', out)
         self.assertEqual(len(calls), 5)
+
+    def test_v1_only_archive_that_verifies_successfully_still_fails_closed(self):
+        # apksigner can exit zero for valid v1/JAR-only APKs: success by itself
+        # must never establish archive-only update compatibility.
+        code, calls, out, err = self.run_archive(v1_only_accepted_without_error=True)
+        self.assertEqual(code, 1)
+        self.assertIn('no verified v2/v3 signing', err)
+        self.assertNotIn('PASS', out)
+        self.assertEqual(len(calls), 4)
+        self.assertFalse(any(cmd[0] == 'adb' for cmd in calls))
+
+    def test_known_v1_only_dev_key_accepted_without_error_is_still_blocked(self):
+        dev_key, filename = next(iter(preflight.HISTORICAL_DEV_SIGNERS.items()))
+        code, calls, out, err = self.run_archive(
+            current_signer=dev_key, v1_only_accepted_without_error=True)
+        self.assertEqual(code, 1)
+        self.assertIn(filename, err)
+        self.assertIn('DO NOT uninstall, clear data, or sideload', err)
+        self.assertNotIn('PASS', out)
 
     def test_wrong_archived_package_rejected(self):
         code, calls, out, err = self.run_archive(installed_package='com.invalid.game')
