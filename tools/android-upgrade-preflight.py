@@ -120,12 +120,19 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('candidate', type=Path, help='Maintained-signed Thornhaven .apk (not .aab)')
     parser.add_argument('--serial', help='Explicit adb serial, if multiple devices are connected')
+    parser.add_argument('--installed-apk', type=Path,
+                        help='Compare an archived APK offline instead of querying an Android device; does not establish the installed app signer')
     parser.add_argument('--adb', default='adb')
     parser.add_argument('--aapt', default='aapt')
     parser.add_argument('--apksigner', default='apksigner')
     args = parser.parse_args(argv)
     if not args.candidate.is_file() or args.candidate.suffix.lower() != '.apk':
         parser.error('Candidate must be an existing APK file (not an AAB)')
+    if args.installed_apk is not None:
+        if args.serial:
+            parser.error('--serial cannot be combined with --installed-apk')
+        if not args.installed_apk.is_file() or args.installed_apk.suffix.lower() != '.apk':
+            parser.error('--installed-apk must name an existing APK file')
     prefix = [args.adb] + (['-s', args.serial] if args.serial else [])
     try:
         candidate_badging = command([args.aapt, 'dump', 'badging', str(args.candidate)])
@@ -133,6 +140,14 @@ def main(argv=None):
                                   str(args.candidate)])
         # Fail closed on a non-release candidate, even before contacting a device.
         _, minimum_sdk = validate_release_candidate(candidate_badging, candidate_cert)
+        if args.installed_apk is not None:
+            archived_badging = command([args.aapt, 'dump', 'badging', str(args.installed_apk)])
+            archived_cert = command([args.apksigner, 'verify', '--print-certs', str(args.installed_apk)])
+            old_code, new_code = validate_pair(archived_badging, archived_cert,
+                                               candidate_badging, candidate_cert)
+            print(f'PASS (ARCHIVE-ONLY): {PACKAGE} versionCode {old_code} -> {new_code}; APK signing identity matches.')
+            print('NO DEVICE INSPECTED OR UPDATE PERFORMED: this compares two local APK files only. It does not establish which signing certificate is installed on a phone, Play App Signing compatibility, or saved-character survival.')
+            return 0
         sdk_report = command(prefix + ['shell', 'getprop', 'ro.build.version.sdk']).strip()
         if not re.fullmatch(r'\d+', sdk_report):
             raise PreflightError('Could not identify device Android SDK level')
