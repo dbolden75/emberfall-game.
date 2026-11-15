@@ -286,9 +286,21 @@
   if(typeof id!=='string'||!id.trim())return false;
   return typeof maps==='undefined'||Object.prototype.hasOwnProperty.call(maps,id);
  }
+ // Quest completion flags are coerced with !!value by applySavedGame().
+ // A stored string "false" becomes true and can unlock a quest/reward after
+ // an ordinary save or purchase. Preserve raw bytes instead of promoting
+ // malformed present milestones; historic omitted fields are supported.
+ function safeStoredQuestMilestones(state){
+  for(const key of ['done','hasSigil','hasFourfoldKey','huntRewarded',
+                    'shrineRewarded','deepQuestDone','houseBought']){
+   if(Object.prototype.hasOwnProperty.call(state,key)&&typeof state[key]!=='boolean')return false;
+  }
+  return !Object.prototype.hasOwnProperty.call(state,'defeated')||
+   (Number.isSafeInteger(state.defeated)&&state.defeated>=0);
+ }
  function safeSavedState(state){
   return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
-   safeSavedHero(state.player)&&safeStoredActiveMapId(state)&&
+   safeSavedHero(state.player)&&safeStoredActiveMapId(state)&&safeStoredQuestMilestones(state)&&
    (!Object.prototype.hasOwnProperty.call(state,'townRelicState')||
      safeStoredTownRegionFlags(state.townRelicState))&&
    (!Object.prototype.hasOwnProperty.call(state,'ownedHomes')||
