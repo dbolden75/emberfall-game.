@@ -116,6 +116,29 @@ def validate_pair(installed_badging, installed_certs, candidate_badging, candida
     return current_code, new_code
 
 
+def archived_certificate_report(apksigner, path):
+    """Allow recognizing a verified *known bad* v1-only dev signer, never PASS it.
+
+    Legacy 1.0.57 development APKs have only JAR/v1 signatures. A normal
+    modern-Android verification may fail before reporting their certificates.
+    Validate that old signature for API 23 solely to recognize the two
+    explicitly blocked historical development keys. No v1-only APK can PASS.
+    """
+    try:
+        return command([apksigner, 'verify', '--print-certs', str(path)])
+    except PreflightError as initial_error:
+        try:
+            legacy = command([apksigner, 'verify', '--min-sdk-version', '23',
+                              '--max-sdk-version', '23', '--print-certs', str(path)])
+        except PreflightError:
+            raise initial_error
+        if parse_certificates(legacy) not in HISTORICAL_DEV_SIGNERS:
+            raise PreflightError(
+                'Archived APK verifies only under legacy v1 signing; '
+                'modern Android upgrade compatibility cannot be established')
+        return legacy
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('candidate', type=Path, help='Maintained-signed Thornhaven .apk (not .aab)')
@@ -142,7 +165,7 @@ def main(argv=None):
         _, minimum_sdk = validate_release_candidate(candidate_badging, candidate_cert)
         if args.installed_apk is not None:
             archived_badging = command([args.aapt, 'dump', 'badging', str(args.installed_apk)])
-            archived_cert = command([args.apksigner, 'verify', '--print-certs', str(args.installed_apk)])
+            archived_cert = archived_certificate_report(args.apksigner, args.installed_apk)
             old_code, new_code = validate_pair(archived_badging, archived_cert,
                                                candidate_badging, candidate_cert)
             print(f'PASS (ARCHIVE-ONLY): {PACKAGE} versionCode {old_code} -> {new_code}; APK signing identity matches.')
