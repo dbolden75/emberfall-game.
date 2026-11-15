@@ -36,6 +36,25 @@ class PreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(preflight.PreflightError, 'Installed signer differs'):
             self.verify(current_cert=self.OTHER_CERT)
 
+    def test_both_historical_dev_apks_block_release_upgrade_with_backup_warning(self):
+        expected = {
+            '09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099':
+                'Thornhaven-1.0.57-dev-test.apk',
+            'eba47475cc63815c8d16bbf7819a32dcd3991438e5c2336df2bbe10eb9e423b5':
+                'Thornhaven-1.0.57-fixes-dev-test.apk',
+        }
+        self.assertEqual(preflight.HISTORICAL_DEV_SIGNERS, expected)
+        for cert, filename in expected.items():
+            with self.subTest(filename=filename):
+                with self.assertRaises(preflight.PreflightError) as blocked:
+                    self.verify(current_cert=cert)
+                message = str(blocked.exception)
+                self.assertIn('Installed signer differs', message)
+                self.assertIn(filename, message)
+                self.assertIn('cannot update it in place', message)
+                self.assertIn('do not assume an export menu exists', message)
+                self.assertIn('DO NOT uninstall, clear data, or sideload', message)
+
     def test_bad_candidate_signer_fails_closed(self):
         with self.assertRaisesRegex(preflight.PreflightError, 'Candidate is not signed'):
             self.verify(target_cert=self.OTHER_CERT)
