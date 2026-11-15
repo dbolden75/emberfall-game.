@@ -366,8 +366,17 @@
  function safeStoredHeroGender(hero){
   return hero.gender==null||hero.gender==='male'||hero.gender==='female';
  }
+ // snapshotGameState() only serializes these hero fields. An older client
+ // silently drops future metadata from saved heroes on its next normal save
+ // or confirmed Play receipt commit. Keep those original bytes untouched.
+ function safeStoredHeroFields(hero){
+  const known=new Set(['name','class','gender','x','y','hp','max','speed','xp','level','coins',
+   'inventory','weapon','armor','shield','earrings','necklace','legs','boots']);
+  return Object.keys(hero).every(key=>known.has(key));
+ }
  function safeSavedHero(hero){
   return !!(hero&&typeof hero==='object'&&!Array.isArray(hero)&&
+   safeStoredHeroFields(hero)&&
    typeof hero.name==='string'&&hero.name.trim()&&
    typeof hero.class==='string'&&['warrior','rogue','mage','cleric'].includes(hero.class)&&
    safeStoredHeroGender(hero)&&safeStoredVitals(hero)&&safeStoredProgress(hero)&&safeStoredHeroGear(hero)&&
