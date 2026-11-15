@@ -298,8 +298,20 @@
   return !Object.prototype.hasOwnProperty.call(state,'defeated')||
    (Number.isSafeInteger(state.defeated)&&state.defeated>=0);
  }
+ // snapshotGameState() also projects the top-level state onto a fixed set
+ // of properties. A newer save may carry additional world/quest/currency
+ // metadata that this client cannot reconstruct. Block writes rather than
+ // quietly discarding those original fields during a normal save or receipt.
+ function safeStoredStateFields(state){
+  const known=new Set(['gatheringSkills','gearUpgradeLevels','player','mapId',
+   'defeated','done','hasSigil','hasFourfoldKey','townRelicState','huntRewarded',
+   'shrineRewarded','deepQuestDone','houseBought','ownedHomes','townQuestState',
+   'houseStorage','companions','mapStates']);
+  return Object.keys(state).every(key=>known.has(key));
+ }
  function safeSavedState(state){
   return !!(state&&typeof state==='object'&&!Array.isArray(state)&&
+   safeStoredStateFields(state)&&
    safeSavedHero(state.player)&&safeStoredActiveMapId(state)&&safeStoredQuestMilestones(state)&&
    (!Object.prototype.hasOwnProperty.call(state,'townRelicState')||
      safeStoredTownRegionFlags(state.townRelicState))&&
