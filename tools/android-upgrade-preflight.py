@@ -125,7 +125,7 @@ def archived_certificate_report(apksigner, path):
     explicitly blocked historical development keys. No v1-only APK can PASS.
     """
     try:
-        return command([apksigner, 'verify', '--print-certs', str(path)])
+        report = command([apksigner, 'verify', '--verbose', '--print-certs', str(path)])
     except PreflightError as initial_error:
         try:
             legacy = command([apksigner, 'verify', '--min-sdk-version', '23',
@@ -137,6 +137,20 @@ def archived_certificate_report(apksigner, path):
                 'Archived APK verifies only under legacy v1 signing; '
                 'modern Android upgrade compatibility cannot be established')
         return legacy
+    # A successful apksigner exit alone can still be a v1/JAR-only verification.
+    # Fail closed on that case even when the certificate matches our release key.
+    # Known development certificates are returned only so validate_pair can
+    # provide their specific DO NOT uninstall/clear/sideload warning.
+    modern_flags = [
+        f'Verified using v{v} scheme (APK Signature Scheme v{v}): true'
+        for v in (2, 3)
+    ]
+    if not any(flag in report.splitlines() for flag in modern_flags):
+        if parse_certificates(report) not in HISTORICAL_DEV_SIGNERS:
+            raise PreflightError(
+                'Archived APK has no verified v2/v3 signing; '
+                'archive-only upgrade compatibility cannot be established')
+    return report
 
 
 def main(argv=None):
