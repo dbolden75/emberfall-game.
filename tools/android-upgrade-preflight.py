@@ -16,6 +16,15 @@ from pathlib import Path
 PACKAGE = 'com.vaelbrink.ashvale.newjourney'
 EXPECTED_RELEASE_SIGNER = '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22'
 
+# Verified from the actual historical APKs, not from their similarly named
+# release variants. These certificates cannot update to the maintained APK.
+HISTORICAL_DEV_SIGNERS = {
+    '09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099':
+        'Thornhaven-1.0.57-dev-test.apk',
+    'eba47475cc63815c8d16bbf7819a32dcd3991438e5c2336df2bbe10eb9e423b5':
+        'Thornhaven-1.0.57-fixes-dev-test.apk',
+}
+
 
 class PreflightError(Exception):
     pass
@@ -93,6 +102,14 @@ def validate_pair(installed_badging, installed_certs, candidate_badging, candida
     if new_signer != EXPECTED_RELEASE_SIGNER:
         raise PreflightError('Candidate is not signed by the maintained Thornhaven certificate')
     if current_signer != new_signer:
+        if current_signer in HISTORICAL_DEV_SIGNERS:
+            name = HISTORICAL_DEV_SIGNERS[current_signer]
+            raise PreflightError(
+                f'Installed signer differs: this is the historical {name} development key. '
+                'The maintained APK cannot update it in place. These 1.0.57 development '
+                'APKs do not bundle the newer cloud-save scripts, so do not assume an '
+                'export menu exists. DO NOT uninstall, clear data, or sideload; first '
+                'establish and verify an independent lossless character-data recovery path.')
         raise PreflightError('Installed signer differs from maintained APK. DO NOT uninstall, clear data, or sideload. Use the existing Play track or independently verify a lossless export.')
     if new_code <= current_code:
         raise PreflightError(f'Candidate versionCode {new_code} is not newer than installed {current_code}')
