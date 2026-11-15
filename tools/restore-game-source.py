@@ -368,6 +368,24 @@ assert content.count(stale_bug_context) == 1, 'Expected exactly one historical J
 content = content.replace(stale_bug_context, updated_bug_context, 1)
 assert hashlib.sha256(content).hexdigest() == '058da04291d2c5c4de83a194f5bceb47b38a2c5d4d3b084ca379371b3afe0e8e', 'Jarvis build metadata patch hash mismatch'
 
+# Atlas-only geography overlay. Keep the authenticated gameplay/save lineage above
+# unchanged; fail closed if the expected original renderer is absent.
+atlas_source = (root / 'index.html').read_bytes()
+atlas_start = b' // Fictionalized Alabama-inspired geography:'
+atlas_end = b' // Dirt roads connect exactly'
+assert atlas_source.count(atlas_start) == 1, 'Expected one reviewed atlas geography block'
+start = atlas_source.index(atlas_start)
+end = atlas_source.index(atlas_end, start)
+atlas_overlay = atlas_source[start:end]
+old_start = b' g.save();g.scale(size/900,size/900);g.beginPath();g.moveTo(845,0);'
+old_end = b' // Dirt roads connect exactly'
+assert content.count(old_start) == 1, 'Expected one original atlas river/coast block'
+old_at = content.index(old_start)
+old_finish = content.index(old_end, old_at)
+assert b'const river=()=>{' in content[old_at:old_finish], 'Unexpected original atlas geometry'
+content = content[:old_at] + atlas_overlay + content[old_finish:]
+assert content.count(atlas_start) == 1, 'Atlas overlay must be applied exactly once'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
