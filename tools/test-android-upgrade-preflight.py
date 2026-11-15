@@ -329,5 +329,90 @@ class CommandTimeoutTests(unittest.TestCase):
             self.assertEqual(runner.call_args.kwargs['timeout'], 240)
 
 
+
+class OfflineArchivePreflightTests(unittest.TestCase):
+    """Real CLI dispatch with mocked SDK metadata; never queries Android/ADB."""
+
+    def run_archive(self, *, current_signer=None, installed_package=None):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate = pathlib.Path(temp) / 'candidate.apk'
+            installed = pathlib.Path(temp) / 'archived-1.0.57.apk'
+            candidate.write_bytes(b'candidate mock')
+            installed.write_bytes(b'installed mock')
+            calls = []
+
+            def sdk_command(argv):
+                calls.append(tuple(argv))
+                self.assertNotEqual(argv[0], 'adb', 'archive-only mode must never invoke adb')
+                is_candidate = argv[-1] == str(candidate)
+                if argv[0] == 'aapt':
+                    pkg = preflight.PACKAGE if is_candidate else (installed_package or preflight.PACKAGE)
+                    code = 169 if is_candidate else 159
+                    return (f"package: name='{pkg}' versionCode='{code}' versionName='1.0.67'\n"
+                            "sdkVersion:'24'\n")
+                if argv[0] == 'apksigner':
+                    signer = preflight.EXPECTED_RELEASE_SIGNER if is_candidate else (
+                        current_signer or preflight.EXPECTED_RELEASE_SIGNER)
+                    return ('Verified using v2 scheme (APK Signature Scheme v2): true\n'
+                            'Verified using v3 scheme (APK Signature Scheme v3): true\n'
+                            f'Signer #1 certificate SHA-256 digest: {signer}\n')
+                raise AssertionError(f'Unexpected tool: {argv!r}')
+
+            out, err = io.StringIO(), io.StringIO()
+            with mock.patch.object(preflight, 'command', side_effect=sdk_command), \
+                 contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                code = preflight.main([str(candidate), '--installed-apk', str(installed)])
+            return code, calls, out.getvalue(), err.getvalue()
+
+    def test_archive_same_key_proves_only_local_signer_parity(self):
+        code, calls, out, err = self.run_archive()
+        self.assertEqual(code, 0, err)
+        self.assertIn('PASS (ARCHIVE-ONLY)', out)
+        self.assertIn('NO DEVICE INSPECTED OR UPDATE PERFORMED', out)
+        self.assertEqual(len(calls), 4)
+
+    def test_both_real_historical_dev_signer_identities_are_refused(self):
+        for digest, filename in preflight.HISTORICAL_DEV_SIGNERS.items():
+            with self.subTest(filename=filename):
+                code, calls, out, err = self.run_archive(current_signer=digest)
+                self.assertEqual(code, 1)
+                self.assertIn(filename, err)
+                self.assertIn('DO NOT uninstall, clear data, or sideload', err)
+                self.assertNotIn('PASS', out)
+                self.assertEqual(len(calls), 4)
+
+    def test_wrong_archived_package_rejected(self):
+        code, calls, out, err = self.run_archive(installed_package='com.invalid.game')
+        self.assertEqual(code, 1)
+        self.assertIn('Package identity mismatch', err)
+        self.assertNotIn('PASS', out)
+
+    def test_missing_archived_apk_rejected_before_sdk_or_adb(self):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate = pathlib.Path(temp) / 'candidate.apk'
+            candidate.write_bytes(b'mock')
+            missing = pathlib.Path(temp) / 'missing.apk'
+            with mock.patch.object(preflight, 'command') as command, \
+                 contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as caught:
+                    preflight.main([str(candidate), '--installed-apk', str(missing)])
+            self.assertEqual(caught.exception.code, 2)
+            command.assert_not_called()
+
+    def test_serial_cannot_be_used_with_offline_archive_mode(self):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate = pathlib.Path(temp) / 'candidate.apk'
+            archived = pathlib.Path(temp) / 'old.apk'
+            candidate.write_bytes(b'mock')
+            archived.write_bytes(b'mock')
+            with mock.patch.object(preflight, 'command') as command, \
+                 contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as caught:
+                    preflight.main([str(candidate), '--installed-apk', str(archived),
+                                    '--serial', 'device'])
+            self.assertEqual(caught.exception.code, 2)
+            command.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
