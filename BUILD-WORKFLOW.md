@@ -13,6 +13,14 @@ On a computer with a connected, authorized Android device and the Android SDK `a
 python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.67-main-5bfb31d-PR298-original-signed.apk
 ```
 
+To compare a **saved historical APK file** without attaching a phone, run:
+
+```bash
+python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.67-main-5bfb31d-PR298-original-signed.apk --installed-apk /path/to/Thornhaven-1.0.57.apk
+```
+
+This archive-only check reads the two APK manifests and signing certificates without `adb`, and fails closed on historical development-key APKs. A passing archive comparison **does not verify what is installed on the Samsung phone**, its Play App Signing certificate, or saved characters; use the device preflight or a Play-delivered update for those gates. Never uninstall or clear app data to resolve a mismatch.
+
 Use `--serial DEVICE_SERIAL` if more than one Android device is attached. This copies the *installed* base APK into a temporary computer directory without modifying the phone, checks both package identities and original-key signer SHA-256, and rejects a same-version/downgrade attempt. It **does not install anything or prove that character saves survive an update**. It fails closed if Android/SDK commands cannot inspect the installed application. A Google Play App Signing build may have a different installed signer than the locally maintained-signed APK; in that case never uninstall/clear data or sideload. Update through the existing Play track and validate saved characters instead. CI runs `python3 tools/test-android-upgrade-preflight.py` using mock manifests/certificates, not a real device.
 
 BUILD-STATUS.txt is a dated historical status log, not the current release authority. Earlier entries below are historical release notes.
