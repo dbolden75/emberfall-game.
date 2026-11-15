@@ -333,7 +333,7 @@ class CommandTimeoutTests(unittest.TestCase):
 class OfflineArchivePreflightTests(unittest.TestCase):
     """Real CLI dispatch with mocked SDK metadata; never queries Android/ADB."""
 
-    def run_archive(self, *, current_signer=None, installed_package=None):
+    def run_archive(self, *, current_signer=None, installed_package=None, legacy_only=False):
         with tempfile.TemporaryDirectory() as temp:
             candidate = pathlib.Path(temp) / 'candidate.apk'
             installed = pathlib.Path(temp) / 'archived-1.0.57.apk'
@@ -351,6 +351,8 @@ class OfflineArchivePreflightTests(unittest.TestCase):
                     return (f"package: name='{pkg}' versionCode='{code}' versionName='1.0.67'\n"
                             "sdkVersion:'24'\n")
                 if argv[0] == 'apksigner':
+                    if legacy_only and not is_candidate and '--max-sdk-version' not in argv:
+                        raise preflight.PreflightError('Modern Android verification rejected v1-only APK')
                     signer = preflight.EXPECTED_RELEASE_SIGNER if is_candidate else (
                         current_signer or preflight.EXPECTED_RELEASE_SIGNER)
                     return ('Verified using v2 scheme (APK Signature Scheme v2): true\n'
@@ -374,12 +376,20 @@ class OfflineArchivePreflightTests(unittest.TestCase):
     def test_both_real_historical_dev_signer_identities_are_refused(self):
         for digest, filename in preflight.HISTORICAL_DEV_SIGNERS.items():
             with self.subTest(filename=filename):
-                code, calls, out, err = self.run_archive(current_signer=digest)
+                code, calls, out, err = self.run_archive(current_signer=digest, legacy_only=True)
                 self.assertEqual(code, 1)
                 self.assertIn(filename, err)
                 self.assertIn('DO NOT uninstall, clear data, or sideload', err)
                 self.assertNotIn('PASS', out)
-                self.assertEqual(len(calls), 4)
+                self.assertEqual(len(calls), 5)
+                self.assertIn('--max-sdk-version', calls[-1])
+
+    def test_v1_only_maintained_signer_never_gets_false_compatibility_pass(self):
+        code, calls, out, err = self.run_archive(legacy_only=True)
+        self.assertEqual(code, 1)
+        self.assertIn('verifies only under legacy v1 signing', err)
+        self.assertNotIn('PASS', out)
+        self.assertEqual(len(calls), 5)
 
     def test_wrong_archived_package_rejected(self):
         code, calls, out, err = self.run_archive(installed_package='com.invalid.game')
