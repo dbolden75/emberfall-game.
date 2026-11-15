@@ -329,5 +329,122 @@ class CommandTimeoutTests(unittest.TestCase):
             self.assertEqual(runner.call_args.kwargs['timeout'], 240)
 
 
+
+class OfflineArchivePreflightTests(unittest.TestCase):
+    """Real CLI dispatch with mocked SDK metadata; never queries Android/ADB."""
+
+    def run_archive(self, *, current_signer=None, installed_package=None, legacy_only=False,
+                    v1_only_accepted_without_error=False):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate = pathlib.Path(temp) / 'candidate.apk'
+            installed = pathlib.Path(temp) / 'archived-1.0.57.apk'
+            candidate.write_bytes(b'candidate mock')
+            installed.write_bytes(b'installed mock')
+            calls = []
+
+            def sdk_command(argv):
+                calls.append(tuple(argv))
+                self.assertNotEqual(argv[0], 'adb', 'archive-only mode must never invoke adb')
+                is_candidate = argv[-1] == str(candidate)
+                if argv[0] == 'aapt':
+                    pkg = preflight.PACKAGE if is_candidate else (installed_package or preflight.PACKAGE)
+                    code = 169 if is_candidate else 159
+                    return (f"package: name='{pkg}' versionCode='{code}' versionName='1.0.67'\n"
+                            "sdkVersion:'24'\n")
+                if argv[0] == 'apksigner':
+                    if legacy_only and not is_candidate and '--max-sdk-version' not in argv:
+                        raise preflight.PreflightError('Modern Android verification rejected v1-only APK')
+                    signer = preflight.EXPECTED_RELEASE_SIGNER if is_candidate else (
+                        current_signer or preflight.EXPECTED_RELEASE_SIGNER)
+                    modern = not (v1_only_accepted_without_error and not is_candidate)
+                    vflag = 'true' if modern else 'false'
+                    return (f'Verified using v2 scheme (APK Signature Scheme v2): {vflag}\n'
+                            f'Verified using v3 scheme (APK Signature Scheme v3): {vflag}\n'
+                            f'Signer #1 certificate SHA-256 digest: {signer}\n')
+                raise AssertionError(f'Unexpected tool: {argv!r}')
+
+            out, err = io.StringIO(), io.StringIO()
+            with mock.patch.object(preflight, 'command', side_effect=sdk_command), \
+                 contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                code = preflight.main([str(candidate), '--installed-apk', str(installed)])
+            return code, calls, out.getvalue(), err.getvalue()
+
+    def test_archive_same_key_proves_only_local_signer_parity(self):
+        code, calls, out, err = self.run_archive()
+        self.assertEqual(code, 0, err)
+        self.assertIn('PASS (ARCHIVE-ONLY)', out)
+        self.assertIn('NO DEVICE INSPECTED OR UPDATE PERFORMED', out)
+        self.assertEqual(len(calls), 4)
+
+    def test_both_real_historical_dev_signer_identities_are_refused(self):
+        for digest, filename in preflight.HISTORICAL_DEV_SIGNERS.items():
+            with self.subTest(filename=filename):
+                code, calls, out, err = self.run_archive(current_signer=digest, legacy_only=True)
+                self.assertEqual(code, 1)
+                self.assertIn(filename, err)
+                self.assertIn('DO NOT uninstall, clear data, or sideload', err)
+                self.assertNotIn('PASS', out)
+                self.assertEqual(len(calls), 5)
+                self.assertIn('--max-sdk-version', calls[-1])
+
+    def test_v1_only_maintained_signer_never_gets_false_compatibility_pass(self):
+        code, calls, out, err = self.run_archive(legacy_only=True)
+        self.assertEqual(code, 1)
+        self.assertIn('verifies only under legacy v1 signing', err)
+        self.assertNotIn('PASS', out)
+        self.assertEqual(len(calls), 5)
+
+    def test_v1_only_archive_that_verifies_successfully_still_fails_closed(self):
+        # apksigner can exit zero for valid v1/JAR-only APKs: success by itself
+        # must never establish archive-only update compatibility.
+        code, calls, out, err = self.run_archive(v1_only_accepted_without_error=True)
+        self.assertEqual(code, 1)
+        self.assertIn('no verified v2/v3 signing', err)
+        self.assertNotIn('PASS', out)
+        self.assertEqual(len(calls), 4)
+        self.assertFalse(any(cmd[0] == 'adb' for cmd in calls))
+
+    def test_known_v1_only_dev_key_accepted_without_error_is_still_blocked(self):
+        dev_key, filename = next(iter(preflight.HISTORICAL_DEV_SIGNERS.items()))
+        code, calls, out, err = self.run_archive(
+            current_signer=dev_key, v1_only_accepted_without_error=True)
+        self.assertEqual(code, 1)
+        self.assertIn(filename, err)
+        self.assertIn('DO NOT uninstall, clear data, or sideload', err)
+        self.assertNotIn('PASS', out)
+
+    def test_wrong_archived_package_rejected(self):
+        code, calls, out, err = self.run_archive(installed_package='com.invalid.game')
+        self.assertEqual(code, 1)
+        self.assertIn('Package identity mismatch', err)
+        self.assertNotIn('PASS', out)
+
+    def test_missing_archived_apk_rejected_before_sdk_or_adb(self):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate = pathlib.Path(temp) / 'candidate.apk'
+            candidate.write_bytes(b'mock')
+            missing = pathlib.Path(temp) / 'missing.apk'
+            with mock.patch.object(preflight, 'command') as command, \
+                 contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as caught:
+                    preflight.main([str(candidate), '--installed-apk', str(missing)])
+            self.assertEqual(caught.exception.code, 2)
+            command.assert_not_called()
+
+    def test_serial_cannot_be_used_with_offline_archive_mode(self):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate = pathlib.Path(temp) / 'candidate.apk'
+            archived = pathlib.Path(temp) / 'old.apk'
+            candidate.write_bytes(b'mock')
+            archived.write_bytes(b'mock')
+            with mock.patch.object(preflight, 'command') as command, \
+                 contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as caught:
+                    preflight.main([str(candidate), '--installed-apk', str(archived),
+                                    '--serial', 'device'])
+            self.assertEqual(caught.exception.code, 2)
+            command.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
