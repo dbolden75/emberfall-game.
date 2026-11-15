@@ -4,7 +4,7 @@ Thornhaven is a single-player Android RPG under active development.
 
 ## Current Android release candidate (verified November 15, 2026)
 - **Version:** 1.0.67 (versionCode 169), package `com.vaelbrink.ashvale.newjourney`.
-- **Maintained-key signed game source:** [`5bfb31d`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) (merged PR #298; protects future top-level quest, currency and world-progress fields against destructive saves and purchase commits). This supersedes the PR #291/297 signed packages.
+- **Maintained-key signed game source:** [`5bfb31d3`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) (merged PR #298; protects future top-level quest, currency and world-progress fields against destructive saves and purchase commits). This supersedes the PR #291/297 signed packages.
 - **Post-merge CI:** [Android APK/AAB #43694551620](https://github.com/dbolden75/emberfall-game./actions/runs/43694551620) and [seven-job emulator matrix #43694551670](https://github.com/dbolden75/emberfall-game./actions/runs/43694551670) both passed at `5bfb31d`. Emulator jobs do **not** establish physical Samsung or Play-delivered installation.
 - **Maintained-signed APK SHA-256:** `d3623239479d6800fc89d1d0c84688a735850a49b74742f1e2284cbac04588ab` (37,624,860 bytes).
 - **Maintained-signed AAB SHA-256:** `a9094a779c813c513da61a7be82ed87ca6a292584884b0adcf968c8001e672ce` (37,201,532 bytes).
