@@ -6,11 +6,11 @@ Updated 2026-11-15. This document is safe for the public repository. **Never** a
 
 - Player-facing title: **Thornhaven**; historical project names are Emberfall and Vaelbrink. Repository: `dbolden75/emberfall-game.` (trailing period is intentional).
 - Established Google Play application ID: `com.vaelbrink.ashvale.newjourney`. **Do not change the application ID, WebView origin, established save keys or maintained signing certificate.**
-- Latest independently verified maintained-key signed candidate: **1.0.67**, versionCode **169**, merged GitHub main [`5bfb31d`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) after PR #298. The change prevents old clients from silently erasing future top-level world, quest and currency fields during saving or purchase delivery. Older PR #291/297 candidates are superseded.
+- Latest independently verified maintained-key signed candidate: **1.0.67**, versionCode **169**, merged GitHub main [`5bfb31d3`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) after PR #298. The change prevents old clients from silently erasing future top-level world, quest and currency fields during saving or purchase delivery. Older PR #291/297 candidates are superseded.
 - Original-key signed historical **1.0.57** release APK for certificate continuity: versionCode 159. The two separate 1.0.57 **dev-test** APKs use different signers and are **not** safe in-place upgrade bases.
 - Maintained signing certificate SHA-256: `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22`. This is the public certificate fingerprint, **not** a signing key.
-- Canonical signed APK: [private Drive backup](https://drive.google.com/file/d/1_cy6Fh9K-IMKzQT2BZwR5IurVfWY-t9Q/view); SHA-256 `d3623239479d6800fc89d1d0c84688a735850a49b74742f1e2284cbac04588ab`; 37,624,860 bytes.
-- Canonical signed AAB: [private Drive backup](https://drive.google.com/file/d/1lNsoeRtLn-zkMzFGpJdCyzIDmlXd-VXe/view); SHA-256 `a9094a779c813c513da61a7be82ed87ca6a292584884b0adcf968c8001e672ce`; 37,201,532 bytes.
+- Canonical signed 1.0.67 APK SHA-256: [private Drive backup](https://drive.google.com/file/d/1_cy6Fh9K-IMKzQT2BZwR5IurVfWY-t9Q/view); SHA-256 `d3623239479d6800fc89d1d0c84688a735850a49b74742f1e2284cbac04588ab`; 37,624,860 bytes.
+- Canonical signed 1.0.67 AAB SHA-256: [private Drive backup](https://drive.google.com/file/d/1lNsoeRtLn-zkMzFGpJdCyzIDmlXd-VXe/view); SHA-256 `a9094a779c813c513da61a7be82ed87ca6a292584884b0adcf968c8001e672ce`; 37,201,532 bytes.
 - Release evidence and unresolved gates: [issue #6](https://github.com/dbolden75/emberfall-game./issues/6) and [BUILD-WORKFLOW.md](BUILD-WORKFLOW.md). [BUILD-STATUS.txt](BUILD-STATUS.txt) is a historical log.
 
 ## What has actually passed
