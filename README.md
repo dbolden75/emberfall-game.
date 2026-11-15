@@ -2,15 +2,15 @@
 
 Thornhaven is a single-player Android RPG under active development.
 
-## Current Android release candidate (verified November 14, 2026)
+## Current Android release candidate (verified November 15, 2026)
 - **Version:** 1.0.67 (versionCode 169), package `com.vaelbrink.ashvale.newjourney`.
-- **Maintained-key signed game source:** [`e18b2e3b`](https://github.com/dbolden75/emberfall-game./commit/e18b2e3b285f424427deab25c89bae35aeaceb43) (PR #291; forge-rank save/purchase guard), merged into main. PR #292 added compatible backup/restore regression coverage without modifying the signed gameplay payload.
-- **Post-merge CI:** [Android APK/AAB #43612167596](https://github.com/dbolden75/emberfall-game./actions/runs/43612167596) and [seven-job emulator matrix #43612167592](https://github.com/dbolden75/emberfall-game./actions/runs/43612167592) passed at signed source `e18b2e3b`. Emulator jobs use disposable QA signatures, **not** the maintained-signed APK or a Play-delivered update.
-- **Maintained-signed APK SHA-256:** `1e8d8358aba8a7e058019ccec2b5beb443012281a992fc8ba9de6227c4843585`.
-- **Maintained-signed AAB SHA-256:** `2e9fe6a1869dc69c7e191e8fda928f1790b1c3a310ede8b6897678cb56a60c27`.
-- **Certificate SHA-256:** `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22`.
+- **Maintained-key signed game source:** [`5bfb31d3`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) (merged PR #298; protects future top-level quest, currency and world-progress fields against destructive saves and purchase commits). This supersedes the PR #291/297 signed packages.
+- **Post-merge CI:** [Android APK/AAB #43694551620](https://github.com/dbolden75/emberfall-game./actions/runs/43694551620) and [seven-job emulator matrix #43694551670](https://github.com/dbolden75/emberfall-game./actions/runs/43694551670) both passed at `5bfb31d`. Emulator jobs do **not** establish physical Samsung or Play-delivered installation.
+- **Maintained-signed APK SHA-256:** `d3623239479d6800fc89d1d0c84688a735850a49b74742f1e2284cbac04588ab` (37,624,860 bytes).
+- **Maintained-signed AAB SHA-256:** `a9094a779c813c513da61a7be82ed87ca6a292584884b0adcf968c8001e672ce` (37,201,532 bytes).
+- **Certificate SHA-256:** `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22` (matches maintained-key signed historical 1.0.57).
 
-The PR #291 signed APK and canonical Drive AAB were re-hashed and ZIP-checked on November 14; maintained certificate verification and 25/25 shared game assets matched. Previous GitHub Actions checks verified APK v2/v3 signing and 16 KiB alignment. Signing credentials remain private. Exact signed files are backed up on private Google Drive: [APK](https://drive.google.com/file/d/1go7Nxs-gRzC03vTXbxL_vzjQQFidilbw/view) and [AAB](https://drive.google.com/file/d/1UkMHGXEqsFcwH_Ji80J1p_u2VxQK-vXA/view). They are not public tester links. GitHub's ordinary Android workflow publishes unsigned release payloads, not Play-accepted binaries. See [release issue #6](https://github.com/dbolden75/emberfall-game./issues/6) for provenance and remaining Play checks.
+The exact signed PR #298 packages passed APK v2/v3 and AAB JAR signature verification, 16 KiB APK alignment, ZIP/CRC integrity, 25/25 identical gameplay assets, JavaScript syntax, and deterministic save-protection regressions. Both signed binaries were archived in Google Drive and verified after download: [APK](https://drive.google.com/file/d/1_cy6Fh9K-IMKzQT2BZwR5IurVfWY-t9Q/view) and [AAB](https://drive.google.com/file/d/1lNsoeRtLn-zkMzFGpJdCyzIDmlXd-VXe/view). These Drive links are release backups, **not** public tester enrollment. GitHub's ordinary Android CI produces unsigned release payloads; the signed files are not confirmed accepted by Google Play. Consult [release issue #6](https://github.com/dbolden75/emberfall-game./issues/6) for audit and outstanding gates.
 
 ## Testing links
 - [Enroll in Thornhaven Google Play testing](https://play.google.com/apps/testing/com.vaelbrink.ashvale.newjourney)
