@@ -3,6 +3,23 @@ const fs=require('node:fs');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
+const packaged=fs.readFileSync('app/src/main/assets/index.html','utf8');
+// The root web page is NOT the Android game. Enforce the same reviewed overlay
+// in the reconstructed Android WebView payload before considering this PR shippable.
+const overlayStart=' // Fictionalized Alabama-inspired geography:';
+const overlayEnd=' // Dirt roads connect exactly';
+function geographyOverlay(source){
+ const start=source.indexOf(overlayStart);
+ assert(start!==-1,'Alabama-inspired geography absent from source');
+ const end=source.indexOf(overlayEnd,start);
+ assert(end>start,'Geography block missing preserved roads');
+ return source.slice(start,end);
+}
+assert.equal(geographyOverlay(packaged),geographyOverlay(html),
+ 'Android APK will not contain the same atlas shown by web preview');
+for(const key of ['emberfall_character_slots_v1','emberfall_active_character_slot_v1','emberfall_singleplayer_v1']){
+ assert(packaged.includes(key),'Historical save identity missing from Android source: '+key);
+}
 const atlas=html.slice(html.indexOf('function drawThemedWorldMap(){'),html.indexOf('function paintExplorationFog(){'));
 assert(atlas.startsWith('function drawThemedWorldMap(){'),'atlas renderer exists');
 assert(atlas.includes('worldGrid.forEach'),'atlas still uses gameplay region grid');
