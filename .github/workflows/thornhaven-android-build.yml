@@ -31,6 +31,7 @@ jobs:
           node-version: '22'
       - name: Verify source and regression tests
         run: |
+          python3 tools/test-apk-variant-identity.py
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
           python3 tools/test-android-upgrade-preflight.py
@@ -132,17 +133,20 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee apk-badging.txt
-          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='169' versionName='1.0.67'" apk-badging.txt
+          python3 tools/check-apk-variant-identity.py --apk "$APK" --variant debug \
+            --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
           sha256sum "$APK"
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-1.0.67-debug-test-apk
+          name: thornhaven-QA-isolated-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
       - name: Verify compiled release Billing manifest and installation identity
         run: |
+          python3 tools/check-apk-variant-identity.py --apk app/build/outputs/apk/release/app-release-unsigned.apk \
+            --variant release --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           python3 tools/check-android-billing-manifest.py \
             --apk app/build/outputs/apk/release/app-release-unsigned.apk \
             --version-code 169

@@ -57,6 +57,14 @@ class BinaryManifestGateTests(unittest.TestCase):
                 next(attrs for path, attrs in data if attrs.get('name') == name)['exported'] = True
                 self.assertTrue(module.validate(data, 169))
 
+    def test_production_debug_or_test_only_apk_rejected(self):
+        for flag in ('debuggable', 'testOnly'):
+            data = fixture()
+            data[2][1][flag] = True
+            self.assertIn('Release APK must not be debuggable or testOnly', module.validate(data, 169))
+            data[2][1][flag] = False
+            self.assertEqual(module.validate(data, 169), [])
+
     def test_malformed_axml_rejected(self):
         for raw in (b'', b'<manifest/>', bytes(32)):
             with self.subTest(raw=raw):

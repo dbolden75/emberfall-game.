@@ -21,6 +21,7 @@ jobs:
           node-version: '22'
       - name: Verify source, gameplay and save regression suites
         run: |
+          python3 tools/test-apk-variant-identity.py
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
           python3 tools/test-offline-signing.py
@@ -102,6 +103,8 @@ jobs:
         run: |
           set -euo pipefail
           gradle --no-daemon :app:assembleRelease :app:bundleRelease
+          python3 tools/check-apk-variant-identity.py --apk app/build/outputs/apk/release/app-release-unsigned.apk \
+            --variant release --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           mkdir -p release-output
           unsigned=app/build/outputs/apk/release/app-release-unsigned.apk
           aligned=release-output/thornhaven-1.0.67-aligned-unsigned.apk

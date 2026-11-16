@@ -4,7 +4,7 @@
 # both with the same temporary DEBUG key. Neither APK is Play-signed and this
 # never touches the user's installed app or their saved progress.
 set -euo pipefail
-PKG=com.vaelbrink.ashvale.newjourney
+PKG=com.vaelbrink.ashvale.newjourney.debug
 ACTIVITY=com.emberfall.ashvale.MainActivity
 OLD=qa-historical-157/app/build/outputs/apk/debug/app-debug.apk
 NEW=app/build/outputs/apk/debug/app-debug.apk

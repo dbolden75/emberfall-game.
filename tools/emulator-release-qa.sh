@@ -36,10 +36,15 @@ done
 grep -q "package: name='$PKG' versionCode='159' versionName='1.0.57'" reports/emulator/qa-release-old-badging.txt
 grep -q "package: name='$PKG' versionCode='169' versionName='1.0.67'" reports/emulator/qa-release-badging.txt
 
-# This emulator is disposable: the preceding DEBUG-key smoke/upgrade phases
-# created only synthetic QA saves. A different QA key cannot update that app.
-# NEVER perform this uninstall on a real user device or an existing Play app.
-adb uninstall "$PKG" | tee reports/emulator/qa-release-remove-debug.txt
+# Debug QA must coexist with release QA; never remove either package to
+# conceal a signing conflict. This script runs only on a disposable emulator.
+DEBUG_PKG=com.vaelbrink.ashvale.newjourney.debug
+adb shell pm path "$DEBUG_PKG" | grep -q '^package:'
+printf 'debug-data-retained\n' | adb shell -T run-as "$DEBUG_PKG" tee files/qa-coexistence.txt
+if adb shell pm path "$PKG" | grep -q '^package:'; then
+  echo 'FAIL: release QA requires a fresh production-package installation' >&2
+  exit 1
+fi
 adb install "$OLD_APK" | tee reports/emulator/qa-release-old-install.txt
 adb shell dumpsys package "$PKG" > reports/emulator/qa-release-old-package.txt
 grep -q 'versionCode=159' reports/emulator/qa-release-old-package.txt
@@ -131,3 +136,8 @@ if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
 fi
 echo 'PASS: same disposable QA signer: 1.0.57 RELEASE -> 1.0.67 RELEASE upgrade retained 2 character slots, inventory, XP and active slot; four towns rendered before/after; cold restart and Android background lifecycle saves passed.'
 echo 'NOT VERIFIED: maintained-key APK installation, Google Play distribution/signing/versionCode acceptance, physical Samsung, authenticated Drive account.'
+
+# Installing/upgrading release must leave the isolated debug app and its data.
+adb shell pm path "$DEBUG_PKG" | grep -q '^package:'
+adb shell run-as "$DEBUG_PKG" cat files/qa-coexistence.txt | grep -qx 'debug-data-retained'
+echo 'PASS: isolated debug app/data coexist with release upgrade.'
