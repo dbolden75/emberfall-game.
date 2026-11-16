@@ -474,5 +474,46 @@ class OfflineArchivePreflightTests(unittest.TestCase):
             command.assert_not_called()
 
 
+
+class CurrentReleaseUpgradeTests(unittest.TestCase):
+    """Protect the actual 1.0.67 (169) -> 1.0.68 (170) update boundary.
+
+    These are SDK-free metadata/certificate simulations; the signed APK
+    pair and the real phone still require independent verification.
+    """
+
+    def badging(self, version):
+        return (f"package: name='{preflight.PACKAGE}' versionCode='{version}' "
+                f"versionName='1.0.{version - 102}'\\n")
+
+    def certificate(self, digest):
+        return f'Signer #1 certificate SHA-256 digest: {digest}\\n'
+
+    def test_167_to_168_same_original_signer_allows_in_place_preflight(self):
+        signed = self.certificate(preflight.EXPECTED_RELEASE_SIGNER)
+        self.assertEqual(
+            preflight.validate_pair(
+                self.badging(169), signed, self.badging(170), signed),
+            (169, 170))
+
+    def test_168_blocks_same_version_and_downgrade_preflight(self):
+        signed = self.certificate(preflight.EXPECTED_RELEASE_SIGNER)
+        for installed in (170, 171):
+            with self.subTest(installed=installed), self.assertRaisesRegex(
+                    preflight.PreflightError, 'not newer'):
+                preflight.validate_pair(
+                    self.badging(installed), signed, self.badging(170), signed)
+
+    def test_168_blocks_historical_development_signers(self):
+        release = self.certificate(preflight.EXPECTED_RELEASE_SIGNER)
+        for digest, filename in preflight.HISTORICAL_DEV_SIGNERS.items():
+            with self.subTest(filename=filename), self.assertRaisesRegex(
+                    preflight.PreflightError, 'cannot update it in place'):
+                preflight.validate_pair(
+                    self.badging(159), self.certificate(digest),
+                    self.badging(170), release)
+
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
