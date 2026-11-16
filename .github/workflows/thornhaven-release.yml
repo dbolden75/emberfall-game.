@@ -21,6 +21,8 @@ jobs:
           node-version: '22'
       - name: Verify source, gameplay and save regression suites
         run: |
+          # Signable releases must enforce the same Android atlas/save-topology gate as unsigned CI.
+          node scripts/test-atlas-geography.cjs
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
           python3 tools/test-offline-signing.py
