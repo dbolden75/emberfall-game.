@@ -34,4 +34,45 @@ assert(html.includes("paintExplorationFog();const focus="),'atlas initialization
 const scripts=[...html.matchAll(new RegExp('<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>','gi'))].map(m=>m[1]).filter(Boolean);
 assert(scripts.length>0,'game scripts exist');
 for(const script of scripts)new vm.Script(script,{filename:'game-inline.js'});
-console.log('PASS: atlas geography present; map topology hooks retained; inline JS parses');
+
+// Preserve the existing 9×9 save-addressable world layout until an intentional
+// region migration is designed. The atlas may change appearance but cannot
+// silently rearrange legacy map IDs, quest destinations or compass routes.
+function parseWorldGrid(source){
+ const match=source.match(/const worldGrid\s*=\s*(\[[\s\S]*?\]);/);
+ assert(match,'worldGrid not found in game source');
+ return JSON.parse(match[1]);
+}
+const grid=parseWorldGrid(html),androidGrid=parseWorldGrid(packaged);
+assert.deepEqual(androidGrid,grid,'Android and browser world-grid mappings differ');
+assert.equal(grid.length,9,'Historical 9-row world layout changed');
+assert(grid.every(row=>row.length===9),'Historical 9-column world layout changed');
+const ids=grid.flat();
+assert.equal(new Set(ids).size,81,'World grid contains missing or duplicate region IDs');
+const baselineGridSha256='e85017316443bc93d5db86c5ce3f6c893e9e2d49284ee07eaa3539908044464e';
+const gridHash=require('node:crypto').createHash('sha256').update(JSON.stringify(grid)).digest('hex');
+assert.equal(gridHash,baselineGridSha256,'Existing saved-region coordinates changed without a migration');
+const questLine=html.split('\n').find(line=>line.startsWith('const townQuestDefs='));
+assert(questLine,'Town quest definitions not found');
+const questAreas=[...questLine.matchAll(/area:'([^']+)'/g)].map(match=>match[1]);
+assert(questAreas.length>=8,'Expected established four-town quest destinations');
+const required=new Set(['ashvale','sunmere','brackenford','stonewatch',...questAreas]);
+for(const id of required)assert(ids.includes(id),'Town or quest region missing from world grid: '+id);
+// A new game must be able to reach each town and early town quest without
+// crossing either the Fourfold Key shrine or the Ember Sigil dungeon.
+const sealed=new Set(['mosslight','emberdeep']);
+const positions=new Map(grid.flatMap((row,y)=>row.map((id,x)=>[id,[x,y]])));
+const queue=['ashvale'],visited=new Set(queue);
+for(let i=0;i<queue.length;i++){
+ const [x,y]=positions.get(queue[i]);
+ for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+  const next=grid[y+dy]?.[x+dx];
+  if(next&&!sealed.has(next)&&!visited.has(next)){visited.add(next);queue.push(next);}
+ }
+}
+assert.equal(visited.size,79,'One or more ordinary regions are isolated by gated maps');
+for(const id of required)assert(visited.has(id),'Quest/town cannot be reached before shrine unlock: '+id);
+assert(packaged.includes("links.exits=links.exits.filter(e=>e.trigger!=='edge');"),
+ 'Android source must rebuild compass exits from the current grid');
+
+console.log('PASS: atlas geography, 81 stable region IDs, quest/town reachability, save coordinates and inline JS');
