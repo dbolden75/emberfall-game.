@@ -4,7 +4,7 @@
 # DocumentsUI stress test so graphics-emulator exhaustion cannot hide a
 # genuine control-layout failure. Production signing materials are never used.
 set -euo pipefail
-PKG=com.vaelbrink.ashvale.newjourney
+PKG=com.vaelbrink.ashvale.newjourney.debug
 ACTIVITY=com.emberfall.ashvale.MainActivity
 APK=app/build/outputs/apk/debug/app-debug.apk
 orientation="${1:-both}"

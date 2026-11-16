@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ephemeral Android emulator startup/restart check. Not a Play or physical-device test.
 set -euo pipefail
-PKG=com.vaelbrink.ashvale.newjourney
+PKG=com.vaelbrink.ashvale.newjourney.debug
 ACTIVITY=com.emberfall.ashvale.MainActivity
 APK=app/build/outputs/apk/debug/app-debug.apk
 mkdir -p reports/emulator

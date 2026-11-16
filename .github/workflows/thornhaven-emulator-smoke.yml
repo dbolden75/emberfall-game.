@@ -147,8 +147,17 @@ jobs:
               assert original.count(old) == 1, 'WebView debug toggle changed in ' + project
               p.write_text(original.replace(old, 'WebView.setWebContentsDebuggingEnabled(true);'))
           PY
+          # Isolate only the historical debug fixture too. Audited gameplay,
+          # release application ID and historical version remain unchanged.
+          printf "\nandroid.buildTypes.debug.applicationIdSuffix = '.debug'\n" >> qa-historical-157/app/build.gradle
+          mkdir -p qa-historical-157/app/src/debug
+          cp app/src/debug/AndroidManifest.xml qa-historical-157/app/src/debug/AndroidManifest.xml
           (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug :app:assembleRelease)
           gradle --no-daemon :app:assembleDebug :app:assembleRelease
+          python3 tools/check-apk-variant-identity.py --apk app/build/outputs/apk/debug/app-debug.apk \
+            --variant debug --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
+          python3 tools/check-apk-variant-identity.py --apk qa-historical-157/app/build/outputs/apk/debug/app-debug.apk \
+            --variant debug --gradle qa-historical-157/app/build.gradle --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           echo 'Built audited 1.0.57 DEBUG/RELEASE and 1.0.67 DEBUG/RELEASE; no maintained signing credentials used.'
       - name: Sign historical and current RELEASE APKs with the SAME disposable QA key
         run: |
@@ -328,6 +337,8 @@ jobs:
           node --check tools/emulator-webview-probe.cjs
           gradle --no-daemon :app:assembleDebug
           test -s app/build/outputs/apk/debug/app-debug.apk
+          python3 tools/check-apk-variant-identity.py --apk app/build/outputs/apk/debug/app-debug.apk \
+            --variant debug --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           gradle --stop || true
       - name: Enable KVM for hosted Android emulator
         run: |
