@@ -32,6 +32,24 @@ class PreflightTests(unittest.TestCase):
     def test_valid_in_place_candidate(self):
         self.assertEqual(self.verify(), (157, 169))
 
+    def test_current_1_0_68_upgrade_paths_and_gradle_identity(self):
+        # Protect the actual 1.0.67 -> 1.0.68 release path, not just a
+        # generic old fixture. Neither assertion touches Android/device data.
+        gradle = (modpath.parents[1] / 'app' / 'build.gradle').read_text(encoding='utf-8')
+        self.assertIn("applicationId 'com.vaelbrink.ashvale.newjourney'", gradle)
+        self.assertIn('versionCode 170', gradle)
+        self.assertIn("versionName '1.0.68'", gradle)
+        self.assertEqual(self.verify(old=169, new=170), (169, 170))
+        self.assertEqual(self.verify(old=159, new=170), (159, 170))
+        with self.assertRaisesRegex(preflight.PreflightError, 'not newer'):
+            self.verify(old=170, new=170)
+        with self.assertRaisesRegex(preflight.PreflightError, 'Installed signer differs'):
+            self.verify(old=169, new=170, current_cert=self.OTHER_CERT)
+        for legacy_signer in preflight.HISTORICAL_DEV_SIGNERS:
+            with self.subTest(legacy_signer=legacy_signer), self.assertRaisesRegex(
+                    preflight.PreflightError, 'cannot update it in place'):
+                self.verify(old=159, new=170, current_cert=legacy_signer)
+
     def test_play_app_signing_mismatch_fails_closed(self):
         with self.assertRaisesRegex(preflight.PreflightError, 'Installed signer differs'):
             self.verify(current_cert=self.OTHER_CERT)
@@ -255,12 +273,12 @@ class ReleaseCandidateValidationTests(unittest.TestCase):
                 f'Signer #1 certificate SHA-256 digest: {preflight.EXPECTED_RELEASE_SIGNER}\n')
 
     def badge(self, extra=''):
-        return (f"package: name='{preflight.PACKAGE}' versionCode='169' "
-                "versionName='1.0.67'\nsdkVersion:'24'\n" + extra)
+        return (f"package: name='{preflight.PACKAGE}' versionCode='170' "
+                "versionName='1.0.68'\nsdkVersion:'24'\n" + extra)
 
     def test_valid_release_metadata(self):
         self.assertEqual(preflight.validate_release_candidate(self.badge(), self.report()),
-                         (169, 24))
+                         (170, 24))
 
     def test_missing_or_ambiguous_minimum_sdk_rejected(self):
         for bad in (self.badge().replace("sdkVersion:'24'\n", ''),
