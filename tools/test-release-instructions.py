@@ -131,24 +131,20 @@ def main():
         if emulator_push_paths.count(path) != 1:
             raise SystemExit(f'FAIL: gameplay sources cannot trigger emulator smoke: {path}')
     print('PASS: root game HTML and scripts edits trigger native Android emulator smoke')
-    # CI artifact labels must match the actual Android versionCode: a stale
-    # name makes emulator evidence look like an older APK despite new tests.
+    # Reject stale emulator evidence names after bumping Android versionCode.
+    evidence_names = [line.strip().split('name: ', 1)[1]
+                      for line in emulator_workflow.splitlines()
+                      if line.strip().startswith('name: thornhaven-')
+                      and '-android-' in line and line.strip().endswith('-evidence')]
     expected_evidence = {
         f'thornhaven-{code}-android-emulator-smoke-evidence',
         f'thornhaven-{code}-android-api${{{{ matrix.api-level }}}}-${{{{ matrix.orientation }}}}-${{{{ matrix.side }}}}-evidence',
     }
-    evidence_names = re.findall(r'^\\s*name:\\s*(thornhaven-\\d+-android-[^\\n]+-evidence)\\s*    print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
-
-
-if __name__ == '__main__':
-    main()
-,
-                                emulator_workflow, re.M)
-    if len(evidence_names) != len(expected_evidence) or set(evidence_names) != expected_evidence:
+    if len(evidence_names) != 2 or set(evidence_names) != expected_evidence:
         raise SystemExit(
-            f'FAIL: emulator artifact labels {evidence_names!r} must match '
+            f'FAIL: emulator artifact names {evidence_names!r} must use '
             f'Android versionCode {code}; expected {sorted(expected_evidence)!r}')
-    print('PASS: emulator evidence artifact labels match Android versionCode')
+    print('PASS: emulator evidence names match Android versionCode')
     print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
 
 
