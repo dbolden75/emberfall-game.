@@ -484,10 +484,10 @@ class CurrentReleaseUpgradeTests(unittest.TestCase):
 
     def badging(self, version):
         return (f"package: name='{preflight.PACKAGE}' versionCode='{version}' "
-                f"versionName='1.0.{version - 102}'\\n")
+                f"versionName='1.0.{version - 102}'\n")
 
     def certificate(self, digest):
-        return f'Signer #1 certificate SHA-256 digest: {digest}\\n'
+        return f'Signer #1 certificate SHA-256 digest: {digest}\n'
 
     def test_167_to_168_same_original_signer_allows_in_place_preflight(self):
         signed = self.certificate(preflight.EXPECTED_RELEASE_SIGNER)
