@@ -74,6 +74,9 @@ on:
       - 'app/**'
       - 'source-payload/**'
       - 'tools/restore-game-source.py'
+      # Game-facing files require native WebView/save-upgrade testing too.
+      - 'index.html'
+      - 'scripts/**'
       - '.github/workflows/thornhaven-emulator-smoke.yml'
       - 'tools/emulator-smoke.sh'
       - 'tools/emulator-save-upgrade.sh'

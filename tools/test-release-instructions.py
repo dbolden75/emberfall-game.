@@ -120,6 +120,17 @@ def main():
         if push_paths.count(path) != 1:
             raise SystemExit(f'FAIL: root game HTML or scripts cannot trigger Android CI: {path}')
     print('PASS: Android CI push triggers include all game HTML and scripts')
+    # Gameplay and regression edits must also reach a real Android emulator,
+    # not just the mocked browser tests in the unsigned build workflow.
+    emulator_workflow = (ROOT / '.github/workflows/thornhaven-emulator-smoke.yml').read_text(encoding='utf-8')
+    emulator_parts = emulator_workflow.split('    paths:\n', 1)
+    if len(emulator_parts) != 2:
+        raise SystemExit('FAIL: emulator workflow no longer filters push paths')
+    emulator_push_paths = emulator_parts[1].split('\njobs:', 1)[0]
+    for path in ("      - 'index.html'", "      - 'scripts/**'"):
+        if emulator_push_paths.count(path) != 1:
+            raise SystemExit(f'FAIL: gameplay sources cannot trigger emulator smoke: {path}')
+    print('PASS: root game HTML and scripts edits trigger native Android emulator smoke')
     print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
 
 
