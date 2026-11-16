@@ -109,6 +109,17 @@ def main():
             if marker not in workflow or workflow.index(preflight_gate) > workflow.index(marker):
                 raise SystemExit('FAIL: signed release tests must precede maintained-key handling')
     print('PASS: both Android workflows enforce upgrade-preflight safety before signing')
+    # An edit to the gameplay source or regression scripts must not silently
+    # skip Android CI. A skipped build is not proof of a tested release.
+    build_workflow = (ROOT / '.github/workflows/thornhaven-android-build.yml').read_text(encoding='utf-8')
+    trigger_sections = build_workflow.split('  push:\n', 1)
+    if len(trigger_sections) != 2:
+        raise SystemExit('FAIL: Android CI no longer has push triggers')
+    push_paths = trigger_sections[1].split('\njobs:', 1)[0]
+    for path in ("      - 'index.html'", "      - 'scripts/**'"):
+        if push_paths.count(path) != 1:
+            raise SystemExit(f'FAIL: root game HTML or scripts cannot trigger Android CI: {path}')
+    print('PASS: Android CI push triggers include all game HTML and scripts')
     print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
 
 
