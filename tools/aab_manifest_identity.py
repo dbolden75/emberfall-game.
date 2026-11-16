@@ -108,7 +108,17 @@ def _root_attributes(data: bytes) -> dict[tuple[str, str], tuple[str, bytes | No
             continue
         if wire_type != 2:
             raise ValueError('Invalid AAB XML child element wire type')
-        child = list(_fields(_one(list(_fields(node)), 1, 2)))
+        node_fields = list(_fields(node))
+        # XmlNode is a oneof: element (1) or text (2). AAPT preserves
+        # indentation as whitespace text nodes between manifest elements.
+        values = [(f, t, v) for f, t, v in node_fields if f in (1, 2)]
+        if len(values) != 1 or values[0][1] != 2:
+            raise ValueError('Invalid or ambiguous AAB XML child node')
+        if values[0][0] == 2:
+            if _string(values[0][2]).strip():
+                raise ValueError('Unexpected non-whitespace AAB manifest text')
+            continue
+        child = list(_fields(values[0][2]))
         if _string(_one(child, 3, 2)) != 'application':
             continue
         applications += 1

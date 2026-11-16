@@ -35,7 +35,7 @@ def attribute(name, value, namespace='', code=None):
 def manifest(package=PACKAGE, code='169', compiled=169, version='1.0.67', *,
              duplicate=False, root='manifest', root_test_only=False,
              root_debuggable=False, app_debuggable=False, app_test_only=False,
-             duplicate_application=False, omit_application=False):
+             duplicate_application=False, omit_application=False, child_node=None):
     body = field(3, root.encode()) + attribute('package', package)
     body += attribute('versionCode', code, ANDROID_NAMESPACE, compiled)
     body += attribute('versionName', version, ANDROID_NAMESPACE)
@@ -54,6 +54,8 @@ def manifest(package=PACKAGE, code='169', compiled=169, version='1.0.67', *,
         body += field(5, field(1, app))
     if duplicate_application:
         body += field(5, field(1, app))
+    if child_node is not None:
+        body += field(5, child_node)
     return field(1, body)
 
 
@@ -76,6 +78,11 @@ def main():
             assert accepted is should_pass, f'Invalid AAB identity result: {should_pass=}'
 
         check(manifest(), True)
+        check(manifest(child_node=field(2, b'\n    ')), True)
+        check(manifest(child_node=field(2, b'unexpected text')))
+        check(manifest(child_node=field(2, b' ') + field(1, field(3, b'application'))))
+        check(manifest(child_node=field(1, field(3, b'application')) * 2))
+        check(manifest(child_node=b''))
         check(manifest(package='com.other.app'))
         check(manifest(code='168'))
         check(manifest(compiled=168))
@@ -99,7 +106,7 @@ def main():
             assert False, 'Missing manifest passed'
         except ValueError:
             pass
-    print('PASS: AAB manifest identity rejects 15 changed, unsafe, malformed, duplicate, or missing fixture cases')
+    print('PASS: AAB manifest identity accepts whitespace and rejects 19 changed, unsafe, ambiguous, duplicate, or missing fixture cases')
     print('NOTE: synthetic AAB XML; no actual signing keys or device testing')
 
 

@@ -1,8 +1,17 @@
 # Thornhaven: New Journey
 
+## New atlas playtest — November 16, 2026
+
+Version **1.0.68**, versionCode **170**, same maintained package and original signing certificate. [Signed APK](https://chatgpt.com/library?file_id=libfile_fde3_f-f377a205c89c8191ad7701f17a91a90d_eb36aeb7689c819183e67c62639a839d&account_id=personal); [signed AAB](https://chatgpt.com/library?file_id=libfile_fde3_f-5405bc200fd88191bdaecd516225867a_eb36aeb7689c819183e67c62639a839d&account_id=personal). Built from atlas commit `1343da4e`; [Android build #43859590946](https://github.com/dbolden75/emberfall-game./actions/runs/43859590946) and [7/7 emulator jobs #43859591084](https://github.com/dbolden75/emberfall-game./actions/runs/43859591084) passed. All 25 game assets match reconstructed source and APK/AAB. APK v2/v3 signatures, 16 KiB alignment, AAB signature, and native payload parity passed.
+
+Fictional Alabama-inspired atlas rivers, foothills and wetlands are included; original 81 region IDs, town positions and quest access remain intact. This is a geography rendering pass, not a replacement of local playable terrain. APK SHA-256: `679f4d9c388922e8eafd821e573fbb5c380d01f6929df1a0230121a800ee3918`. AAB SHA-256: `67b7c98bde0c20ff166203df5eee4196167ce3779adfbb94782ca6181f8931f7`.
+
+Physical Samsung installation/performance, Play acceptance and live purchases remain unverified. AAB manifest verification now permits valid indentation text nodes while rejecting ambiguous XML nodes; signing was verified against the actual compiled AAB. The previous 1.0.67 release evidence follows for historical comparison.
+
+
 Thornhaven is a single-player Android RPG under active development.
 
-## Current Android release candidate (verified November 15, 2026)
+## Previous Android release candidate (verified November 15, 2026)
 - **Version:** 1.0.67 (versionCode 169), package `com.vaelbrink.ashvale.newjourney`.
 - **Maintained-key signed game source:** [`5bfb31d3`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) (merged PR #298; protects future top-level quest, currency and world-progress fields against destructive saves and purchase commits). This supersedes the PR #291/297 signed packages.
 - **Post-merge CI:** [Android APK/AAB #43694551620](https://github.com/dbolden75/emberfall-game./actions/runs/43694551620) and [seven-job emulator matrix #43694551670](https://github.com/dbolden75/emberfall-game./actions/runs/43694551670) both passed at `5bfb31d`. Emulator jobs do **not** establish physical Samsung or Play-delivered installation.
