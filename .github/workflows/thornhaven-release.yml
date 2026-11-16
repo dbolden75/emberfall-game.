@@ -23,6 +23,8 @@ jobs:
         run: |
           # Signable releases must enforce the same Android atlas/save-topology gate as unsigned CI.
           node scripts/test-atlas-geography.cjs
+          # Block signing if historical/dev certificate and in-place upgrade safeguards regress.
+          python3 tools/test-android-upgrade-preflight.py
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
           python3 tools/test-offline-signing.py
