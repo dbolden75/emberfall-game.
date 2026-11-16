@@ -43,6 +43,12 @@ for(const orientation of ['portrait','landscape']){
   }
 }
 assert(workflow.includes('api-level: ${{ matrix.api-level }}'));
+// Both isolated Android 14 portrait legs must use the tested alternate
+// renderer; left-only selection allowed repeated right-side QEMU exits.
+const options=workflow.split('\\n').filter(line=>line.trim().startsWith('emulator-options:'));
+assert(options.some(line=>line.includes("matrix.api-level == 34 && matrix.orientation == 'portrait'") &&
+  line.includes('-gpu swangle_indirect') && !line.includes("matrix.side == 'left'")),
+  'Both Android14 portrait handedness legs must select swangle, without losing a test leg');
 assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}'));
 assert(workflow.includes('name: thornhaven-167-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
