@@ -96,6 +96,19 @@ def main():
         raise SystemExit('FAIL: release instructions no longer warn against data-loss migration')
     print('PASS: both historical development signing identities and save-preservation warning retained')
     print(f'PASS: documented Android release is {package}, version {version}, versionCode {code}')
+    # Signing must be gated by the same non-destructive APK upgrade preflight
+    # regression suite as unsigned CI, before any maintained-key release step.
+    preflight_gate = 'python3 tools/test-android-upgrade-preflight.py'
+    for workflow_path in ('.github/workflows/thornhaven-android-build.yml',
+                          '.github/workflows/thornhaven-release.yml'):
+        workflow = (ROOT / workflow_path).read_text(encoding='utf-8')
+        if workflow.count(preflight_gate) != 1:
+            raise SystemExit(f'FAIL: missing or repeated upgrade-preflight gate in {workflow_path}')
+        if workflow_path.endswith('thornhaven-release.yml'):
+            marker = 'Verify maintained release-key secrets'
+            if marker not in workflow or workflow.index(preflight_gate) > workflow.index(marker):
+                raise SystemExit('FAIL: signed release tests must precede maintained-key handling')
+    print('PASS: both Android workflows enforce upgrade-preflight safety before signing')
     print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
 
 
