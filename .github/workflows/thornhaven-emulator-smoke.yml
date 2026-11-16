@@ -6,6 +6,8 @@ on:
   push:
     branches:
       - main
+      # Targeted nonbreaking atlas QA before merging PR #302.
+      - feature/alabama-inspired-atlas
       # Run the full matrix for new fixes without editing this list each time.
       - 'fix/**'
       - 'release/**'
@@ -125,7 +127,7 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' '058da04291d2c5c4de83a194f5bceb47b38a2c5d4d3b084ca379371b3afe0e8e' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '8d1dba7c1a1cf37417d0f2e8ac8aa25615cbc13d00258f062eea01a23493e09f' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 169' app/build.gradle
           grep -q "versionName '1.0.67'" app/build.gradle
           # Keep a byte-exact copy of the uninstrumented production-variant
@@ -297,7 +299,7 @@ jobs:
       - name: Restore audited gameplay with v1.0.67 release labels
         run: |
           python3 tools/restore-game-source.py
-          printf '%s  %s\n' '058da04291d2c5c4de83a194f5bceb47b38a2c5d4d3b084ca379371b3afe0e8e' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '8d1dba7c1a1cf37417d0f2e8ac8aa25615cbc13d00258f062eea01a23493e09f' 'app/src/main/assets/index.html' | sha256sum -c -
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
