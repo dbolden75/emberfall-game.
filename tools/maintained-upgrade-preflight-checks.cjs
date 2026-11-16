@@ -38,12 +38,14 @@ try {
   ]);
   mock('apksigner',[
     '#!/bin/bash','set -eu',
-    'if [[ "$*" == *installed-base.apk ]]; then cert="$INSTALLED_CERT"; else cert="$CANDIDATE_CERT"; fi',
+    'if [[ "$*" == *installed-base.apk ]]; then',
+    '  cert="$INSTALLED_CERT"; v2="${INSTALLED_V2:-true}"; v3="${INSTALLED_V3:-true}";',
+    'else',
+    '  cert="$CANDIDATE_CERT"; v2="${CANDIDATE_V2:-true}"; v3="${CANDIDATE_V3:-true}";',
+    'fi',
     'echo "Signer #1 certificate SHA-256 digest: $cert"',
-    'if [[ "$*" != *installed-base.apk ]]; then',
-    '  echo "Verified using v2 scheme (APK Signature Scheme v2): ${CANDIDATE_V2:-true}"',
-    '  echo "Verified using v3 scheme (APK Signature Scheme v3): ${CANDIDATE_V3:-true}"',
-    'fi'
+    'echo "Verified using v2 scheme (APK Signature Scheme v2): $v2"',
+    'echo "Verified using v3 scheme (APK Signature Scheme v3): $v3"'
   ]);
   const script=path.join(__dirname,'maintained-upgrade-preflight.sh');
   function check(label,override,pass,match,expectNoAdb=false){
@@ -60,6 +62,12 @@ try {
   }
   check('maintained signer 159->169',{},true,'PASS: installed com.vaelbrink.ashvale.newjourney versionCode 159');
   check('large aapt dump under pipefail',{BADGING_EXTRA_LINES:'20000'},true,'PASS: installed com.vaelbrink.ashvale.newjourney versionCode 159');
+  check('installed v1-only with same signing key is blocked',
+    {INSTALLED_V2:'false',INSTALLED_V3:'false'},false,
+    'Archived APK has no verified v2/v3 signing');
+  check('legacy development v1-only signer is blocked with recovery warning',
+    {INSTALLED_CERT:'09ed9284b3e16e0181f7e9b428e5ed882bc66cf325c900212d40baf9dc817099',
+      INSTALLED_V2:'false',INSTALLED_V3:'false'},false,'DO NOT uninstall, clear data, or sideload');
   check('Play-signed base blocks sideload',{INSTALLED_CERT:'0'.repeat(64)},false,'Installed signer differs');
   check('debuggable candidate rejected before device access',{CANDIDATE_DEBUGGABLE:'1'},false,'debuggable or testOnly',true);
   check('testOnly candidate rejected before device access',{CANDIDATE_TEST_ONLY:'1'},false,'debuggable or testOnly',true);
@@ -75,5 +83,5 @@ try {
   check('multiline device API cannot be reinterpreted',{DEVICE_SDK:'3\n4'},false,'Could not identify device Android SDK');
   check('candidate missing minimum SDK blocks',{CANDIDATE_MIN_SDK:''},false,'Candidate has no unambiguous minimum Android SDK');
   check('ambiguous installed base APKs are rejected', {DUPLICATE_BASE:'1'}, false, 'Could not uniquely locate');
-  console.log('PASS: all seventeen read-only preflight checks (mock Android commands; no device)');
+  console.log('PASS: all nineteen read-only preflight checks (mock Android commands; no device)');
 } finally {fs.rmSync(tmp,{recursive:true,force:true});}

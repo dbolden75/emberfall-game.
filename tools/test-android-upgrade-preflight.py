@@ -100,7 +100,9 @@ class UpgradePreflightCliTests(unittest.TestCase):
     def exercise_cli(self, *, bad_candidate=False, bad_installed=False,
                      ambiguous_path=False, pull_fails=False,
                      missing_v2=False, missing_v3=False, debuggable=False,
-                     test_only=False, device_sdk='35'):
+                     test_only=False, device_sdk='35',
+                     installed_v1_only=False, installed_dev_signer=None,
+                     installed_verify_fails=False):
         with tempfile.TemporaryDirectory() as tmp:
             candidate = pathlib.Path(tmp) / 'candidate.apk'
             candidate.write_bytes(b'mocked-candidate')
@@ -120,11 +122,15 @@ class UpgradePreflightCliTests(unittest.TestCase):
                             "versionName='1.0.67'\nsdkVersion:'24'\n" + extra)
                 if args[0] == 'apksigner':
                     is_candidate = str(candidate) == args[-1]
+                    if not is_candidate and installed_verify_fails and '--max-sdk-version' not in args:
+                        raise preflight.PreflightError('Modern Android verification rejected v1-only installed APK')
                     wrong = ((bad_candidate and is_candidate)
                              or (bad_installed and not is_candidate))
                     digest = 'f' * 64 if wrong else preflight.EXPECTED_RELEASE_SIGNER
-                    v2 = 'false' if is_candidate and missing_v2 else 'true'
-                    v3 = 'false' if is_candidate and missing_v3 else 'true'
+                    if not is_candidate and installed_dev_signer:
+                        digest = installed_dev_signer
+                    v2 = 'false' if (is_candidate and missing_v2) or (not is_candidate and installed_v1_only) else 'true'
+                    v3 = 'false' if (is_candidate and missing_v3) or (not is_candidate and installed_v1_only) else 'true'
                     return (f'Verified using v2 scheme (APK Signature Scheme v2): {v2}\n'
                             f'Verified using v3 scheme (APK Signature Scheme v3): {v3}\n'
                             f'Signer #1 certificate SHA-256 digest: {digest}\n')
@@ -179,6 +185,28 @@ class UpgradePreflightCliTests(unittest.TestCase):
         self.assertEqual(result, 1)
         self.assertIn('Could not uniquely locate', err)
         self.assertFalse(any('pull' in cmd for cmd in calls))
+
+    def test_cli_installed_v1_only_matching_key_cannot_pass(self):
+        # A valid v1 JAR signature is not sufficient proof of modern update
+        # compatibility even if the cert happens to match the release signer.
+        result, calls, out, err = self.exercise_cli(installed_v1_only=True)
+        self.assertEqual(result, 1)
+        self.assertIn('no verified v2/v3 signing', err)
+        self.assertNotIn('PASS:', out)
+        self.assertEqual(sum('pull' in cmd for cmd in calls), 1)
+
+    def test_cli_recognizes_legacy_dev_signer_from_installed_base(self):
+        for key, filename in preflight.HISTORICAL_DEV_SIGNERS.items():
+            with self.subTest(filename=filename):
+                result, calls, out, err = self.exercise_cli(
+                    installed_v1_only=True, installed_dev_signer=key,
+                    installed_verify_fails=True)
+                self.assertEqual(result, 1)
+                self.assertIn(filename, err)
+                self.assertIn('DO NOT uninstall, clear data, or sideload', err)
+                self.assertNotIn('PASS:', out)
+                self.assertEqual(sum('pull' in cmd for cmd in calls), 1)
+                self.assertTrue(any('--max-sdk-version' in cmd for cmd in calls))
 
     def test_cli_pull_failure_never_claims_success(self):
         result, calls, out, err = self.exercise_cli(pull_fails=True)

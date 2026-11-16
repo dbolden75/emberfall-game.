@@ -197,7 +197,11 @@ def main(argv=None):
             copy = str(Path(temp) / 'installed-base.apk')
             command(prefix + ['pull', base, copy])
             current_badging = command([args.aapt, 'dump', 'badging', copy])
-            current_cert = command([args.apksigner, 'verify', '--print-certs', copy])
+            # A copied installed APK can be a legacy v1-only test build.
+            # Never treat apksigner's success exit alone as upgrade-safe:
+            # verify v2/v3, or identify a known historical dev key solely
+            # to return the explicit recovery warning from validate_pair.
+            current_cert = archived_certificate_report(args.apksigner, Path(copy))
             old_code, new_code = validate_pair(current_badging, current_cert,
                                                candidate_badging, candidate_cert)
         print(f'PASS: installed {PACKAGE} versionCode {old_code}, candidate {new_code}; APK signing identity matches.')
