@@ -46,10 +46,14 @@ def main():
             raise SystemExit(f'FAIL: missing canonical SHA-256 for {label}')
         return match.group(1)
 
+    # The last signed candidate can precede the current development version.
+    signed_versions = re.findall(r'Canonical signed ([0-9.]+) APK SHA-256', continuity)
+    assert len(signed_versions) == 1, 'Expected one documented signed candidate version'
+    signed_version = signed_versions[0]
     for kind in ('APK', 'AAB'):
         digests = (
             pinned_sha(readme, f'Maintained-signed {kind} SHA-256', f'README {kind}'),
-            pinned_sha(continuity, f'Canonical signed {version} {kind} SHA-256', f'continuity {kind}'),
+            pinned_sha(continuity, f'Canonical signed {signed_version} {kind} SHA-256', f'continuity {kind}'),
             pinned_sha(guide, f'{"canonical signed APK SHA-256 is" if kind == "APK" else "AAB SHA-256 is"}',
                        f'build instructions {kind}'),
         )

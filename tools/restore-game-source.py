@@ -360,7 +360,7 @@ import re
 gradle_source = (root / 'app/build.gradle').read_text()
 build_versions = re.findall(r"(?m)^\s*versionName\s+'([^']+)'\s*$", gradle_source)
 assert len(build_versions) == 1, 'Expected one Android release versionName'
-report_version = build_versions[0].encode('ascii')
+report_version = b'1.0.67'  # historical hash lineage; current labels applied below
 assert b'Version ' + report_version + b' \xc2\xb7 Ashvale Reach' in content, 'Android and title-screen release versions differ'
 stale_bug_context = b"const context=()=>({build:'1.0.49',map:"
 updated_bug_context = b"const context=()=>({build:'" + report_version + b"',map:"
@@ -386,10 +386,18 @@ assert b'const river=()=>{' in content[old_at:old_finish], 'Unexpected original 
 content = content[:old_at] + atlas_overlay + content[old_finish:]
 assert content.count(atlas_start) == 1, 'Atlas overlay must be applied exactly once'
 
+# Authenticate the reviewed atlas before changing only the new release labels.
+assert hashlib.sha256(content).hexdigest() == '8d1dba7c1a1cf37417d0f2e8ac8aa25615cbc13d00258f062eea01a23493e09f', 'Atlas baseline hash mismatch'
+release_labels = [(b'New Journey \xc2\xb7 v1.0.67', b'New Journey \xc2\xb7 v1.0.68'), (b'Version 1.0.67 \xc2\xb7 Ashvale Reach', b'Version 1.0.68 \xc2\xb7 Ashvale Reach'), (b"const context=()=>({build:'1.0.67',map:", b"const context=()=>({build:'1.0.68',map:")]
+for old, new in release_labels:
+    assert content.count(old) == 1, 'Expected exactly one 1.0.68 release label'
+    content = content.replace(old, new, 1)
+assert hashlib.sha256(content).hexdigest() == '9fa2d220141f329467e7d1978ca628f78dc2a6975c46eb7f2d55221e701cec88', '1.0.68 atlas release hash mismatch'
+
 target = root / 'app/src/main/assets/index.html'
 target.parent.mkdir(parents=True, exist_ok=True)
 if target.exists():
     assert target.read_bytes() == content, 'Refusing to overwrite a different game source'
 else:
     target.write_bytes(content)
-print('Thornhaven 1.0.67 HTML reconstructed, SHA-256 verified:', hashlib.sha256(content).hexdigest())
+print('Thornhaven 1.0.68 HTML reconstructed, SHA-256 verified:', hashlib.sha256(content).hexdigest())

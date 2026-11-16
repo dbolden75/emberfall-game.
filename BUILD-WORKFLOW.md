@@ -1,6 +1,8 @@
 # Thornhaven build and test workflow
 
-Current main development source: 1.0.67, Android versionCode 169.
+Current main development source: 1.0.68, Android versionCode 170.
+
+Development candidate: Alabama-inspired atlas geography; original 81 regions and quest routes retained. A signed 1.0.68 APK is pending build and verification. The signed 1.0.67 candidate below remains the previous release.
 
 **Current candidate (November 15, 2026):** versionName `1.0.67`, versionCode `169`, package `com.vaelbrink.ashvale.newjourney`. The maintained-key-signed APK/AAB correspond to merged main commit [`5bfb31d3`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) (PR #298). The canonical signed APK SHA-256 is `d3623239479d6800fc89d1d0c84688a735850a49b74742f1e2284cbac04588ab` (37,624,860 bytes). AAB SHA-256 is `a9094a779c813c513da61a7be82ed87ca6a292584884b0adcf968c8001e672ce` (37,201,532 bytes). Maintained certificate SHA-256: `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22`. [Post-merge Android build #43694551620](https://github.com/dbolden75/emberfall-game./actions/runs/43694551620) and [7/7 emulator jobs #43694551670](https://github.com/dbolden75/emberfall-game./actions/runs/43694551670) passed. Exact signed files: [APK backup](https://drive.google.com/file/d/1_cy6Fh9K-IMKzQT2BZwR5IurVfWY-t9Q/view), [AAB backup](https://drive.google.com/file/d/1lNsoeRtLn-zkMzFGpJdCyzIDmlXd-VXe/view). Offline package/certificate checks passed. Play upload, Play App Signing identity, physical Samsung in-place update, existing-save survival and actual Google Play purchases/restoration are **not verified**.
 
@@ -12,6 +14,14 @@ On a computer with a connected, authorized Android device and the Android SDK `a
 ```bash
 python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.67-main-5bfb31d-PR298-original-signed.apk
 ```
+
+To compare a **saved historical APK file** without attaching a phone, run:
+
+```bash
+python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.67-main-5bfb31d-PR298-original-signed.apk --installed-apk /path/to/Thornhaven-1.0.57.apk
+```
+
+This archive-only check reads the two APK manifests and signing certificates without `adb`, and fails closed on historical development-key APKs. The two known 1.0.57 development APKs are JAR/v1-only signed; the checker can recognize their certificates using bounded API-23 verification solely to display the specific blocking warning. It never reports a compatibility PASS on an APK that verifies only with legacy v1 signing. A passing archive comparison **does not verify what is installed on the Samsung phone**, its Play App Signing certificate, or saved characters; use the device preflight or a Play-delivered update for those gates. Never uninstall or clear app data to resolve a mismatch.
 
 Use `--serial DEVICE_SERIAL` if more than one Android device is attached. This copies the *installed* base APK into a temporary computer directory without modifying the phone, checks both package identities and original-key signer SHA-256, and rejects a same-version/downgrade attempt. It **does not install anything or prove that character saves survive an update**. It fails closed if Android/SDK commands cannot inspect the installed application. A Google Play App Signing build may have a different installed signer than the locally maintained-signed APK; in that case never uninstall/clear data or sideload. Update through the existing Play track and validate saved characters instead. CI runs `python3 tools/test-android-upgrade-preflight.py` using mock manifests/certificates, not a real device.
 
