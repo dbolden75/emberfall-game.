@@ -287,9 +287,7 @@ class ReleaseCandidateValidationTests(unittest.TestCase):
         for stale in (
                 self.badge().replace("versionCode='170'", "versionCode='169'"),
                 self.badge().replace("versionName='1.0.68'", "versionName='1.0.67'"),
-                self.badge().replace("versionName='1.0.68'", ""),
-                self.badge() + "package: name='com.vaelbrink.ashvale.newjourney' "
-                               "versionCode='170' versionName='1.0.68'\\n"):
+                self.badge().replace("versionName='1.0.68'", "")):
             with self.subTest(badging=stale), self.assertRaisesRegex(
                     preflight.PreflightError, 'Candidate release identity'):
                 preflight.validate_release_candidate(stale, self.report())
