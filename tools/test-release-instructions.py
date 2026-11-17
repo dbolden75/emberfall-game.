@@ -39,7 +39,7 @@ def main():
     if guide.count(section_header) != 1:
         raise SystemExit('FAIL: missing or duplicate Android upgrade preflight instructions')
     preflight_guide = guide.split(section_header, 1)[1].split('BUILD-STATUS.txt', 1)[0]
-    candidates = re.findall(r'^python3 tools/android-upgrade-preflight\\.py\\s+(\\S+)',
+    candidates = re.findall(r'^python3 tools/android-upgrade-preflight\.py\s+(\S+)',
                             preflight_guide, re.M)
     expected_candidate = f'/path/to/Thornhaven-{version}-maintained-key.apk'
     if len(candidates) != 2 or candidates != [expected_candidate] * 2:
