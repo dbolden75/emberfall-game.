@@ -117,7 +117,7 @@ def parse_manifest(binary):
     return nodes
 
 
-def validate(nodes, version_code=169):
+def validate(nodes, version_code):
     def entries(path):
         return [attrs for loc, attrs in nodes if loc == path]
 
@@ -149,7 +149,8 @@ def validate(nodes, version_code=169):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apk', type=Path, required=True)
-    parser.add_argument('--version-code', type=int, default=169)
+    parser.add_argument('--version-code', type=int, required=True,
+                        help='Expected APK versionCode from the selected Android release')
     args = parser.parse_args()
     try:
         with ZipFile(args.apk) as archive:
