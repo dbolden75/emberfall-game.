@@ -24,9 +24,9 @@ assert.match(maintained, /com\.vaelbrink\.ashvale\.newjourney.*versionCode='170'
   'Maintained CI must assert the release package and version');
 // An Android Gradle build can succeed yet package stale or incomplete game
 // files. Keep the compiled-APK browser gate in the maintained workflow.
-assert.match(maintained, /unzip -qq "\\$apk" 'assets\\/\\*' -d "\\$compiled_dir"/,
+assert(maintained.includes('unzip -qq "$apk" \'assets/*\' -d "$compiled_dir"'),
   'CI must extract the actual compiled release APK for browser QA');
-assert.match(maintained, /python3 tools\\/browser-interactive-qa\\.py --assets "\\$compiled_dir\\/assets"/,
+assert(maintained.includes('python3 tools/browser-interactive-qa.py --assets "$compiled_dir/assets"'),
   'CI must interactively test the compiled release APK assets');
 assert.match(gradle, /applicationId\s+['"]com\.vaelbrink\.ashvale\.newjourney['"]/,
   'The appId must preserve existing Play app and local saves');
