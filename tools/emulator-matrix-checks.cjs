@@ -51,7 +51,15 @@ assert(options.some(line=>line.includes("matrix.api-level == 34 && matrix.orient
   'Both Android14 portrait handedness legs must select swangle, without losing a test leg');
 assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}'));
-assert(workflow.includes('name: thornhaven-167-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
+// Derive the evidence artifact version from Gradle; stale 1.0.67 names must
+// not survive a 1.0.68 test run or mislead Play release reviewers.
+const versions=fs.readFileSync('app/build.gradle','utf8').split(String.fromCharCode(10))
+  .filter(line=>line.trim().startsWith('versionCode '));
+assert.equal(versions.length,1,'Expected exactly one versionCode');
+const versionCode=versions[0].trim().split(' ').filter(Boolean)[1];
+assert.match(versionCode,/^[0-9]+$/,'Android versionCode must be numeric');
+assert(workflow.includes('name: thornhaven-'+versionCode+'-android-emulator-smoke-evidence'));
+assert(workflow.includes('name: thornhaven-'+versionCode+'-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
 assert(shell.includes('control-preferences-$orientation'),'Native matrix must select its orientation');
 const logcatLaunch='adb logcat -v threadtime -b main -b system -b crash > reports/control-matrix/streamed-logcat.txt 2>&1 &';
 assert(shell.includes(logcatLaunch),'Guest crash logs must stream before ADB disappears');
