@@ -32,6 +32,21 @@ def main():
                              'documented package')
     if documented_package != package:
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md package {documented_package} != {package}')
+    # Documentation must never recommend a superseded release APK as the
+    # current device preflight candidate. Comparing 1.0.67 to an already
+    # upgraded 1.0.68 phone would give misleading downgrade guidance.
+    section_header = '### Read-only installed APK compatibility preflight'
+    if guide.count(section_header) != 1:
+        raise SystemExit('FAIL: missing or duplicate Android upgrade preflight instructions')
+    preflight_guide = guide.split(section_header, 1)[1].split('BUILD-STATUS.txt', 1)[0]
+    candidates = re.findall(r'^python3 tools/android-upgrade-preflight\\.py\\s+(\\S+)',
+                            preflight_guide, re.M)
+    expected_candidate = f'/path/to/Thornhaven-{version}-maintained-key.apk'
+    if len(candidates) != 2 or candidates != [expected_candidate] * 2:
+        raise SystemExit(
+            f'FAIL: upgrade preflight examples must use current signed APK '
+            f'{expected_candidate}; found {candidates!r}')
+    print('PASS: device and historical-archive preflight examples target the current APK')
     # CI cannot see private signing keys, but inconsistent public hashes or
     # source commits could advertise a stale/unsafe APK after a native rebuild.
     readme = (ROOT / 'README.md').read_text(encoding='utf-8')
