@@ -8,6 +8,21 @@ const fs=require('node:fs');
 const {spawnSync}=require('node:child_process');
 const probe=fs.readFileSync('tools/emulator-webview-probe.cjs','utf8');
 const shell=fs.readFileSync('tools/emulator-control-matrix-qa.sh','utf8');
+const upgrade=fs.readFileSync('tools/emulator-save-upgrade.sh','utf8');
+// Native save migration must be an actual Android package replacement, not
+// an uninstall/reinstall that discards user data. Retain the same install time.
+const before=upgrade.indexOf('first_install_before=');
+const install=upgrade.indexOf('adb install -r "$NEW"');
+const after=upgrade.indexOf('first_install_after=');
+assert(before>0 && install>before && after>install,
+  'Native upgrade must capture firstInstallTime before and after install -r');
+assert(upgrade.includes('test "$first_install_before" = "$first_install_after"'),
+  'Native upgrade must fail if Android installation identity was replaced');
+assert(upgrade.includes('qa-upgrade-installation-retained.txt'),
+  'Native upgrade must publish auditable in-place preservation evidence');
+assert.doesNotMatch(upgrade.slice(install), /adb (?:uninstall|shell pm clear)\b/,
+  'Native upgrade must never clear or uninstall the historical app after saving');
+
 const workflow=fs.readFileSync('.github/workflows/thornhaven-emulator-smoke.yml','utf8');
 const match=probe.match(/const controlPreferences=String\.raw`([\s\S]*?)`;/);
 assert(match,'Native Android WebView control-preferences probe missing');
