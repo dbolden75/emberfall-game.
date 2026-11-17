@@ -129,7 +129,7 @@ class UpgradePreflightCliTests(unittest.TestCase):
             def fake_command(args):
                 calls.append(tuple(args))
                 if args[0] == 'aapt':
-                    code = 169 if str(candidate) == args[-1] else 159
+                    code = 170 if str(candidate) == args[-1] else 159
                     extra = ''
                     if str(candidate) == args[-1]:
                         if debuggable:
@@ -137,7 +137,7 @@ class UpgradePreflightCliTests(unittest.TestCase):
                         if test_only:
                             extra += 'application-testOnly\n'
                     return (f"package: name='{preflight.PACKAGE}' versionCode='{code}' "
-                            "versionName='1.0.67'\nsdkVersion:'24'\n" + extra)
+                            "versionName='1.0.68'\nsdkVersion:'24'\n" + extra)
                 if args[0] == 'apksigner':
                     is_candidate = str(candidate) == args[-1]
                     if not is_candidate and installed_verify_fails and '--max-sdk-version' not in args:
