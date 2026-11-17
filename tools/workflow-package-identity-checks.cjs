@@ -31,11 +31,15 @@ assert(maintained.includes('python3 tools/browser-interactive-qa.py --assets "$c
 // Compiled release QA must include high-risk gameplay paths, not just a menu
 // smoke; source-tree browser tests alone cannot validate the APK's packaged code.
 for (const call of [
+  'python3 tools/browser-camp-story-qa.py --assets "$compiled_dir/assets"',
+  'python3 tools/browser-gathering-qa.py --assets "$compiled_dir/assets"',
   'python3 tools/browser-pet-combat-qa.py --assets "$compiled_dir/assets"',
   'python3 tools/browser-purchase-qa.py --assets "$compiled_dir/assets"',
   '--evidence-dir reports/browser-compiled-pet-combat-qa',
   '--evidence-dir reports/browser-compiled-purchase-qa --orientation portrait',
   '--evidence-dir reports/browser-compiled-purchase-qa --orientation landscape',
+  'reports/browser-compiled-camp-story-qa/*.png',
+  'reports/browser-compiled-gathering-qa/*.png',
   'reports/browser-compiled-pet-combat-qa/*.png',
   'reports/browser-compiled-purchase-qa/*.png',
 ]) {
