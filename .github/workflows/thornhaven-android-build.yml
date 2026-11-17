@@ -144,11 +144,19 @@ jobs:
           mkdir -p "$compiled_dir"
           unzip -qq "$apk" 'assets/*' -d "$compiled_dir"
           python3 tools/browser-interactive-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-release-qa
+          # Test the packaged pet-combat and purchase flows, not only restored source.
+          # Each orientation launches its own browser to bound game HTML memory.
+          python3 tools/browser-pet-combat-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-pet-combat-qa
+          python3 tools/browser-purchase-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-purchase-qa --orientation portrait
+          python3 tools/browser-purchase-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-purchase-qa --orientation landscape
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: thornhaven-1.0.68-compiled-release-browser-qa
-          path: reports/browser-compiled-release-qa/*.png
+          path: |
+            reports/browser-compiled-release-qa/*.png
+            reports/browser-compiled-pet-combat-qa/*.png
+            reports/browser-compiled-purchase-qa/*.png
           if-no-files-found: ignore
 
       - name: Verify APK identity and signature
