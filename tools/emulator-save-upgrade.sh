@@ -30,6 +30,11 @@ timeout --signal=TERM --kill-after=10s 90s adb shell am start -n "$PKG/$ACTIVITY
 sleep 12
 adb shell dumpsys package "$PKG" > reports/emulator/qa-package-157.txt
 grep -q 'versionCode=159' reports/emulator/qa-package-157.txt
+# Android must retain its original installation record when upgrading from
+# 1.0.57. A clean reinstall could otherwise hide loss of old app data.
+first_install_before="$(sed -n 's/^[[:space:]]*firstInstallTime=//p' reports/emulator/qa-package-157.txt | head -n 1)"
+test -n "$first_install_before" || { echo 'FAIL: historical installation time unavailable'; exit 1; }
+
 oldpid="$(adb shell pidof "$PKG" | tr -d '\r')"
 test -n "$oldpid"
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$oldpid"
@@ -54,6 +59,14 @@ adb shell am force-stop "$PKG"
 adb install -r "$NEW" | tee reports/emulator/qa-upgrade-170.txt
 adb shell dumpsys package "$PKG" > reports/emulator/qa-package-170.txt
 grep -q 'versionCode=170' reports/emulator/qa-package-170.txt
+first_install_after="$(sed -n 's/^[[:space:]]*firstInstallTime=//p' reports/emulator/qa-package-170.txt | head -n 1)"
+test "$first_install_before" = "$first_install_after" || {
+  echo 'FAIL: firstInstallTime changed across 1.0.57 -> 1.0.68 upgrade; not proven in-place'
+  exit 1
+}
+printf 'PASS: original firstInstallTime preserved after 1.0.57 -> 1.0.68 upgrade: %s\n' "$first_install_after" |
+  tee reports/emulator/qa-upgrade-installation-retained.txt
+
 timeout --signal=TERM --kill-after=10s 90s adb shell am start -n "$PKG/$ACTIVITY" | tee reports/emulator/qa-start-170.txt
 sleep 12
 newpid="$(adb shell pidof "$PKG" | tr -d '\r')"
