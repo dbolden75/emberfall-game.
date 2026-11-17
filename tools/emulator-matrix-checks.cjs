@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Static safety gate for Android 14/16 native emulator legs. This cannot replace
+// Static safety gate for Android 14/15/16 native emulator legs. This cannot replace
 // native tests: it prevents accidental loss of native orientation/UI assertions
 // when splitting a flaky hosted-emulator run into independent jobs.
 const assert=require('node:assert/strict');
@@ -8,6 +8,21 @@ const fs=require('node:fs');
 const {spawnSync}=require('node:child_process');
 const probe=fs.readFileSync('tools/emulator-webview-probe.cjs','utf8');
 const shell=fs.readFileSync('tools/emulator-control-matrix-qa.sh','utf8');
+const upgrade=fs.readFileSync('tools/emulator-save-upgrade.sh','utf8');
+// Native save migration must be an actual Android package replacement, not
+// an uninstall/reinstall that discards user data. Retain the same install time.
+const before=upgrade.indexOf('first_install_before=');
+const install=upgrade.indexOf('adb install -r "$NEW"');
+const after=upgrade.indexOf('first_install_after=');
+assert(before>0 && install>before && after>install,
+  'Native upgrade must capture firstInstallTime before and after install -r');
+assert(upgrade.includes('test "$first_install_before" = "$first_install_after"'),
+  'Native upgrade must fail if Android installation identity was replaced');
+assert(upgrade.includes('qa-upgrade-installation-retained.txt'),
+  'Native upgrade must publish auditable in-place preservation evidence');
+assert.doesNotMatch(upgrade.slice(install), /adb (?:uninstall|shell pm clear)\b/,
+  'Native upgrade must never clear or uninstall the historical app after saving');
+
 const workflow=fs.readFileSync('.github/workflows/thornhaven-emulator-smoke.yml','utf8');
 const match=probe.match(/const controlPreferences=String\.raw`([\s\S]*?)`;/);
 assert(match,'Native Android WebView control-preferences probe missing');
@@ -31,7 +46,7 @@ for(const orientation of ['portrait','landscape']){
 }
 assert(probe.includes("source=source.replace(sides,"),'One-side source selection missing');
 assert.match(workflow,/orientation: \[portrait, landscape\]/);
-assert.match(workflow,/api-level: \[34, 36\]/,'Android 14 and Android 16 coverage required');
+assert.match(workflow,/api-level: \[34, 35, 36\]/,'Android 14, 15 and 16 coverage required');
 assert.match(workflow,/side: \[both\]/,'Normal full-side matrix required');
 assert.match(workflow,/side: right/,'Android14 portrait-right leg missing');
 assert.match(workflow,/side: left/,'Android14 portrait-left leg missing');
@@ -51,7 +66,15 @@ assert(options.some(line=>line.includes("matrix.api-level == 34 && matrix.orient
   'Both Android14 portrait handedness legs must select swangle, without losing a test leg');
 assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}'));
-assert(workflow.includes('name: thornhaven-167-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
+// Derive the evidence artifact version from Gradle; stale 1.0.67 names must
+// not survive a 1.0.68 test run or mislead Play release reviewers.
+const versions=fs.readFileSync('app/build.gradle','utf8').split(String.fromCharCode(10))
+  .filter(line=>line.trim().startsWith('versionCode '));
+assert.equal(versions.length,1,'Expected exactly one versionCode');
+const versionCode=versions[0].trim().split(' ').filter(Boolean)[1];
+assert.match(versionCode,/^[0-9]+$/,'Android versionCode must be numeric');
+assert(workflow.includes('name: thornhaven-'+versionCode+'-android-emulator-smoke-evidence'));
+assert(workflow.includes('name: thornhaven-'+versionCode+'-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence'));
 assert(shell.includes('control-preferences-$orientation'),'Native matrix must select its orientation');
 const logcatLaunch='adb logcat -v threadtime -b main -b system -b crash > reports/control-matrix/streamed-logcat.txt 2>&1 &';
 assert(shell.includes(logcatLaunch),'Guest crash logs must stream before ADB disappears');
@@ -101,4 +124,4 @@ for(const args of [['portrait','wrong-side'],['both','left']]){
                JSON.stringify(args)+' '+invalid.stderr);
 }
 
-console.log('PASS (static): Android 14/16 CI requires 2 APIs x 2 orientations x 2 sides x 2 movement modes; geometry, save and settings assertions retained. Not native emulator testing.');
+console.log('PASS (static): Android 14/15/16 CI requires API 34 isolated-side and API 35/36 both-side emulator checks; geometry, save and settings assertions retained. Not native emulator testing.');

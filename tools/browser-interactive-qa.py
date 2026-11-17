@@ -8,6 +8,7 @@ Google Play, device install, or real filesystem-backed Android save durability.
 """
 
 import argparse
+import base64
 import json
 import re
 import shutil
@@ -97,7 +98,33 @@ def check_orientation(browser, assets: Path, output: Path, orientation: str, wid
             assert page.evaluate("mapId") == "wayfarers_camp", (
                 f"{atlas_mode}: inspecting {destination} unexpectedly moved the player")
     assert not errors, f"Uncaught game JavaScript errors: {errors[:5]}"
+    # Test actual Android-packaged atlas pixels, not the historically divergent
+    # root browser prototype. CSS screenshots alone can hide a blank canvas.
+    atlas_render = page.evaluate("""() => {
+        const canvas = document.getElementById('themedWorldMap');
+        if (!canvas) return null;
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let opaque = 0, water = 0, terrain = 0;
+        // Sample every 16th pixel to avoid transferring 10MB of RGBA data.
+        for (let i = 0; i < pixels.length; i += 64) {
+            const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2], a = pixels[i + 3];
+            if (a > 0) opaque++;
+            if (b > r && g > r) water++;
+            if (g > r && g > b + 15) terrain++;
+        }
+        return {width: canvas.width, height: canvas.height, opaque, water, terrain};
+    }""")
+    assert atlas_render and atlas_render["width"] == 1620 and atlas_render["height"] == 1620, (
+        f"Android atlas is missing or not the original 9×9 canvas: {atlas_render}")
+    assert atlas_render["opaque"] > 150000 and atlas_render["water"] > 2000 and atlas_render["terrain"] > 20000, (
+        f"Android atlas has blank/missing water or terrain layers: {atlas_render}")
     output.mkdir(parents=True, exist_ok=True)
+    if orientation == "portrait":
+        # Unobstructed atlas-only image is a visual review artifact, not a
+        # screenshot from a physical Android device.
+        data_url = page.evaluate("document.getElementById('themedWorldMap').toDataURL('image/png')")
+        assert data_url.startswith("data:image/png;base64,"), "Atlas canvas could not be exported"
+        (output / "android-payload-atlas-canvas.png").write_bytes(base64.b64decode(data_url.split(",", 1)[1]))
     page.screenshot(path=str(output / (orientation + "-world-map-detail.png")), timeout=20000)
     # Regression for historical town-entry freezes. These QA-only direct map
     # transitions exercise all four town loading paths, not walking or portals.

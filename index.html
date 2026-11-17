@@ -1541,8 +1541,29 @@ function drawThemedWorldMap(){
  worldGrid.forEach((row,y)=>row.forEach((id,x)=>{const biome=atlasBiome(id),key={snow:'snow',marsh:'marsh',coast:'grass',ash:'dungeon',plains:'grass',forest:'grass'}[biome];if(key==='grass')return;
   const patch=document.createElement('canvas');patch.width=patch.height=300;const p=patch.getContext('2d');p.translate(-x*180+60,-y*180+60);p.fillStyle=surface(key);p.fillRect(x*180-60,y*180-60,300,300);p.setTransform(1,0,0,1,0,0);p.globalCompositeOperation='destination-in';const fade=p.createRadialGradient(150,150,75,150,150,150);fade.addColorStop(0,'#fff');fade.addColorStop(1,'#fff0');p.fillStyle=fade;p.fillRect(0,0,300,300);g.drawImage(patch,x*180-60,y*180-60);
  }));
- g.save();g.scale(size/900,size/900);g.beginPath();g.moveTo(845,0);g.bezierCurveTo(780,150,875,260,838,390);g.bezierCurveTo(810,520,860,680,900,900);g.lineTo(900,0);g.closePath();g.fillStyle=surface('water');g.fill();g.lineWidth=4;g.strokeStyle='#6c81735c';g.stroke();g.restore();
- g.save();g.scale(size/900,size/900);const river=()=>{g.beginPath();g.moveTo(360,0);g.bezierCurveTo(335,170,405,260,365,450);g.bezierCurveTo(325,610,405,745,355,900);};river();g.lineWidth=21;g.strokeStyle='#23382b';g.stroke();river();g.lineWidth=13;g.strokeStyle=surface('water');g.stroke();g.restore();
+ // Fictionalized Alabama-inspired geography: highland tributaries feed a central
+ // river basin, widening into southern marshland. Atlas-only: no save/map IDs change.
+ g.save();g.scale(size/900,size/900);
+ const water=surface('water');
+ // Southern delta and eastern floodplain; neither changes collision geometry.
+ g.beginPath();g.moveTo(410,900);g.bezierCurveTo(475,790,590,825,670,900);
+ g.closePath();g.fillStyle=water;g.globalAlpha=.65;g.fill();g.globalAlpha=1;
+ g.beginPath();g.moveTo(885,560);g.bezierCurveTo(840,640,895,770,900,900);
+ g.lineTo(900,560);g.closePath();g.fillStyle=water;g.globalAlpha=.48;g.fill();g.globalAlpha=1;
+ const stream=(path,width)=>{g.beginPath();path();g.lineCap='round';g.lineJoin='round';g.strokeStyle='#203b35';g.lineWidth=width+7;g.stroke();g.beginPath();path();g.strokeStyle=water;g.lineWidth=width;g.stroke();};
+ // Main river: northern foothills through the central basin to southern delta.
+ stream(()=>{g.moveTo(375,0);g.bezierCurveTo(350,120,440,185,390,290);g.bezierCurveTo(325,410,430,490,385,595);g.bezierCurveTo(345,705,440,775,470,900);},15);
+ // Western tributary and eastern river valleys.
+ stream(()=>{g.moveTo(35,245);g.bezierCurveTo(155,235,185,355,290,410);g.quadraticCurveTo(335,435,390,445);},8);
+ stream(()=>{g.moveTo(825,125);g.bezierCurveTo(690,185,700,280,575,340);g.quadraticCurveTo(465,380,395,395);},9);
+ stream(()=>{g.moveTo(830,575);g.bezierCurveTo(710,560,660,690,555,725);g.quadraticCurveTo(480,750,430,765);},8);
+ // Foothill ridges in the north-east: visual only, no new impassable tiles.
+ for(let i=0;i<13;i++){const x=515+(i%5)*63+Math.floor(i/5)*18,y=35+Math.floor(i/5)*64+(i%3)*8;
+  g.beginPath();g.moveTo(x-24,y+18);g.lineTo(x,y-24-(i%3)*8);g.lineTo(x+27,y+18);g.closePath();g.fillStyle='#656b59';g.fill();g.strokeStyle='#a9a58a';g.lineWidth=2;g.stroke();}
+ // Southern marsh clusters.
+ for(let i=0;i<23;i++){const x=130+(i*97)%670,y=740+(i*43)%145;
+  g.beginPath();g.ellipse(x,y,20+i%4*7,8+i%3*4,0,0,Math.PI*2);g.fillStyle='#426d57';g.globalAlpha=.4;g.fill();}
+ g.globalAlpha=1;g.restore();
  // Dirt roads connect exactly the same neighboring regions as the playable world.
  g.beginPath();worldGrid.forEach((row,y)=>row.forEach((id,x)=>{const cx=x*180+90,cy=y*180+90;if(x<row.length-1){g.moveTo(cx,cy);g.lineTo(cx+180,cy);}if(y<worldGrid.length-1){g.moveTo(cx,cy);g.lineTo(cx,cy+180);}}));g.lineWidth=18;g.strokeStyle='#27331e99';g.stroke();g.lineWidth=12;g.strokeStyle=surface('dirt');g.stroke();
  // Timber bridges carry the east-west roads across the river.

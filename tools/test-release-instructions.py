@@ -32,6 +32,21 @@ def main():
                              'documented package')
     if documented_package != package:
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md package {documented_package} != {package}')
+    # Documentation must never recommend a superseded release APK as the
+    # current device preflight candidate. Comparing 1.0.67 to an already
+    # upgraded 1.0.68 phone would give misleading downgrade guidance.
+    section_header = '### Read-only installed APK compatibility preflight'
+    if guide.count(section_header) != 1:
+        raise SystemExit('FAIL: missing or duplicate Android upgrade preflight instructions')
+    preflight_guide = guide.split(section_header, 1)[1].split('BUILD-STATUS.txt', 1)[0]
+    candidates = re.findall(r'^python3 tools/android-upgrade-preflight\.py\s+(\S+)',
+                            preflight_guide, re.M)
+    expected_candidate = f'/path/to/Thornhaven-{version}-maintained-key.apk'
+    if len(candidates) != 2 or candidates != [expected_candidate] * 2:
+        raise SystemExit(
+            f'FAIL: upgrade preflight examples must use current signed APK '
+            f'{expected_candidate}; found {candidates!r}')
+    print('PASS: device and historical-archive preflight examples target the current APK')
     # CI cannot see private signing keys, but inconsistent public hashes or
     # source commits could advertise a stale/unsafe APK after a native rebuild.
     readme = (ROOT / 'README.md').read_text(encoding='utf-8')
@@ -46,10 +61,14 @@ def main():
             raise SystemExit(f'FAIL: missing canonical SHA-256 for {label}')
         return match.group(1)
 
+    # The last signed candidate can precede the current development version.
+    signed_versions = re.findall(r'Canonical signed ([0-9.]+) APK SHA-256', continuity)
+    assert len(signed_versions) == 1, 'Expected one documented signed candidate version'
+    signed_version = signed_versions[0]
     for kind in ('APK', 'AAB'):
         digests = (
             pinned_sha(readme, f'Maintained-signed {kind} SHA-256', f'README {kind}'),
-            pinned_sha(continuity, f'Canonical signed {version} {kind} SHA-256', f'continuity {kind}'),
+            pinned_sha(continuity, f'Canonical signed {signed_version} {kind} SHA-256', f'continuity {kind}'),
             pinned_sha(guide, f'{"canonical signed APK SHA-256 is" if kind == "APK" else "AAB SHA-256 is"}',
                        f'build instructions {kind}'),
         )
@@ -92,6 +111,61 @@ def main():
         raise SystemExit('FAIL: release instructions no longer warn against data-loss migration')
     print('PASS: both historical development signing identities and save-preservation warning retained')
     print(f'PASS: documented Android release is {package}, version {version}, versionCode {code}')
+    # Signing must be gated by the same non-destructive APK upgrade preflight
+    # regression suite as unsigned CI, before any maintained-key release step.
+    preflight_gate = 'python3 tools/test-android-upgrade-preflight.py'
+    for workflow_path in ('.github/workflows/thornhaven-android-build.yml',
+                          '.github/workflows/thornhaven-release.yml'):
+        workflow = (ROOT / workflow_path).read_text(encoding='utf-8')
+        if workflow.count(preflight_gate) != 1:
+            raise SystemExit(f'FAIL: missing or repeated upgrade-preflight gate in {workflow_path}')
+        if workflow_path.endswith('thornhaven-release.yml'):
+            marker = 'Verify maintained release-key secrets'
+            if marker not in workflow or workflow.index(preflight_gate) > workflow.index(marker):
+                raise SystemExit('FAIL: signed release tests must precede maintained-key handling')
+    print('PASS: both Android workflows enforce upgrade-preflight safety before signing')
+    # An edit to the gameplay source or regression scripts must not silently
+    # skip Android CI. A skipped build is not proof of a tested release.
+    build_workflow = (ROOT / '.github/workflows/thornhaven-android-build.yml').read_text(encoding='utf-8')
+    trigger_sections = build_workflow.split('  push:\n', 1)
+    if len(trigger_sections) != 2:
+        raise SystemExit('FAIL: Android CI no longer has push triggers')
+    push_paths = trigger_sections[1].split('\njobs:', 1)[0]
+    for path in ("      - 'index.html'", "      - 'scripts/**'",
+                 "      - 'build.gradle'", "      - 'settings.gradle'",
+                 "      - 'gradle.properties'", "      - 'gradle/**'",
+                 "      - 'gradlew'"):
+        if push_paths.count(path) != 1:
+            raise SystemExit(f'FAIL: root game HTML or scripts cannot trigger Android CI: {path}')
+    print('PASS: Android CI triggers include game HTML, scripts and Gradle inputs')
+    # Gameplay and regression edits must also reach a real Android emulator,
+    # not just the mocked browser tests in the unsigned build workflow.
+    emulator_workflow = (ROOT / '.github/workflows/thornhaven-emulator-smoke.yml').read_text(encoding='utf-8')
+    emulator_parts = emulator_workflow.split('    paths:\n', 1)
+    if len(emulator_parts) != 2:
+        raise SystemExit('FAIL: emulator workflow no longer filters push paths')
+    emulator_push_paths = emulator_parts[1].split('\njobs:', 1)[0]
+    for path in ("      - 'index.html'", "      - 'scripts/**'",
+                 "      - 'build.gradle'", "      - 'settings.gradle'",
+                 "      - 'gradle.properties'", "      - 'gradle/**'",
+                 "      - 'gradlew'"):
+        if emulator_push_paths.count(path) != 1:
+            raise SystemExit(f'FAIL: gameplay sources cannot trigger emulator smoke: {path}')
+    print('PASS: game HTML, scripts and Gradle inputs trigger native Android emulator smoke')
+    # Reject stale emulator evidence names after bumping Android versionCode.
+    evidence_names = [line.strip().split('name: ', 1)[1]
+                      for line in emulator_workflow.splitlines()
+                      if line.strip().startswith('name: thornhaven-')
+                      and '-android-' in line and line.strip().endswith('-evidence')]
+    expected_evidence = {
+        f'thornhaven-{code}-android-emulator-smoke-evidence',
+        f'thornhaven-{code}-android-api${{{{ matrix.api-level }}}}-${{{{ matrix.orientation }}}}-${{{{ matrix.side }}}}-evidence',
+    }
+    if len(evidence_names) != 2 or set(evidence_names) != expected_evidence:
+        raise SystemExit(
+            f'FAIL: emulator artifact names {evidence_names!r} must use '
+            f'Android versionCode {code}; expected {sorted(expected_evidence)!r}')
+    print('PASS: emulator evidence names match Android versionCode')
     print('NOT TESTED: Play Console versionCode availability or upload-signing acceptance')
 
 

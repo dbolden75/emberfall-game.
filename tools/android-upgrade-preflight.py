@@ -55,11 +55,38 @@ def parse_badging(output):
     return matches[0][0], int(matches[0][1])
 
 
+def expected_source_release_identity():
+    """Pin candidate identity to current Gradle release, not its filename.
+
+    A correctly signed but outdated APK can otherwise give a misleading
+    compatibility PASS against an earlier installed version.
+    """
+    gradle_path = Path(__file__).resolve().parents[1] / 'app' / 'build.gradle'
+    try:
+        gradle = gradle_path.read_text(encoding='utf-8')
+    except OSError as exc:
+        raise PreflightError('Cannot read source Android release identity; no upgrade decision') from exc
+    codes = re.findall(r'^\s*versionCode\s+(\d+)\s*$', gradle, re.M)
+    names = re.findall(r"^\s*versionName\s+'([^']+)'\s*$", gradle, re.M)
+    if len(codes) != 1 or len(names) != 1:
+        raise PreflightError('Ambiguous source Android release identity; no upgrade decision')
+    return int(codes[0]), names[0]
+
+
 def validate_release_candidate(badging, certificate_report):
     """Reject non-release APKs before contacting a phone or reporting upgrade safety."""
     pkg, code = parse_badging(badging)
     if pkg != PACKAGE or parse_certificates(certificate_report) != EXPECTED_RELEASE_SIGNER:
         raise PreflightError('Candidate has incorrect package or signing certificate')
+    expected_code, expected_name = expected_source_release_identity()
+    names = re.findall(
+        r"^package:\s+name='[^']+'\s+versionCode='\d+'\s+versionName='([^']+)'",
+        badging, re.M)
+    if len(names) != 1 or (code, names[0]) != (expected_code, expected_name):
+        raise PreflightError(
+            f'Candidate release identity is stale or ambiguous; '
+            f'expected {expected_name} (versionCode {expected_code}), '
+            'do not install or remove anything')
     sdk = re.findall(r"^sdkVersion:'(\d+)'\s*$", badging, re.M)
     if len(sdk) != 1:
         raise PreflightError('Candidate has no unambiguous minimum Android SDK')
