@@ -137,7 +137,7 @@ class UpgradePreflightCliTests(unittest.TestCase):
                         if test_only:
                             extra += 'application-testOnly\n'
                     return (f"package: name='{preflight.PACKAGE}' versionCode='{code}' "
-                            "versionName='1.0.68'\nsdkVersion:'24'\n" + extra)
+                            f"versionName='1.0.{68 if code == 170 else 57}'\nsdkVersion:'24'\n" + extra)
                 if args[0] == 'apksigner':
                     is_candidate = str(candidate) == args[-1]
                     if not is_candidate and installed_verify_fails and '--max-sdk-version' not in args:
@@ -394,8 +394,9 @@ class OfflineArchivePreflightTests(unittest.TestCase):
                 is_candidate = argv[-1] == str(candidate)
                 if argv[0] == 'aapt':
                     pkg = preflight.PACKAGE if is_candidate else (installed_package or preflight.PACKAGE)
-                    code = 169 if is_candidate else 159
-                    return (f"package: name='{pkg}' versionCode='{code}' versionName='1.0.67'\n"
+                    code = 170 if is_candidate else 159
+                    name = '1.0.68' if is_candidate else '1.0.57'
+                    return (f"package: name='{pkg}' versionCode='{code}' versionName='{name}'\n"
                             "sdkVersion:'24'\n")
                 if argv[0] == 'apksigner':
                     if legacy_only and not is_candidate and '--max-sdk-version' not in argv:
