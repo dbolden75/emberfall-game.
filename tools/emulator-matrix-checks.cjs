@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Static safety gate for Android 14/16 native emulator legs. This cannot replace
+// Static safety gate for Android 14/15/16 native emulator legs. This cannot replace
 // native tests: it prevents accidental loss of native orientation/UI assertions
 // when splitting a flaky hosted-emulator run into independent jobs.
 const assert=require('node:assert/strict');
@@ -31,7 +31,7 @@ for(const orientation of ['portrait','landscape']){
 }
 assert(probe.includes("source=source.replace(sides,"),'One-side source selection missing');
 assert.match(workflow,/orientation: \[portrait, landscape\]/);
-assert.match(workflow,/api-level: \[34, 36\]/,'Android 14 and Android 16 coverage required');
+assert.match(workflow,/api-level: \[34, 35, 36\]/,'Android 14, 15 and 16 coverage required');
 assert.match(workflow,/side: \[both\]/,'Normal full-side matrix required');
 assert.match(workflow,/side: right/,'Android14 portrait-right leg missing');
 assert.match(workflow,/side: left/,'Android14 portrait-left leg missing');
@@ -109,4 +109,4 @@ for(const args of [['portrait','wrong-side'],['both','left']]){
                JSON.stringify(args)+' '+invalid.stderr);
 }
 
-console.log('PASS (static): Android 14/16 CI requires 2 APIs x 2 orientations x 2 sides x 2 movement modes; geometry, save and settings assertions retained. Not native emulator testing.');
+console.log('PASS (static): Android 14/15/16 CI requires API 34 isolated-side and API 35/36 both-side emulator checks; geometry, save and settings assertions retained. Not native emulator testing.');

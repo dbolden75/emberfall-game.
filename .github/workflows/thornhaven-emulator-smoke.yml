@@ -269,13 +269,13 @@ jobs:
   # of the long release-upgrade + Android document-provider stress scenario.
   # The same game HTML is verified, but this job never touches production keys.
   control-matrix:
-    # Verify all controls on both Android 14 and Android 16 (target SDK 36).
-    # Combined matrix covers the original eight cases with every assertion.
+    # Verify controls on Android 14, 15 and 16 (target SDK 36).
+    # Combined matrix keeps isolated Android 14 stress legs plus Android 15/16 both-side coverage.
     strategy:
       fail-fast: false
       matrix:
         orientation: [portrait, landscape]
-        api-level: [34, 36]
+        api-level: [34, 35, 36]
         side: [both]
         # Android 14 portrait and landscape combined-side runs have
         # intermittently lost the hosted emulator during WebView settings
@@ -353,7 +353,7 @@ jobs:
           # Pre-start once and check it responds before starting the guest.
           adb start-server
           adb devices -l
-      - name: Test native control preferences on Android 14 and 16 emulators
+      - name: Test native control preferences on Android 14, 15 and 16 emulators
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
