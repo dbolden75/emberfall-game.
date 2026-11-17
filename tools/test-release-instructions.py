@@ -131,10 +131,13 @@ def main():
     if len(trigger_sections) != 2:
         raise SystemExit('FAIL: Android CI no longer has push triggers')
     push_paths = trigger_sections[1].split('\njobs:', 1)[0]
-    for path in ("      - 'index.html'", "      - 'scripts/**'"):
+    for path in ("      - 'index.html'", "      - 'scripts/**'",
+                 "      - 'build.gradle'", "      - 'settings.gradle'",
+                 "      - 'gradle.properties'", "      - 'gradle/**'",
+                 "      - 'gradlew'"):
         if push_paths.count(path) != 1:
             raise SystemExit(f'FAIL: root game HTML or scripts cannot trigger Android CI: {path}')
-    print('PASS: Android CI push triggers include all game HTML and scripts')
+    print('PASS: Android CI triggers include game HTML, scripts and Gradle inputs')
     # Gameplay and regression edits must also reach a real Android emulator,
     # not just the mocked browser tests in the unsigned build workflow.
     emulator_workflow = (ROOT / '.github/workflows/thornhaven-emulator-smoke.yml').read_text(encoding='utf-8')
@@ -142,10 +145,13 @@ def main():
     if len(emulator_parts) != 2:
         raise SystemExit('FAIL: emulator workflow no longer filters push paths')
     emulator_push_paths = emulator_parts[1].split('\njobs:', 1)[0]
-    for path in ("      - 'index.html'", "      - 'scripts/**'"):
+    for path in ("      - 'index.html'", "      - 'scripts/**'",
+                 "      - 'build.gradle'", "      - 'settings.gradle'",
+                 "      - 'gradle.properties'", "      - 'gradle/**'",
+                 "      - 'gradlew'"):
         if emulator_push_paths.count(path) != 1:
             raise SystemExit(f'FAIL: gameplay sources cannot trigger emulator smoke: {path}')
-    print('PASS: root game HTML and scripts edits trigger native Android emulator smoke')
+    print('PASS: game HTML, scripts and Gradle inputs trigger native Android emulator smoke')
     # Reject stale emulator evidence names after bumping Android versionCode.
     evidence_names = [line.strip().split('name: ', 1)[1]
                       for line in emulator_workflow.splitlines()

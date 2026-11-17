@@ -72,6 +72,12 @@ on:
       - fix/legacy-save-migration-quota-20261103
     paths:
       - 'app/**'
+      # Root Gradle inputs can change native APK behavior without app/** edits.
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'gradlew'
       - 'source-payload/**'
       - 'tools/restore-game-source.py'
       # Game-facing files require native WebView/save-upgrade testing too.

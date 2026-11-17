@@ -19,6 +19,7 @@ on:
       - 'gradlew'
       - 'settings.gradle'
       - 'build.gradle'
+      - 'gradle.properties'
       - '.github/workflows/thornhaven-android-build.yml'
       - '.github/workflows/thornhaven-release.yml'
 jobs:
