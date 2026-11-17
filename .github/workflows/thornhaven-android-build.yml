@@ -132,6 +132,26 @@ jobs:
         run: |
           test -f app/build.gradle || { echo 'Android project not uploaded yet'; exit 1; }
           gradle --no-daemon :app:lintDebug :app:assembleDebug :app:assembleRelease :app:bundleRelease
+      # Test the exact game HTML packaged into the compiled Android release,
+      # not merely the restored source tree. A packaging divergence must fail CI.
+      - name: Browser-test compiled Android release APK assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$apk"
+          compiled_dir="$RUNNER_TEMP/thornhaven-compiled-browser"
+          mkdir -p "$compiled_dir"
+          unzip -qq "$apk" 'assets/*' -d "$compiled_dir"
+          python3 tools/browser-interactive-qa.py --assets "$compiled_dir/assets" \\
+            --evidence-dir reports/browser-compiled-release-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: thornhaven-1.0.68-compiled-release-browser-qa
+          path: reports/browser-compiled-release-qa/*.png
+          if-no-files-found: ignore
+
       - name: Verify APK identity and signature
         run: |
           APK=app/build/outputs/apk/debug/app-debug.apk
