@@ -143,8 +143,7 @@ jobs:
           compiled_dir="$RUNNER_TEMP/thornhaven-compiled-browser"
           mkdir -p "$compiled_dir"
           unzip -qq "$apk" 'assets/*' -d "$compiled_dir"
-          python3 tools/browser-interactive-qa.py --assets "$compiled_dir/assets" \\
-            --evidence-dir reports/browser-compiled-release-qa
+          python3 tools/browser-interactive-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-release-qa
       - uses: actions/upload-artifact@v4
         if: always()
         with:
