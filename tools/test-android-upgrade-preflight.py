@@ -281,6 +281,29 @@ class ReleaseCandidateValidationTests(unittest.TestCase):
         self.assertEqual(preflight.validate_release_candidate(self.badge(), self.report()),
                          (170, 24))
 
+    def test_stale_maintained_signed_candidate_is_not_upgrade_ready(self):
+        # Signature parity with an older APK is insufficient: an operator
+        # can select a valid but obsolete maintained-key release by mistake.
+        for stale in (
+                self.badge().replace("versionCode='170'", "versionCode='169'"),
+                self.badge().replace("versionName='1.0.68'", "versionName='1.0.67'"),
+                self.badge().replace("versionName='1.0.68'", ""),
+                self.badge() + "package: name='com.vaelbrink.ashvale.newjourney' "
+                               "versionCode='170' versionName='1.0.68'\\n"):
+            with self.subTest(badging=stale), self.assertRaisesRegex(
+                    preflight.PreflightError, 'Candidate release identity'):
+                preflight.validate_release_candidate(stale, self.report())
+
+    def test_source_version_change_invalidates_old_apk(self):
+        with mock.patch.object(preflight, 'expected_source_release_identity',
+                               return_value=(171, '1.0.69')):
+            with self.assertRaisesRegex(preflight.PreflightError,
+                                        r'expected 1\.0\.69 \(versionCode 171\)'):
+                preflight.validate_release_candidate(self.badge(), self.report())
+
+    def test_valid_source_gradle_release_metadata(self):
+        self.assertEqual(preflight.expected_source_release_identity(), (170, '1.0.68'))
+
     def test_missing_or_ambiguous_minimum_sdk_rejected(self):
         for bad in (self.badge().replace("sdkVersion:'24'\n", ''),
                     self.badge("sdkVersion:'27'\n")):
