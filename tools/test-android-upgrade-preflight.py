@@ -48,7 +48,7 @@ class PreflightTests(unittest.TestCase):
         for legacy_signer in preflight.HISTORICAL_DEV_SIGNERS:
             with self.subTest(legacy_signer=legacy_signer), self.assertRaisesRegex(
                     preflight.PreflightError, 'cannot update it in place'):
-                self.verify(old=159, new=170, current_cert=legacy_signer)
+                self.verify(old=158, new=170, current_cert=legacy_signer)
 
     def test_play_app_signing_mismatch_fails_closed(self):
         with self.assertRaisesRegex(preflight.PreflightError, 'Installed signer differs'):
@@ -129,7 +129,8 @@ class UpgradePreflightCliTests(unittest.TestCase):
             def fake_command(args):
                 calls.append(tuple(args))
                 if args[0] == 'aapt':
-                    code = 170 if str(candidate) == args[-1] else 159
+                    code = 170 if str(candidate) == args[-1] else (158 if installed_dev_signer else 159)
+                    name = {170: '1.0.68', 159: '1.0.57', 158: '1.0.56-dev'}[code]
                     extra = ''
                     if str(candidate) == args[-1]:
                         if debuggable:
@@ -137,7 +138,7 @@ class UpgradePreflightCliTests(unittest.TestCase):
                         if test_only:
                             extra += 'application-testOnly\n'
                     return (f"package: name='{preflight.PACKAGE}' versionCode='{code}' "
-                            f"versionName='1.0.{68 if code == 170 else 57}'\nsdkVersion:'24'\n" + extra)
+                            f"versionName='{name}'\nsdkVersion:'24'\n" + extra)
                 if args[0] == 'apksigner':
                     is_candidate = str(candidate) == args[-1]
                     if not is_candidate and installed_verify_fails and '--max-sdk-version' not in args:
@@ -394,8 +395,8 @@ class OfflineArchivePreflightTests(unittest.TestCase):
                 is_candidate = argv[-1] == str(candidate)
                 if argv[0] == 'aapt':
                     pkg = preflight.PACKAGE if is_candidate else (installed_package or preflight.PACKAGE)
-                    code = 170 if is_candidate else 159
-                    name = '1.0.68' if is_candidate else '1.0.57'
+                    code = 170 if is_candidate else (158 if current_signer in preflight.HISTORICAL_DEV_SIGNERS else 159)
+                    name = '1.0.68' if is_candidate else ('1.0.56-dev' if code == 158 else '1.0.57')
                     return (f"package: name='{pkg}' versionCode='{code}' versionName='{name}'\n"
                             "sdkVersion:'24'\n")
                 if argv[0] == 'apksigner':
@@ -495,15 +496,16 @@ class OfflineArchivePreflightTests(unittest.TestCase):
 
 
 class CurrentReleaseUpgradeTests(unittest.TestCase):
-    """Protect the actual 1.0.67 (169) -> 1.0.68 (170) update boundary.
+    """Protect the 1.0.67 (169) -> 1.0.68 (170) boundary and 158 dev APKs.
 
     These are SDK-free metadata/certificate simulations; the signed APK
     pair and the real phone still require independent verification.
     """
 
     def badging(self, version):
+        name = '1.0.56-dev' if version == 158 else f'1.0.{version - 102}'
         return (f"package: name='{preflight.PACKAGE}' versionCode='{version}' "
-                f"versionName='1.0.{version - 102}'\n")
+                f"versionName='{name}'\n")
 
     def certificate(self, digest):
         return f'Signer #1 certificate SHA-256 digest: {digest}\n'
@@ -529,7 +531,7 @@ class CurrentReleaseUpgradeTests(unittest.TestCase):
             with self.subTest(filename=filename), self.assertRaisesRegex(
                     preflight.PreflightError, 'cannot update it in place'):
                 preflight.validate_pair(
-                    self.badging(159), self.certificate(digest),
+                    self.badging(158), self.certificate(digest),
                     self.badging(170), release)
 
 
