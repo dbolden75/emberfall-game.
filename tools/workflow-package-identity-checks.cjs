@@ -28,6 +28,19 @@ assert(maintained.includes('unzip -qq "$apk" \'assets/*\' -d "$compiled_dir"'),
   'CI must extract the actual compiled release APK for browser QA');
 assert(maintained.includes('python3 tools/browser-interactive-qa.py --assets "$compiled_dir/assets"'),
   'CI must interactively test the compiled release APK assets');
+// Compiled release QA must include high-risk gameplay paths, not just a menu
+// smoke; source-tree browser tests alone cannot validate the APK's packaged code.
+for (const call of [
+  'python3 tools/browser-pet-combat-qa.py --assets "$compiled_dir/assets"',
+  'python3 tools/browser-purchase-qa.py --assets "$compiled_dir/assets"',
+  '--evidence-dir reports/browser-compiled-pet-combat-qa',
+  '--evidence-dir reports/browser-compiled-purchase-qa --orientation portrait',
+  '--evidence-dir reports/browser-compiled-purchase-qa --orientation landscape',
+  'reports/browser-compiled-pet-combat-qa/*.png',
+  'reports/browser-compiled-purchase-qa/*.png',
+]) {
+  assert(maintained.includes(call), 'Compiled Android release QA gate missing: ' + call);
+}
 assert.match(gradle, /applicationId\s+['"]com\.vaelbrink\.ashvale\.newjourney['"]/,
   'The appId must preserve existing Play app and local saves');
 assert.match(gradle, /versionCode\s+170\b/,
