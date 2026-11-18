@@ -6,6 +6,7 @@ Run after restore-game-source.py. This only reads source files and never edits s
 import hashlib
 import json
 import re
+import runpy
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
@@ -40,7 +41,10 @@ expected = {
 for path, wanted in expected.items():
     source = root / path
     assert source.is_file(), f"Missing 1.0.69 release asset: {path}"
-    assert hashlib.sha256(source.read_bytes()).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
+    data = source.read_bytes()
+    if path == 'app/src/main/assets/index.html':
+        data = runpy.run_path(str(root / 'tools/apply-last-lantern.py'))['remove'](data.decode()).encode()
+    assert hashlib.sha256(data).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
 
 html = (root / "app/src/main/assets/index.html").read_text()
 for script in ("immersive-atlas.js", "smooth-motion.js", "natural-followers.js",

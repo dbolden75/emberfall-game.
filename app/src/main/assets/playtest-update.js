@@ -19,6 +19,8 @@ function paint(){if(panel.hidden)return;const b=worldBounds(),w=canvas.clientWid
  if(activeMap.town){const used=new Set(activeMap.npcs.map(n=>n.frontage));used.add('classHome');const buildings=[...used].map(k=>townFrontages[k]).filter(Boolean);for(const [x,y,w,h] of townOutlyingHouses)buildings.push({x,y,w,h});
   for(const f of buildings){g.fillStyle='#776653';g.fillRect(f.x,f.y,f.w,f.h);g.strokeStyle='#ead7ac';g.lineWidth=1/scale;g.strokeRect(f.x,f.y,f.w,f.h);if(f.label&&revealed(f.x+f.w/2,f.y+f.h)){g.fillStyle='#fff1cf';g.font=(9/scale)+'px sans-serif';g.fillText(f.label,f.x,f.y+f.h/2);}}
  }
+ // Authored cutaway rooms share their visible wall/bench footprints with collision.
+ for(const [x,y,x2,y2] of activeMap.solidAreas||[]){g.fillStyle='#514c43';g.fillRect(x,y,x2-x,y2-y);}
  const dot=(x,y,color,r=7)=>{g.fillStyle=color;g.beginPath();g.arc(x,y,r/scale,0,Math.PI*2);g.fill();};
  for(const t of activeMap.trees||[]){const x=Array.isArray(t)?t[0]:t.x,y=Array.isArray(t)?t[1]:t.y;g.fillStyle='#253d3544';g.beginPath();g.ellipse(x+5,y+5,17,10,0,0,Math.PI*2);g.fill();g.fillStyle=regionSurface()==='snow'?'#71928a':'#355f43';g.beginPath();g.moveTo(x,y-20);g.lineTo(x-15,y+9);g.lineTo(x+15,y+9);g.closePath();g.fill();g.fillStyle='#b3bc8844';g.beginPath();g.moveTo(x,y-17);g.lineTo(x-10,y+5);g.lineTo(x,y+5);g.closePath();g.fill();}
  for(const t of activeMap.stones||[]){const x=Array.isArray(t)?t[0]:t.x,y=Array.isArray(t)?t[1]:t.y;g.fillStyle='#555e59';g.beginPath();g.moveTo(x-11,y+6);g.lineTo(x-8,y-7);g.lineTo(x+4,y-12);g.lineTo(x+12,y);g.lineTo(x+8,y+8);g.closePath();g.fill();g.strokeStyle='#c7cbbb';g.lineWidth=1;g.stroke();}

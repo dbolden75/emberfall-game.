@@ -1,0 +1,25 @@
+{
+  "base": "5f236f23deeb8aeadf8049ff84f367a07a7ee403",
+  "node_suites": 135,
+  "passed": 123,
+  "failed_prerequisite": 12,
+  "prerequisite": "javac unavailable (JRE only)",
+  "additional_passed": [
+    "syntax and HTML asset references",
+    "pinned baseline and exact authored overlay",
+    "Last Lantern focused runtime including active retreat",
+    "full game runtime integration",
+    "atlas geography and world-map suites",
+    "release-instruction checks",
+    "native parity tests with mock packages",
+    "duplicate-payload guards"
+  ],
+  "unrun": [
+    "Android build/emulator locally",
+    "physical Samsung touch/performance",
+    "Play-delivered update",
+    "live Billing"
+  ],
+  "generated_html_sha256": "586da746f64d2f3f77f065e32f3a79a7122a3f37ebfdbcc17dc7c522a03185e7",
+  "module_sha256": "7cdfcfd13597d2bb0375c4f3f1de794650242eb4a4378a54be84ba8b6152f0f2"
+}

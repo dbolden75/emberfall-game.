@@ -1,0 +1,28 @@
+[
+  {
+    "orientation": "landscape",
+    "passed": [
+      "UI entry/exit/reentry",
+      "keyboard movement through both doors",
+      "four telegraphs and dodge",
+      "dialogue pauses pending attack",
+      "combat-control clearance",
+      "evidence and reward",
+      "partial/completed document reload"
+    ],
+    "pageErrors": []
+  },
+  {
+    "orientation": "portrait",
+    "passed": [
+      "UI entry/exit/reentry",
+      "keyboard movement through both doors",
+      "four telegraphs and dodge",
+      "dialogue pauses pending attack",
+      "combat-control clearance",
+      "evidence and reward",
+      "partial/completed document reload"
+    ],
+    "pageErrors": []
+  }
+]
