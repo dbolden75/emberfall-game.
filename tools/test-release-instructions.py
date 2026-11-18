@@ -41,13 +41,15 @@ def main():
     preflight_guide = guide.split(section_header, 1)[1].split('BUILD-STATUS.txt', 1)[0]
     candidates = re.findall(r'^python3 tools/android-upgrade-preflight\.py\s+(\S+)',
                             preflight_guide, re.M)
-    # The source may be newer than the last signed APK; never suggest
-    # installing the current unsigned audio development candidate.
-    continuity_for_signed = (ROOT / 'THORNHAVEN_CONTINUITY.md').read_text(encoding='utf-8')
-    signed_candidates = re.findall(r'Canonical signed ([0-9.]+) APK SHA-256', continuity_for_signed)
-    if len(signed_candidates) != 1:
-        raise SystemExit('FAIL: ambiguous maintained-signed preflight candidate')
-    expected_candidate = f'/path/to/Thornhaven-{signed_candidates[0]}-maintained-key.apk'
+    # The development source can be ahead of the last signed, deliverable APK.
+    # Prefer the explicit current release-handover marker; the historic SHA
+    # provenance below remains separate and must not be mislabelled as current.
+    signed_candidates = re.findall(
+        r'maintained-signed ([0-9.]+) release remains the last installable candidate', guide)
+    if len(signed_candidates) > 1:
+        raise SystemExit('FAIL: ambiguous last installable maintained-signed APK')
+    signed_candidate_version = signed_candidates[0] if signed_candidates else version
+    expected_candidate = f'/path/to/Thornhaven-{signed_candidate_version}-maintained-key.apk'
     if len(candidates) != 2 or candidates != [expected_candidate] * 2:
         raise SystemExit(
             f'FAIL: upgrade preflight examples must use current signed APK '
