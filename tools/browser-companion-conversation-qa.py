@@ -38,7 +38,22 @@ def run(browser, assets, output, width, height):
         click('What should we focus on?')
         page.locator('#adventureChoices').get_by_role('button', name=re.compile(re.escape(title))).click()
 
+    page.evaluate("""() => {
+        window.voiceEvents=[]; window.voiceUnhandled=[];
+        window.addEventListener('unhandledrejection',e=>voiceUnhandled.push(String(e.reason)));
+        window.stubVoice={
+            speak(payload) {
+                if(document.getElementById('adventureScreen').hidden ||
+                   payload.text!==document.getElementById('adventureText').textContent ||
+                   !document.querySelector('#adventureChoices button')) throw Error('Speech before final render');
+                voiceEvents.push({event:'speak',...payload});
+            },
+            stop() {voiceEvents.push({event:'stop'});}
+        };
+        window.ThornhavenVoice=stubVoice;
+    }""")
     open_talk()
+    assert not page.evaluate("voiceEvents.some(e=>e.event==='speak')")
     assert 'No active companion' in answer()
     click('Manage companions')
     page.evaluate("recruitHuman('dalen')")
@@ -57,7 +72,53 @@ def run(browser, assets, output, width, height):
     assert page.evaluate("document.activeElement.getAttribute('aria-label')") == 'Close companion conversation'
     page.keyboard.press('Escape')
     assert page.locator('#adventureScreen').is_hidden()
+    assert page.evaluate('voiceEvents.at(-1).event') == 'stop'
     assert page.evaluate('document.activeElement.id') == 'hudDetailsToggle'
+    # Conversation-specific attributes/footer must not leak after closing.
+    assert page.locator('#adventureText').get_attribute('tabindex') is None
+    assert page.locator('#adventureScreen .screenClose').get_attribute('aria-label') == 'Close story'
+    assert page.locator('#adventureScreen .screenFoot').inner_text() == 'Choices and progress save with this character.'
+    page.evaluate('voiceEvents=[]')
+    open_talk()
+    click('Remind me about your summons')
+    events=page.evaluate('voiceEvents')
+    assert [e['event'] for e in events] == ['speak','stop','speak'], events
+    assert all(e.get('speakerId')=='companion:dalen' and e.get('profile')=='merchant'
+               for e in events if e['event']=='speak')
+    assert events[-1]['text']==answer() and 'Offline authored' not in events[-1]['text']
+    page.evaluate("openAdventureDialog('Interrupted story','Narrator text',[])")
+    assert page.evaluate('voiceEvents.at(-1).event') == 'stop'
+    assert page.locator('#adventureText').get_attribute('tabindex') is None
+    assert page.locator('#adventureScreen .screenClose').get_attribute('aria-label') == 'Close story'
+    assert 'Offline authored' not in page.locator('#adventureScreen .screenFoot').inner_text()
+    open_talk()
+    page.evaluate('openHumanRoster()')
+    assert page.locator('#adventureText').get_attribute('tabindex') is None
+    assert 'Offline authored' not in page.locator('#adventureScreen .screenFoot').inner_text()
+    open_talk()
+    page.evaluate('openQuestJournal()')
+    assert page.evaluate('voiceEvents.at(-1).event') == 'stop'
+    assert page.locator('#adventureText').get_attribute('tabindex') is None
+    # Preserve an existing tabindex too, not just the normal absence of one.
+    page.evaluate("document.getElementById('adventureText').setAttribute('tabindex','7')")
+    open_talk()
+    page.evaluate("closePanel('adventureScreen')")
+    assert page.locator('#adventureText').get_attribute('tabindex') == '7'
+    page.evaluate("document.getElementById('adventureText').removeAttribute('tabindex')")
+    # Missing, sync-throwing and rejected asynchronous optional audio all retain
+    # working text and navigation, without unhandled promise rejection.
+    for impl in ["undefined", "{speak(){throw Error('speak')},stop(){throw Error('stop')}}",
+                 "{speak(){return Promise.reject(Error('speak'))},stop(){return Promise.reject(Error('stop'))}}"]:
+        page.evaluate('window.ThornhavenVoice='+impl)
+        open_talk()
+        click('Remind me about your summons')
+        assert answer()==page.evaluate('humanStories.dalen.clue')
+        page.evaluate("closePanel('adventureScreen')")
+        assert page.locator('#adventureText').get_attribute('tabindex') is None
+    page.evaluate("Object.defineProperty(window,'ThornhavenVoice',{configurable:true,get(){throw Error('unavailable')}})")
+    open_talk()
+    page.evaluate("closePanel('adventureScreen');delete window.ThornhavenVoice;window.ThornhavenVoice=stubVoice")
+    assert page.evaluate('voiceUnhandled') == []
     open_talk()
     click('Remind me about your summons')
     assert answer() == page.evaluate('humanStories.dalen.clue')

@@ -26,7 +26,7 @@ if code != 171 and version != "1.0.69":
 assert (code, version) == (171, "1.0.69"), "Incomplete 1.0.69 version promotion"
 
 expected = {
-    "app/src/main/assets/companion-conversations.js": "c1da1b165807141398bc42f2d36dcd9a706fce5de98f42a26e9816540958453d",
+    "app/src/main/assets/companion-conversations.js": "cded629c7f31df1807f8012920ba794cd52efc94d3af7ce28e57c4986eee222d",
     "app/src/main/assets/index.html": "22d4d109078cbcedc7973c205dc8ea3064c4a02ebbf40ca495fbc87aa13e147c",
     "app/src/main/assets/compact-hud.js": "31767d516d7d5afd78088627ce83c1bcc152d1a3de3ee7aea1e2ef2ada6f5fff",
     "app/src/main/assets/immersive-atlas.css": "1906ac055b55bfca73b898c8564d512b49d85c823cb1c316682f8b5460ad63e8",

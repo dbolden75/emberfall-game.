@@ -37,7 +37,31 @@
   }
   return g;
  }
- function invalidate() { session = null; }
+ function voiceCall(method, payload) {
+  // Optional audio must never prevent text, navigation or cleanup from working.
+  try {
+   const api = window.ThornhavenVoice;
+   if (typeof api?.[method] === 'function') Promise.resolve(api[method](payload)).catch(() => {});
+  } catch (_) { /* Text remains the primary response. */ }
+ }
+ function restoreAttribute(element, name, value) {
+  if (value === null) element.removeAttribute(name);
+  else element.setAttribute(name,value);
+ }
+ function invalidate() {
+  const previous = session;
+  session = null;
+  if (!previous) return;
+  voiceCall('stop');
+  panel.querySelector('.screenFoot').textContent = previous.footer;
+  restoreAttribute(panel.querySelector('.screenClose'),'aria-label',previous.closeLabel);
+  restoreAttribute(text,'tabindex',previous.tabindex);
+ }
+ const prepareBefore = preparePanel;
+ preparePanel = function(id) {
+  if (id !== 'adventureScreen') invalidate();
+  return prepareBefore.apply(this,arguments);
+ };
  const dialogBefore = openAdventureDialog;
  openAdventureDialog = function(...args) { invalidate(); return dialogBefore.apply(this,args); };
  const closeBefore = closePanel;
@@ -54,10 +78,15 @@
  };
  function render(body, options, c = companion()) {
   openAdventureDialog(c ? companionDefs[c.id].name : 'Companion conversation', body, []);
+  const turn = session = {
+   id:c?.id || null, slot:activeSlotId,
+   footer:panel.querySelector('.screenFoot').textContent,
+   closeLabel:panel.querySelector('.screenClose').getAttribute('aria-label'),
+   tabindex:text.getAttribute('tabindex')
+  };
   panel.querySelector('.screenFoot').textContent = 'Offline authored conversation · responds to current quests · no generative AI';
   panel.querySelector('.screenClose').setAttribute('aria-label','Close companion conversation');
   text.setAttribute('tabindex','-1');
-  const turn = session = {id:c?.id || null, slot:activeSlotId};
   choices.replaceChildren();
   for (const [label, action] of options) {
    const button = document.createElement('button');
@@ -72,6 +101,9 @@
   }
   // Focus the answer so keyboard/screen-reader users encounter the new turn.
   text.focus();
+  // Stable technical profile, not new character lore. Read only the final visible
+  // reply, never controls/footer, and never narrate the no-companion notice.
+  if (c) voiceCall('speak',{speakerId:'companion:'+c.id,profile:'merchant',text:text.textContent});
  }
  function open() {
   const c = companion();
@@ -125,7 +157,7 @@
   const result = rosterBefore.apply(this,args);
   const button = document.createElement('button');
   button.style.minHeight = '44px';
-   button.type = 'button'; button.textContent = 'Talk with active companion';
+  button.type = 'button'; button.textContent = 'Talk with active companion';
   button.id = 'companionConversationButton'; button.onclick = open;
   choices.prepend(button); return result;
  };
@@ -141,7 +173,6 @@
    else if (!event.shiftKey && (document.activeElement === last || document.activeElement === text)) { event.preventDefault(); first.focus(); }
   }
  });
- // Deliberately text-only. Audio may wrap the existing dialog lifecycle once its
- // optional speaker/interrupt/stop contract is available; no speech dependency.
+ // Audio is optional; this entry point and every conversation work without it.
  window.ThornhavenCompanionConversation = Object.freeze({open});
 })();

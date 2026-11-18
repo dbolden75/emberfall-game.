@@ -43,14 +43,23 @@ It wraps `openHumanRoster` to add a DOM-created entry button. It uses the existi
 `openAdventureDialog` / `adventureScreen` modal, with plain-text DOM buttons and
 answers, 44px minimum choice height, focus on each answer, scoped Tab containment,
 Escape dismissal and focus return to a visible Party control. It wraps
-`openAdventureDialog` and `closePanel` to invalidate old turns. Callbacks check the
+`openAdventureDialog`, `closePanel`, and non-story `preparePanel` transitions to
+invalidate old turns. Each turn captures and restores the previous footer text,
+close-button aria-label and answer tabindex (including an absent attribute). Callbacks check the
 turn identity, panel visibility, active save slot and active living companion.
 
 Public entry: `window.ThornhavenCompanionConversation.open()` (no arguments).
-There is **no speech API dependency or speech hook yet**. Once the independent
-audio work supplies its speaker/interrupt/stop contract, integration can be added
-at the conversation render/invalidation lifecycle. Text must remain usable without
-that integration. The module does not call speech synthesis or duplicate audio.
+Optional audio contract: after the final reply and choices are displayed, call
+`window.ThornhavenVoice.speak({speakerId:'companion:<id>', profile:'merchant',
+text:existingVisibleReply})`. The stable `merchant` profile is a technical default,
+not character lore. On replacement, close, roster/story interruption, or another
+panel opening, call `stop()`. Never speak no-companion notices, narrator story text,
+choice controls or the technical footer. Missing methods, throwing methods/getters,
+and rejected promises are isolated; text and navigation keep working.
+
+No audio implementation is bundled or imported from PR #312. There is no
+MutationObserver workaround for its lifecycle race. The branch stays independent;
+audible output still depends on the optional voice module being present and working.
 
 `restore-1.0.69.py` still authenticates the immutable 1.0.69 baseline, then adds
 exactly one script tag. The source gates pin the feature script and resulting HTML
@@ -62,9 +71,10 @@ checked into Git. The old root browser `index.html` is not the current native so
 ## Verification (November 18, 2026)
 
 - Aggregate: 150 commands (all `tools/*checks.cjs`, all `tools/test*.py`, both atlas
-  scripts, source syntax/assets and candidate gate). Final result: 138 passed;
-  12 native Java checks blocked by missing `javac`. The initial release-identity
-  hash failure was fixed and that gate rerun successfully.
+  scripts, source syntax/assets and candidate gate). Follow-up result: 150 passed. The 12
+  previously blocked native Java checks passed using the installed Java 21
+  `jdk.compiler` module through a temporary `javac` wrapper; no JDK download
+  or permissions bypass was needed.
 - Full-game mock regression: unchanged snapshot across conversation, cloud-save
   encode/parse roundtrip, absent companion, script load, no transport/storage calls,
   text-only rendering.
@@ -77,6 +87,13 @@ checked into Git. The old root browser `index.html` is not the current native so
   unchanged snapshots, cloud export validation and fresh-page saved-slot Continue.
   Both orientations passed with zero page errors. Test fixture state changes are
   confined to QA; browser storage uses the established in-memory test transport.
+- Optional voice stub regressions passed in both orientations: final visible reply
+  and choices exist before speaking; stable speaker/profile; stop before the next
+  reply and on close/story/roster/non-story interruption; no narrator/no-companion
+  speech; missing/throwing/rejecting implementations preserve text with no unhandled
+  promise rejection. Attribute/footer cleanup and restoration of a preexisting
+  tabindex are covered. This is contract validation, not audible voice QA.
+- Existing camp-story browser regression also passed in both orientations.
 - Source parity: baseline restored and authenticated, single added feature tag,
   final HTML SHA-256
   `22d4d109078cbcedc7973c205dc8ea3064c4a02ebbf40ca495fbc87aa13e147c`,
@@ -99,10 +116,17 @@ Run restoration from a clean checkout: the existing restoration process refuses
 to overwrite a different generated HTML. Local evidence lives under
 `reports/companion-conversations/` and `reports/browser-companion-conversation-qa/`.
 
-The 12 blocked checks are: `android-back-navigation-save`,
-`cloud-picker-native-callback`, and `native-billing-{connection,launch,legacy-offer,
-ownership,purchase-callback,refresh-race,refresh-runtime,restore-list,snapshot-guard,
-unfetched}` (all `tools/*-checks.cjs`). Public Adoptium and Corretto JDK download
-attempts returned HTTP 403. Android lint/compilation, actual APK/AAB payload parity,
-signing, emulator/physical-device tests and Play-delivered save retention were not
-run locally. No release was signed, published, deployed or version-bumped.
+The initial 12 Java-check blockers are resolved. This environment has Java
+21.0.12.1 with `jdk.compiler` despite lacking a `javac` executable. A temporary
+executable on PATH delegates compiler arguments to:
+
+```sh
+/usr/bin/java --module jdk.compiler/com.sun.tools.javac.Main "$@"
+```
+
+All aggregate checks were rerun with that wrapper. It is test-environment setup,
+not a repository/toolchain change. Android's required JDK 17/SDK/Gradle build was
+not performed. Android lint/compilation, actual APK/AAB payload parity, signing,
+emulator/physical-device tests, audible speech and Play-delivered save retention
+remain unverified locally. No release was signed, published, deployed or
+version-bumped.
