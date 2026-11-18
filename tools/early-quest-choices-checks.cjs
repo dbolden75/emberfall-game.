@@ -73,4 +73,5 @@ vm.runInContext(`
  for(const q of settlementTasks())assert(inventoryIds.includes('settlement_'+q.id));
  for(const id of Object.keys(storyDungeons))assert(inventoryIds.includes('challenge_'+id));
 `,root);
+assert(fs.readFileSync('app/src/main/assets/early-quest-choices.js','utf8').includes('Willowfen’s trees yield Hardwood Logs'));
 console.log('PASS inventory: catalog including conditional late quests, all hunt templates, small settlement tasks and sanctum replays accounted for.');

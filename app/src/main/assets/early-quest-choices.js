@@ -60,20 +60,20 @@
   const owner=townQuestState,s=regionalState('willowfen'),current=()=>owner===townQuestState&&s===regionalState('willowfen')&&near('willowfen',o)&&!journalPaused('regional_willowfen');
   if(!current())return true;
   if(!s.accepted&&o.piece===undefined){
-   openAdventureDialog('The Lost Lanterns','The marsh guide’s three lanterns have fallen from their posts. Recover them for the guide, or spend timber to rehang them where travelers need light. Both routes earn the guide’s usual reward.',[['return','Return the lanterns to the guide'],['rehang','Rehang the lanterns · three Wood Logs']].map(([method,label])=>({label,action:()=>{if(!current()||s.accepted||s.claimed||!journalCanAccept('regional_willowfen'))return;s.accepted=true;s.method=method;s.found=[];s.progress=0;campCommit();say(method==='rehang'?'Visit each marked lantern with one Wood Log, then report to the guide.':'Recover all three lanterns, then return to the guide.');}})));return true;
+   openAdventureDialog('The Lost Lanterns','The marsh guide’s three lanterns have fallen from their posts. Recover them for the guide, or spend timber to rehang them where travelers need light. Both routes earn the guide’s usual reward. Rehanging uses three ordinary Wood Logs: chop them in Ashvale with a hatchet. Willowfen’s trees yield Hardwood Logs.',[['return','Return the lanterns to the guide'],['rehang','Rehang the lanterns · three Wood Logs']].map(([method,label])=>({label,action:()=>{if(!current()||s.accepted||s.claimed||!journalCanAccept('regional_willowfen'))return;s.accepted=true;s.method=method;s.found=[];s.progress=0;campCommit();say(method==='rehang'?'Chop three ordinary Wood Logs in Ashvale with a hatchet. Visit each marked lantern with one log, then report to the guide.':'Recover all three lanterns, then return to the guide.');}})));return true;
   }
   if(s.method==='rehang'&&o.piece!==undefined&&!s.claimed){
    if(s.found.includes(o.piece)){say('This lantern already lights its post.');return true;}
-   if(!removeItem('wood_log',1)){say('Rehanging this lantern needs one Wood Log.');return true;}
+   if(!removeItem('wood_log',1)){say('Rehanging needs one ordinary Wood Log. Chop logs in Ashvale with a hatchet; Willowfen yields Hardwood Logs.');return true;}
    s.found.push(o.piece);campCommit();say('Lantern rehung · '+s.found.length+'/3. Report to the guide after the third.');return true;
   }
   if(s.claimed&&s.method==='rehang'){say('The guide tends the lights you rehung along the marsh route.');return true;}
   return oldRegional(o);
  };
  const oldCatalog=questCatalog;
- questCatalog=function(){const rows=oldCatalog(),s=townQuestState.regional_willowfen;if(s?.method)for(const q of rows)if(q.id==='regional_willowfen')q.desc=s.method==='rehang'?(s.claimed?'I rehung the guide’s three lanterns. Their lights remain along the marsh route.':'Bring one Wood Log to each marked lantern, rehang all three, then report to the guide.'):(s.claimed?'I returned the three lanterns to the guide. Their old posts remain dark.':q.desc);return rows;};
+ questCatalog=function(){const rows=oldCatalog(),s=townQuestState.regional_willowfen;if(s?.method)for(const q of rows)if(q.id==='regional_willowfen')q.desc=s.method==='rehang'?(s.claimed?'I rehung the guide’s three lanterns. Their lights remain along the marsh route.':'Chop three ordinary Wood Logs in Ashvale with a hatchet. Bring one to each marked lantern, rehang all three, then report to the guide.'):(s.claimed?'I returned the three lanterns to the guide. Their old posts remain dark.':q.desc);return rows;};
  const oldQuestGuide=questGuide;
- questGuide=function(q){const g=oldQuestGuide(q);if(q.id==='regional_willowfen'&&townQuestState.regional_willowfen?.method==='rehang')g.detail='Rehang each of the three marked lanterns with one Wood Log. Return to the guide after all three.';return g;};
+ questGuide=function(q){const g=oldQuestGuide(q);if(q.id==='regional_willowfen'&&townQuestState.regional_willowfen?.method==='rehang')g.detail='Chop ordinary Wood Logs in Ashvale with a hatchet. Rehang each marked lantern with one log, then return to the guide after all three.';return g;};
  const oldDraw=drawWayfarerCamp;
  drawWayfarerCamp=function(){oldDraw();if(mapId==='wayfarers_camp'){standArt('crate',tablet.x,tablet.y,30);drawLocationLabel(tablet.x,tablet.y-34,'PUBLIC WAYMARK');}
   if(mapId==='whisperwood')for(const o of markers){ctx.fillStyle=townQuestState._campPatrol?.markers?.includes(o.marker)?'#e9c782':'#766c59';ctx.fillRect(o.x-3,o.y-20,6,24);ctx.fillRect(o.x-12,o.y-20,24,9);if(Math.hypot(player.x-o.x,player.y-o.y)<110)drawLocationLabel(o.x,o.y-35,o.label);}
