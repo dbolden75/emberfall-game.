@@ -48,6 +48,15 @@ def verify_game_assets(apk):
         if damaged is not None:
             raise RuntimeError(f'APK contains corrupt ZIP member: {damaged}')
         counts = Counter(archive.namelist())
+        # A complete source match also rejects stale extra assets left by
+        # a reused/incremental APK. The AAB signer already checks this set.
+        packaged = {name for name in counts
+                    if name.startswith('assets/') and not name.endswith('/')}
+        if packaged != set(source_assets):
+            raise RuntimeError(
+                'APK game assets differ from source manifest: '
+                f'missing {sorted(set(source_assets) - packaged)}, '
+                f'extra {sorted(packaged - set(source_assets))}')
         for name, source in source_assets.items():
             if counts[name] != 1:
                 raise RuntimeError(f'APK game asset must appear exactly once: {name} (found {counts[name]})')
