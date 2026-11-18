@@ -42,6 +42,26 @@ class BinaryManifestGateTests(unittest.TestCase):
                 data[entry][1][key] = value
                 self.assertTrue(module.validate(data, 171))
 
+    def test_debuggable_or_test_only_release_is_rejected(self):
+        # The release package must never ship as an inspectable or test-only build.
+        for flag in ('debuggable', 'testOnly'):
+            for value in (True, 1, 'true'):
+                with self.subTest(flag=flag, value=value):
+                    data = fixture()
+                    data[2][1][flag] = value
+                    self.assertTrue(any('debuggable or testOnly' in issue
+                                        for issue in module.validate(data, 171)))
+            with self.subTest(flag=flag, value=False):
+                data = fixture()
+                data[2][1][flag] = False
+                self.assertEqual(module.validate(data, 171), [])
+
+    def test_duplicate_application_node_fails_closed(self):
+        data = fixture()
+        data.append(('manifest/application', {'allowBackup': False}))
+        self.assertTrue(any('debuggable or testOnly' in issue
+                            for issue in module.validate(data, 171)))
+
     def test_missing_billing_permission_and_service_visibility_fail(self):
         for path, name in [('manifest/uses-permission', module.BILLING_PERMISSION),
                            ('manifest/queries/intent/action', module.BILLING_QUERY)]:

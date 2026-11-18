@@ -133,6 +133,8 @@ def validate(nodes, version_code):
     apps = entries('manifest/application')
     if len(apps) != 1 or apps[0].get('allowBackup') is not False:
         issues.append('Compiled application backup policy is not pinned to false')
+    if len(apps) != 1 or any(apps[0].get(flag, False) is not False for flag in ('debuggable', 'testOnly')):
+        issues.append('Release APK must not be debuggable or testOnly')
     permissions = {a.get('name') for a in entries('manifest/uses-permission')}
     if BILLING_PERMISSION not in permissions:
         issues.append('Compiled app lacks Play Billing permission')
