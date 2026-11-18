@@ -1,0 +1,1274 @@
+{
+  "html_sha256": "84dfaf9ecb23278f5729dc3d98641f9ee129e9da1aa1dc26b8b1892aa97d777b",
+  "results": [
+    {
+      "command": [
+        "node",
+        "tools/android-back-navigation-save-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: verified Back save, refusal on quota/storage failure, timeout retry, stale callbacks and navigation. Mock WebView, not device.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/android-background-save-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 9 production background-save JavaScript scenarios and native lifecycle guards. Mocked storage, not device testing.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/backup-debug-webview-saves-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: exported read-only archive with private permissions\nPASS: never overwrite an existing backup\nPASS: non-debuggable, ambiguous device, corrupt, empty, partial, mismatched, metadata-only and zero-byte LevelDB backups blocked\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/billing-catalog-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 15 shop/native SKUs agree; 4 retired SKUs excluded from new sales; Play activation remains unverified.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/billing-catalog-consistency-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 15 registered Play IDs match native, storefront and delivery; 11 available in app, 4 retired but restorable; bundle and consumption checks passed.\nNOT VERIFIED: SKU activation/prices in Play Console or actual purchase and restoration.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/briar-save-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: Briar Hollow clue arrays and Ada escape plans validated without changing older saves.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/character-slot-delete-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: eight WebView character-deletion regressions including quota, silent rejection, active-slot guard and legacy fallback.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/character-slot-save-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: ten real HTML slot cases including failed character application and UI rendering rollback.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-enemy-health-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: corrupt enemy max-health ratios are refused before save writes; valid/legacy snapshots work\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-enemy-null-state-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 5 corrupt enemy null fields refused atomically; zero/false and historical omitted fields preserved\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-future-cooldown-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: impossible future gathering/respawn deadlines rejected atomically, valid and historical saves preserved\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-picker-native-callback-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: production Android picker callback: 13 stale, cancelled, save, load, damaged, oversize, rejected-worker and closed scenarios\nNOT VERIFIED: real Android out-of-order provider delivery, physical Samsung phone, or Play-signing update\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-picker-result-isolation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS (source gate): unique SAVE/LOAD request-code routing and stale-result isolation\nNOT VERIFIED: real out-of-order document provider callbacks on Samsung.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: transfer between simulated device stores preserves characters, inventory, equipment, quests, crowns, pets, purchase state and world progress.\nPASS: confirmation, older/missing-slot warnings, concurrent local changes and recovery restore.\nPASS: recovery-write and final-commit storage failures leave local progress intact.\nPASS: corrupt, future-format, unsafe, oversized and incomplete backups rejected.\nPASS: selected character restored, backed up, and preserved across failed backup imports.\nPASS: Cloud Save serializes picker operations through worker completion.\nPASS: Android backup bridge uses user-selected documents, capped I/O, and explicit restore review without broad storage permissions.\nPASS: unreadable historical local slots can be explicitly recovered without silently overwriting local bytes.\nPASS: malformed valid-JSON local rows need additional consent; history preserved byte-for-byte.\nPASS: failed restore rolls back prior recovery record; successful restore keeps expected undo copy.\nPASS: malformed container types rejected before backup import; historical save shape preserved.\nPASS: null/malformed saved enemies rejected before game startup; historical snapshot accepted.\nPASS: impossible saved enemy fields rejected; optional historical fields remain supported.\nPASS: malformed inventory entries rejected before game load; historical bag format preserved.\nPASS: declared malformed chest containers rejected before import; historical chests preserved.\nPASS: invalid house chest rows rejected; historical/legacy chests retained.\nPASS: malformed town home containers rejected before lossy import; historical homes preserved.\nPASS: interrupted and silent Cloud Save writes roll back exact local slots, selection and recovery; emergency recovery retained if rollback fails.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-coin-integrity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 4 valid/historical coin amounts and 6 corrupt amounts; local and zero-write restore checks\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-defense-level-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 138 defense upgrade, compatibility and no-write recovery assertions\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-equal-revision-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: timestamp collisions cannot silently overwrite divergent characters; recovery and ordinary imports work.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-experience-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 3 impossible XP records rejected; 7 legitimate/historical XP records accepted; failed restore left storage untouched\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-export-durability-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: normal Cloud Save export; silent write refusal; quota failure; verified retry; cold-start title normalization; character-switch safety.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-failure-atomicity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS recovery-silent failure does not alter any saved byte\nPASS active-silent failure does not alter any saved byte\nPASS slots-silent failure does not alter any saved byte\nPASS recovery-after-write failure does not alter any saved byte\nPASS active-after-write failure does not alter any saved byte\nPASS slots-after-write failure does not alter any saved byte\nPASS unrecoverable rollback keeps old slots in verified recovery copy\nPASS successful import keeps pre-import save retrievable\nPASS stale save review does not overwrite newer local progress\nPASS: 9 Cloud Save failure-atomicity checks\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-first-hunt-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 92 First Hunt Cloud Save regression assertions\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-forward-home-chest-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 38 forward-home-chest protection, no-write and historical-save assertions.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-gender-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 4 valid/legacy gender states preserved; 6 malformed imports and local rows rejected without writes\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-hero-gear-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 35 corrupt hero-gear imports rejected without save writes; valid and historical slots preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-hero-vitals-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 16 invalid hero vital snapshots rejected during import and local review; historical/valid values preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-human-movement-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 16 invalid human movement/combat snapshots rejected with zero writes; 5 valid/legacy snapshots accepted.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-inherited-item-id-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 35 inherited item-id corruption cases rejected before writes; 6 valid/historical cases accepted\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-inventory-uniqueness-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 15 duplicate backup cases rejected without writes; 5 valid/historical states accepted\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-item-catalog-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: Cloud Save restore preflight blocks six unsupported item-loss paths and preserves legacy/known inventory.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-local-slot-metadata-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 4 damaged slot headings require extra consent and byte-exact recovery; 2 valid/historical local rows accepted\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-map-id-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 8 unknown/inherited regions refused without writes; all packaged outdoor/interior regions and recovery import preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-map-layout-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS map-layout compatibility: current/legacy saves accepted; 9 lossy cases rejected before restore.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-mapstate-compatibility-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 30 map-state safety, atomic-restore and compatibility assertions.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-pet-movement-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 14 corrupt pet movement/timer states rejected with zero writes; 4 valid/legacy pets accepted.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-pet-null-state-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: explicit-null hp/max rejected with zero writes; six current/legacy pet snapshots accepted\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-pet-version-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: seven invalid pet version/equipment imports rejected with zero storage writes; five current/legacy snapshots preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-premium-appearance-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 5 historical/valid premium appearances preserved; 8 lossy selections rejected with no writes\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-purchase-ledger-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 6 valid/historical and 13 invalid purchase-ledger backup cases, including local-read and zero-write restore protection\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-purchased-boost-integrity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 10 valid/legacy boost cases, 18 malformed purchased boost cases rejected before any storage writes\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-recovery-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: recovery preserved across empty/null imports; real/corrupt slots backed up; interrupted imports safe\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-slot-metadata-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: character selector metadata must agree with imported gameplay, invalid imports leave storage untouched; legacy headers remain optional.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-speed-limit-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 28 extreme-speed Cloud Save and no-write assertions\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-town-stock-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 93 town shop inventory/restore assertions\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/cloud-save-world-coordinates-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 14 invalid world coordinates rejected; valid/legacy snapshots and existing local saves preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/companion-active-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: corrupted active flags rejected before live game normalization; valid/historical pets compatible.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/companion-health-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: invalid pet health is rejected before game normalization can silently kill pets.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/companion-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: Cloud Save refuses malformed, duplicate and unrecognized pet imports; existing pet records still load.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/companion-local-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "Companion local-save protection: 34/34 mocked WebView scenarios passed\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/corrupt-slot-overwrite-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 30 syntactic and structural corrupt-slot cases block saves and purchase delivery, including inactive-slot damage; empty and historical unwrapped slots remain valid. Mocked WebView only.\nPASS: title-screen deletion blocks all damaged character maps (including unrelated inactive slot damage); healthy inactive slot deletion still works. Mocked WebView.\nPASS: public Google Play checkout blocks damaged slots and allows verified recovery. Mocked Play bridge.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/current-browser-release-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: current browser presentation integrated with native save/bridge and load order preserved (static)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/dan-level-only-premium-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: TheDanCode has no free premium grants; old test data preserved but ignored; Play ownership, bundle restores, and normal checkout remain intact.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/dungeon-loot-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: dungeon-loot chest/treasure flags validated before restore, historical formats compatible.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/dungeon-rune-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: shrine rune progress import safety, local recovery, and valid older snapshots\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/durable-entitlement-replay-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: verified durable entitlements recover missing/stale ownership without replaying consumables; corrupted ledgers reject delivery.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/emulator-matrix-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS (static): Android 14/15/16 CI requires API 34 isolated-side and API 35/36 both-side emulator checks; geometry, save and settings assertions retained. Not native emulator testing.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/equipment-summary-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: inventory HUD tolerates unavailable historical gear IDs without changing saved equipment.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/frontier-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: Hearthstead progression and NPC food-repair flags guarded; legitimate saves intact.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/gameplay-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: free reward, earned-pet death, paid replacement, insufficient funds, purchased-pet recovery flag, vampire definitions. Mocked state test; not visual or device testing.\nPASS: committed attack resolves once; vampire recovery blocks movement and expires.\nPASS: local exploration reveals nearby cells, hides distant cells, and separates regions in save state.\nPASS: local map opens, renders, closes, and preserves an existing pause state. Canvas calls mocked.\nPASS: healing consumes a potion and immediately persists HP and inventory; no save for unused items. Mocked state, not device testing.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/gather-node-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: malformed gathering cooldowns rejected; old saves and existing progress preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/gathering-forge-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: invalid gathering/forge progress rejected without overwriting saved characters; older valid progress accepted.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/hero-gear-save-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 30 hero equipment preservation checks\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/hero-progression-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 36/36: corrupt saved progression preserves local and legacy bytes, blocks paid delivery; valid and historical cases save (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/hero-vitals-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 30/30: corrupt saved vitals preserve local and legacy bytes, block paid delivery; valid and historical cases save (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/house-storage-ambiguity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: conflicting legacy/modern chests and unrecognized future item containers rejected before save changes; harmless metadata preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/house-storage-skills-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 74/74: malformed chests, gathering XP and forge ranks protected; older saves remain valid (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/human-companion-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: corrupt human companion rosters, active slots, health and coordinates rejected before save import; valid and historical states accepted.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/last-lantern-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS Last Lantern: reachable entrance/objects/enemies, shared walls and doors, independent quest, reward gates, no duplicates, partial/completed/legacy save restoration, slot isolation, cloud validation, scaling and town/sanctuary safety. Mock runtime; browser combat checked separately.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/legacy-enemy-position-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: historical enemy snapshots preserve valid enemy coordinates.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/legacy-inventory-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: legacy catalog item IDs stay saved and visible without silently filling the bag; normal and quest items unchanged.\nPASS: merchant Sell tab ignores unavailable historical IDs without losing saved items.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/legacy-only-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 8/8: legacy-only corruption blocks overwrites and checkout; fresh, valid legacy and authoritative slots remain functional (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/legacy-save-migration-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 1.0.57 legacy migration, quota resistance, valid slots, malformed-slot preservation, consent-only recovery, backup failure, corrupt-mirror isolation and valid empty-store safety. Mocked startup only, not physical Android upgrade.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/legacy-signed-157-cloud-restore-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: real signed 1.0.57 serializer snapshot -> current Cloud Save; two slots, active selection, progress, recovery, downgrade refusal, invalid pet rejection. Mocked JS, not Android/Play delivery.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-active-map-id-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 37/37: active map ID does not get erased by local save or Play purchase (mocked storage)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-atlas-input-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: local-map opening releases movement/touch/attack/autowalk input and retains pause state. Mocked state only.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-forward-hero-fields-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 64/64: future hero fields protected in slots, legacy saves, live snapshots and Play receipt commits (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-future-region-metadata-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 260/260: 40 future/unsafe saves blocked, 20 historical/current saves permitted.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-future-state-fields-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 72/72: unknown top-level fields protected in stored slots, legacy saves, snapshots and simulated receipts\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-future-storage-skill-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 113/113: 16 blocked and 11 permitted mocked save/purchase scenarios\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-hero-gender-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 88/88: 14 damaged stored states blocked, 8 valid/legacy stored states permitted; 11 runtime save and purchase checks (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-map-state-array-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 54/54: map-state array integrity across saves and purchase (mocked WebView storage)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-map-state-object-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 75/75: rune/chest/treasure save and purchase durability (mocked WebView storage)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-map-state-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 18/18: future regional progress protected; historical saves remain writable (mock WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-quest-flags-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 126/126 scenarios: quest flag and defeated-count guard validates stored/legacy/live saves and Play receipt commits (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/local-town-flag-preservation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 68/68: town relic and owned house save/purchase preservation (mocked storage)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/maintained-upgrade-preflight-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: maintained signer 159->171\nPASS: stale signed candidate code blocked before device access\nPASS: stale signed candidate name blocked before device access\nPASS: large aapt dump under pipefail\nPASS: installed v1-only with same signing key is blocked\nPASS: legacy development v1-only signer is blocked with recovery warning\nPASS: Play-signed base blocks sideload\nPASS: debuggable candidate rejected before device access\nPASS: testOnly candidate rejected before device access\nPASS: candidate missing v2 signature blocked\nPASS: candidate missing v3 signature blocked\nPASS: equal version blocked\nPASS: installed version newer than candidate blocked\nPASS: wrong app id blocked\nPASS: wrong candidate signing key blocked\nPASS: minimum supported API is allowed\nPASS: candidate too new for device is blocked\nPASS: device API cannot be determined is blocked\nPASS: multiline device API cannot be reinterpreted\nPASS: candidate missing minimum SDK blocks\nPASS: ambiguous installed base APKs are rejected\nPASS: all twenty-one read-only preflight checks (mock Android commands; no device)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/mining-progression-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: all bundled scripts initialize; Elderwood frames continue with a defeated monster awaiting respawn. DOM/canvas mocked; not device validation.\nPASS: gameplay changes save while paused in menus.\nPASS: actual full game snapshots validate in the portable backup format.\nPASS: all grid regions plus camp/Veilhaven show details; selection leaves scroll/player unchanged; overview and compass dispatch verified. CSS hiding rule removed. No physical touch/layout validation.\nPASS: unlabelled map coordinates select region; drag/scroll gestures do not select. Mocked events only.\nPASS: six native encounters, no town additions, bounded lord summons, stable indexed saves and no summon reward farming.\nPASS: 44 items, shop availability, class restrictions, equipping, healing and save roundtrip.\nPASS: town entry, render cycles and save reload ashvale NPCs: 11\nPASS: town entry, render cycles and save reload brackenford NPCs: 12\nPASS: town entry, render cycles and save reload stonewatch NPCs: 12\nPASS: town entry, render cycles and save reload sunmere NPCs: 13\nPASS: four town-entry mock runtime regressions (not Android/Play testing).\nPASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.\nPASS: all four ordinary level-1 classes mine local copper and train to Mining 5; 60 high-tier regions have mixed ores; depletion and silver gates preserved. Mocked runtime.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/monster-catalog-save-isolation-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS character switching clears temporary catalog summons without losing durable enemy state.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-connection-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: production Java billing connection tests including stale callbacks; no Play transaction or device test\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-launch-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 16 native billing launch scenarios including missing/invalid Play prices, malformed offers and recovery; no live checkout was performed\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-ledger-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS (static): stale consume/ack callbacks are isolated by Play session; disconnect clears blocked finishing and checkout, teardown suppresses late callbacks.\nPASS (static): corrupted Play receipt identity cannot inherit delivery/finish state or bypass native acknowledgement guards; Android CI compiles Java and runs purchase simulations separately.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-legacy-offer-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 12 production Java Billing 9 legacy/multi-offer scenarios; no Play payment or device test\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-offer-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS (static): Play Billing prefers non-rental standard buy options, falls back to eligible non-rental/non-preorder offers, and uses the selected offer token. Live Play eligibility not tested.\nPASS (static): price-query errors, zero active SKUs, and restore errors have distinct messaging without revoking saved receipts on failed queries.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-ownership-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 5 native ownership reconciliation scenarios, including false/throwing persistence and malformed receipt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-purchase-callback-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 9 production Play purchase callback scenarios (no live purchase)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-refresh-race-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: verified receipt revalidation, new grant, failed persistence, repeated callback, and stale query invalidation (no live Play purchase)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-refresh-runtime-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: production Play catalog refresh invalidation removes stale checkout choices, updates snapshot and preserves receipts.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-restore-list-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 4 synchronous query-dispatch failure/recovery scenarios\nPASS: 10 production Java refresh() catalog scenarios, including missing Play status (no live checkout)\nPASS: 14 production Java restore scenarios, including invalid signature rows, null rows, partial ownership and clean recovery (no live restore)\nNOT VERIFIED: real Google Play service, products, payment or restore on a phone.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-snapshot-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: production Java publish retains verified entitlements and valid prices despite malformed Play offers/prices\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/native-billing-unfetched-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: Billing 9 product diagnostics across null, complete and mixed Play responses (no live checkout).\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/pet-id-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: unknown/inherited pet ids rejected before restore; installed pets and local characters preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/play-billing-catalog-parity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 15 Google Play SKUs match catalog, deliver exactly once, and retired checkout is blocked; purchase safety guards intact\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/play-catalog-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 15 Java/HTML SKU definitions match; 4 retired products remain restorable but unsellable; negative fixtures rejected.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/play-catalog-parity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 15 native, HTML and JS SKUs agree; 4 progression products remain restorable but cannot be sold; 11 sale-candidate IDs have consistent receipt types.\nNOTE: Play Console activation, actual checkout, and Play signing are not tested.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/playtest-editor-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "Editor checks passed: one split request, Dan gating, capture context, persisted flags, mismatched ack, failed delivery retention, acknowledged deletion. No Android UI tested.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/premium-catalog-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 15 native/game SKUs, 4 retired sale IDs, and consumption policy agree\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/progress-flag-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: quest milestones and home ownership cannot flip during Cloud Save import; historical flags compatible.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/purchase-api-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: retired sale catalog and checkout are blocked; shop wrapper delegates without offering retired categories.\nPASS: premium menu distinguishes Android Google Play from web preview; public Buy/Restore routes remain gated by native billing and character storage.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/purchase-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: levels preserve XP; duplicate/reload protection; wrong character; invalid SKU/receipt; boost credits; cosmetic restore; storage failure and atomic reward ledger.\nPASS: XP and level packs retired from new sales; legacy Play receipt verification and purchased credit use remain available.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/purchase-ledger-safety-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: cosmetic grant sets ownership and receipt ledger\nPASS: existing cosmetic receipt repairs missing style flag without new reward\nPASS: builder contract delivers exactly one credit per receipt\nPASS: historical paid XP credit is replay-safe\nPASS: character-bound paid credit cannot transfer profiles\nPASS: one signed receipt cannot grant two different products\nPASS: malformed receipt ledger is rejected, not acknowledged\nPASS: malformed town quest state is rejected, not acknowledged\nPASS: credit overflow does not acknowledge a payment\nPASS: retired level-pack restore remains exactly once and immutable\nPASS: invalid receipt hash is rejected\nPASS: unknown product cannot grant an item\nPASS: unrelated character state is not mutated by grants\nPASS: 13 production purchase-ledger regression scenarios\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/purchase-ledger-shape-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: purchase credits and entitlement ledgers reject corrupt/overflowing saved shapes without acknowledging paid receipts; null legacy credits, replay prevention and existing rewards preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/purchase-persist-ack-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 5 purchase persistence/acknowledgment scenarios (including silent WebView storage refusal).\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/purchase-quest-state-integrity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: reject malformed quest-state container before acknowledging paid cosmetics; preserve missing/null legacy state and idempotent credits.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/purchase-receipt-conflict-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: corrupt/conflicting saved receipt rows reject payment acknowledgement; valid duplicate and first delivery preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/quest-kill-counter-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: quest/slayer/camp kill counters validated; older saves accepted.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/regional-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "Regional checks passed: fog, hidden HUD, safe respawns, panel pause, atlas centering.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/release-candidate-cloud-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS normal character, house and forged gear restore\nPASS future unavailable forged item with positive rank is blocked\nPASS unrecognized zero-rank metadata is compatible\nPASS text or oversized forge rank is rejected\nPASS corrupted chest stack is rejected\nPASS future home with stored items cannot be silently erased\nPASS unknown map progress cannot be silently erased\nPASS too many saved rune objects blocks lossy restore\nPASS same-timestamp different saves trigger overwrite conflict\nPASS restore cannot proceed without explicit confirmation\nPASS confirmed empty-device restore persists slot and selection\nPASS silent slot-write failure rolls back selection\nPASS export/import preserves precise forged gear and home chest values\nPASS: 13 of 13 signed-candidate save-compatibility assertions\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/release-identity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 1.0.69 package identity, pinned baseline and exact Last Lantern content overlay\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/release-save-transaction-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS valid backup round-trips without schema changes\nPASS newer save restore writes recovery before commit\nPASS unconfirmed restore leaves existing bytes unchanged\nPASS older import requires explicit approval\nPASS string XP cannot corrupt character progress\nPASS string settlement founding flag is rejected\nPASS non-finite settlement stock is rejected\nPASS vampire hunt string counter is rejected\nPASS Slayer Marks string ledger is rejected\nPASS gathering XP string is rejected\nPASS forge rank string is rejected\nPASS invalid Briar Hollow clue list is rejected\nPASS storage quota failure during restore preserves original data\nPASS damaged local data requires explicit approval\nPASS: 14 independent Cloud Save transaction checks\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/render-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "{\"status\":\"passed\",\"idleDrawCalls\":1,\"movingDrawCalls\":36,\"scope\":\"Camera, mirrored zoom, rotation fallback, offscreen culling, idle and moving artwork\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/reviewer-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: ordinary characters cannot use test grants; developer grants remain local and separate from Play receipt ledger; developer checkout blocked.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/road-inquiry-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS road inquiry: earned prerequisites, both exclusive evidence paths, in-person reveal, all-stage saves/cloud, stale callbacks, canonical enemy indices, legacy knowledge migration and spoiler gates.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/rune-trap-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: rune and trap progress flags validated before Cloud Save import/local restore; historical snapshots supported.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/runtime-integration-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: all bundled scripts initialize; Elderwood frames continue with a defeated monster awaiting respawn. DOM/canvas mocked; not device validation.\nPASS: gameplay changes save while paused in menus.\nPASS: actual full game snapshots validate in the portable backup format.\nPASS: all grid regions plus camp/Veilhaven show details; selection leaves scroll/player unchanged; overview and compass dispatch verified. CSS hiding rule removed. No physical touch/layout validation.\nPASS: unlabelled map coordinates select region; drag/scroll gestures do not select. Mocked events only.\nPASS: six native encounters, no town additions, bounded lord summons, stable indexed saves and no summon reward farming.\nPASS: 44 items, shop availability, class restrictions, equipping, healing and save roundtrip.\nPASS: town entry, render cycles and save reload ashvale NPCs: 11\nPASS: town entry, render cycles and save reload brackenford NPCs: 12\nPASS: town entry, render cycles and save reload stonewatch NPCs: 12\nPASS: town entry, render cycles and save reload sunmere NPCs: 13\nPASS: four town-entry mock runtime regressions (not Android/Play testing).\nPASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/runtime-save-state-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 10/10: unsafe in-memory saves and purchase commits rejected; previous save bytes preserved (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/save-atomicity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: primary save slot committed first; legacy mirror/pref failures do not destroy progress; primary failure preserves prior save and warns. Mocked storage only.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/save-readback-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 4 real-saveGame durability cases (normal, silent refusal, quota rejection, title menu), plus verified retry and unchanged storage keys.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/settlement-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 23 settlement corruption cases rejected; valid and legacy saves preserved.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/slayer-ledger-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: corrupt Slayer Hall marks, rewards, hunts rejected; historical saves accepted.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/snapshot-failure-save-guard-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS 4/4: unsafe fallback blocked and healthy retries verified (mocked WebView)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/soft-fog-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: fog cache, discovery updates, character/region isolation, bounded canvas and compositing restoration. Visual appearance needs live browser.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/town-progress-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: acceptance, fresh patrol requirement, town-only delivery, capacity protection, duplicate reward protection, save roundtrip and rotation\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/town-quest-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: town quest acceptance, claim and rescue flags are validated before restore; legacy counts remain valid.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/vampire-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: vampire quest save flags, hunt count, clues and timers validated; legacy saves retained.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/veil-counsel-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS counsel: prerequisite/gate, three positions, all choices, callback guards, no rewards, per-character partial/completed saves, cloud validation, ordinary dialogue, class/gender independence.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/workflow-package-identity-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: every Android APK entry point uses the maintained package and checked Gradle build\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/world-runtime-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: all bundled scripts initialize; Elderwood frames continue with a defeated monster awaiting respawn. DOM/canvas mocked; not device validation.\nPASS: gameplay changes save while paused in menus.\nPASS: actual full game snapshots validate in the portable backup format.\nPASS: all grid regions plus camp/Veilhaven show details; selection leaves scroll/player unchanged; overview and compass dispatch verified. CSS hiding rule removed. No physical touch/layout validation.\nPASS: unlabelled map coordinates select region; drag/scroll gestures do not select. Mocked events only.\nPASS: six native encounters, no town additions, bounded lord summons, stable indexed saves and no summon reward farming.\nPASS: 44 items, shop availability, class restrictions, equipping, healing and save roundtrip.\nPASS: town entry, render cycles and save reload ashvale NPCs: 11\nPASS: town entry, render cycles and save reload brackenford NPCs: 12\nPASS: town entry, render cycles and save reload stonewatch NPCs: 12\nPASS: town entry, render cycles and save reload sunmere NPCs: 13\nPASS: four town-entry mock runtime regressions (not Android/Play testing).\nPASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.\nPASS: 388 class/region entry, frame and snapshot combinations (mocked graphics).\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tools/xp-progress-import-checks.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: game XP concatenation reproduced; numeric and legacy XP accepted; corrupt imports/local slots rejected without replacement.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "tools/verify.py"
+      ],
+      "exit": 0,
+      "stdout": "{\"status\": \"passed\", \"inline_scripts\": 2, \"source_sha256\": \"84dfaf9ecb23278f5729dc3d98641f9ee129e9da1aa1dc26b8b1892aa97d777b\", \"scope\": \"JavaScript syntax and static HTML asset references\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "tools/verify-release-candidate-169.py"
+      ],
+      "exit": 0,
+      "stdout": "{\"result\": \"PASS\", \"version\": \"1.0.69\", \"versionCode\": 171, \"requiredAssetsVerified\": 10, \"nativePreviewExcluded\": true}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "scripts/test-atlas-geography.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: Android atlas geography, 81 original region IDs, quest/town reachability, save coordinates and inline JS\nNOTE: Web prototype and installed Android map positions predate this PR and are not identical; use Android QA for release proof.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "scripts/test-world-map.cjs"
+      ],
+      "exit": 0,
+      "stdout": "PASS: game scripts parse and fog-of-war integration checks\n",
+      "stderr": ""
+    }
+  ]
+}

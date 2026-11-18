@@ -25,7 +25,7 @@ const KNOWN_PET_IDS=new Set(['dalen','sylvi','corin','eryn','ember_dragon']);
 const KNOWN_MAP_IDS=new Set([
  'ancientgrove','ashenpass','ashenwastes','ashvale','ashvale_home',
  'aurorareach','blackbriar','blackstone','bogreach','borealhollow',
- 'brackenford','brackenford_home','briarhollow','burntwood','cinderfall',
+ 'brackenford','brackenford_home','briarhollow','burntwood','cinderfall','last_lantern',
  'cinderfields','cinderridge','coalcoast','coastroad','coldwater',
  'coralstrand','crowfield','deepfen','duskwood','dustroad',
  'easternshoals','elderwood','embercrypt','emberdeep','emberplain','fenroad',
@@ -445,6 +445,26 @@ function safeTownQuestFlags(quests){
  if(!safeTownStock(quests._townStock))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
  if(!safeVampireStory(quests._vampire))return false;
+ const lanternAccess=quests._lastLanternAccess;
+ if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
+ const lantern=quests.last_lantern;
+ if(lantern!=null){
+  if(typeof lantern!=='object'||Array.isArray(lantern))return false;
+  if(!['accepted','claimed','cleared','bell','register','inventory','yard','nave','stalker','captain'].every(key=>lantern[key]==null||typeof lantern[key]==='boolean'))return false;
+ }
+ const inquiry=quests.road_inquiry;
+ if(inquiry!=null){
+  if(typeof inquiry!=='object'||Array.isArray(inquiry))return false;
+  if(inquiry.version!=null&&inquiry.version!==1)return false;
+  if(!['accepted','road','harbor','corroborated','revealed','legacy'].every(key=>inquiry[key]==null||typeof inquiry[key]==='boolean'))return false;
+  if(inquiry.method!=null&&!['paper','witness'].includes(inquiry.method))return false;
+ }
+ const counsel=quests.veil_counsel;
+ if(counsel!=null){
+  if(typeof counsel!=='object'||Array.isArray(counsel))return false;
+  if(!['reviewed','mirelle','vaelis','orven','response'].every(key=>counsel[key]==null||typeof counsel[key]==='boolean'))return false;
+  if(counsel.choice!=null&&!['refuge','testimony','watch'].includes(counsel.choice))return false;
+ }
  const briar=quests.briar_hollow;
  if(briar!=null){
   if(typeof briar!=='object'||Array.isArray(briar))return false;

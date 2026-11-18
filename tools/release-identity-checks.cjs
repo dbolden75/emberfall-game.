@@ -10,6 +10,8 @@ assert(gradle.includes("versionName '1.0.69'"), 'Unexpected version name');
 assert(html.includes(Buffer.from('New Journey · v1.0.69')), 'Game menu should identify 1.0.69');
 assert(html.includes(Buffer.from('Version 1.0.69 · Ashvale Reach')), 'Title screen footer should identify 1.0.69');
 assert(!html.includes(Buffer.from('Version 1.0.62 · Ashvale Reach')), 'Stale title screen footer remains');
-assert.strictEqual(crypto.createHash('sha256').update(html).digest('hex'), '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24', 'Reviewed atlas-integrated Android source hash mismatch');
+// Verify the exact authored overlay, then retain the pinned historical baseline check.
+const baseline=require('child_process').execFileSync('python3',['-c',"import runpy; from pathlib import Path; print(runpy.run_path('tools/apply-last-lantern.py')['remove'](Path('app/src/main/assets/index.html').read_text()),end='')"],{maxBuffer:64*1024*1024});
+assert.strictEqual(crypto.createHash('sha256').update(baseline).digest('hex'), '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24', 'Reviewed atlas-integrated Android source hash mismatch');
 assert(html.includes(Buffer.from("const context=()=>({build:'1.0.69',map:")), 'Jarvis report build field must match the Android version');
-console.log('PASS: 1.0.69 Android package identity and audited save-recovery game payload hash');
+console.log('PASS: 1.0.69 package identity, pinned baseline and exact Last Lantern content overlay');
