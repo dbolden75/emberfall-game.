@@ -485,6 +485,16 @@ function safeTownQuestFlags(quests){
   if(row.method==='vent'&&(!Number.isInteger(row.harbor)||!Number.isInteger(row.pass)||typeof row.vented!=='boolean'))return false;
   if(row.method==='shutters'&&(typeof row.converted!=='boolean'||typeof row.mounted!=='boolean'))return false;
  }
+ // Corin's warning and voluntary witness route, without rewriting legacy rows.
+ for(const [key,methods] of [['stonewatch_sweep',['iron','gong']],['stonewatch_silk',['cloth','open_vigil']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['hung','closed'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  if(row.steps!=null&&(!Number.isInteger(row.steps)||row.steps<0||row.steps>2))return false;
+  if(row.method==='gong'&&typeof row.hung!=='boolean')return false;
+  if(row.method==='open_vigil'&&(!Number.isInteger(row.steps)||typeof row.closed!=='boolean'||row.closed&&row.steps!==2))return false;
+ }
  const lanternAccess=quests._lastLanternAccess;
  if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
  const lantern=quests.last_lantern;

@@ -348,19 +348,19 @@
       "id": "stonewatch_sweep",
       "title": "Clear the Moor",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "stonewatch-quest-choices.js",
+      "consequence": "Three skeleton defeats/three Grave Iron, or permanently repurpose one spare Buckler at the warning frame. Equipped copies are protected. The warning chosen sets the open vigil station order."
     },
     {
       "id": "stonewatch_silk",
       "title": "A Weaver\u2019s Thread",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "stonewatch-quest-choices.js",
+      "consequence": "Two fresh Weaver defeats/two silk for a covered vigil (28 crowns/20 XP), or witness the two Highmoor stations in the requested order and close an open vigil (18 crowns/30 XP). No player vows; both earn the seal."
     },
     {
       "id": "sunmere_hunt",
