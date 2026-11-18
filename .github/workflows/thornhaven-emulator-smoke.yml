@@ -106,6 +106,7 @@ jobs:
         run: |
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
+          python3 tools/apply-wilderness-slice.py
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -312,6 +313,7 @@ jobs:
         run: |
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
+          python3 tools/apply-wilderness-slice.py
           printf '%s  %s\n' '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24' 'app/src/main/assets/index.html' | sha256sum -c -
       - uses: actions/setup-node@v4
         with:
