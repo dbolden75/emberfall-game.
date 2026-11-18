@@ -27,7 +27,7 @@ assert (code, version) == (171, "1.0.69"), "Incomplete 1.0.69 version promotion"
 
 expected = {
     "app/src/main/assets/index.html": "801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24",
-    "app/src/main/assets/compact-hud.js": "3dc28d72350e055c36976daa39cddbc0d7093c9597ffc0c33b57cde8599f25ef",
+    "app/src/main/assets/compact-hud.js": "31767d516d7d5afd78088627ce83c1bcc152d1a3de3ee7aea1e2ef2ada6f5fff",
     "app/src/main/assets/immersive-atlas.css": "1906ac055b55bfca73b898c8564d512b49d85c823cb1c316682f8b5460ad63e8",
     "app/src/main/assets/immersive-atlas.js": "357240a78caf57ce20b0464f92dbd8778dbab9e653f89ac3fe9b613a1aa1cb28",
     "app/src/main/assets/natural-followers.js": "660b672442629a05c6d6294ea42803b8397dadd3b768982fa66c0ddf02a0e287",
