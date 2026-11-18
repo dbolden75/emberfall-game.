@@ -2,7 +2,7 @@
   "app/src/main/assets/audio-catalog.js": "98410983e2a40445a82b43824be3fde322102b2f1f4458e94b0cf1c1fdbf93ab",
   "app/src/main/assets/game-audio.js": "7443fc2f9bececdf245b18b176e24618633dca83c0ca150d345403719caa717d",
   "app/src/main/assets/audio-integration.js": "a0d4753febf711cc0f8510a41e4bfab450343e93e526e72d8441c639c503d0aa",
-  "tools/apply-audio-overlay.py": "66614284943ac98254ed2e62b9d39b6c4c1ae41163dfe33c7ad462f72ad2ed2b",
+  "tools/apply-audio-overlay.py": "33e1e3923fab61194e5d8d074f2f0ff8751fefbdcafdd211af69aa2df9b843b3",
   "app/src/main/assets/audio/town.ogg": "79c4af82e9463c19813108a17e1192f30f570c55dd809eb0604470400db7e72e",
   "app/src/main/assets/audio/exploration.ogg": "36d9e706c536744c842ecbd001fd25272c1e833fa8606134df4d0f3f7bdbf2bf",
   "app/src/main/assets/audio/combat.ogg": "f6a985ae2f480238fd4adf3637d67b1c630f314c9cf315b7e23ca3c728ffef6e",
