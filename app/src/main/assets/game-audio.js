@@ -17,21 +17,24 @@
    if(!saved){const v=storage.getItem('thornhaven_sound_volume');if(v!==null&&Number.isFinite(Number(v)))prefs.effects.volume=Math.max(0,Math.min(1,Number(v)));prefs.effects.muted=storage.getItem('emberfall_sound_effects_v1')==='off';}
   } catch (_) {}
   const level=bus=>prefs[bus].muted?0:prefs[bus].volume;
-  function stop(row){row.token=++sequence;row.pending=false;row.el.pause();row.active=false;}
+  function stop(row){if(row.expiry)clearTimeout(row.expiry);row.expiry=null;row.token=++sequence;row.pending=false;row.el.pause();row.active=false;}
   function release(row){stop(row);row.el.removeAttribute('src');row.el.load();}
   function safePlay(row) {
    if(paused||!unlocked||row.pending||row.active||failed.has(row.id))return;
-   const token=row.token=++sequence;row.pending=true;
+   const token=row.token=++sequence;row.pending=true;const requestedAt=now();
+   if(!row.loop)row.expiry=setTimeout(()=>{if(row.token===token&&row.pending)stop(row);},300);
    try {Promise.resolve(row.el.play()).then(()=>{
     if(row.token!==token){if(!row.pending&&!row.active)row.el.pause();return;}
-    row.pending=false;if(paused){stop(row);return;}row.active=true;
-   },error=>{if(row.token!==token)return;row.pending=false;row.active=false;if(error&&error.name==='NotSupportedError')failed.add(row.id);});}
-   catch(_){row.pending=false;row.active=false;}
+    row.pending=false;if(row.expiry)clearTimeout(row.expiry);row.expiry=null;
+    if(paused||(!row.loop&&now()-requestedAt>300)){stop(row);return;}row.active=true;
+    if(row.loop){row.target=1;row.retiring=false;for(const other of loops)if(other!==row&&other.bus===row.bus){other.target=0;other.retiring=true;}}
+   },error=>{if(row.token!==token)return;row.pending=false;row.active=false;if(row.expiry)clearTimeout(row.expiry);row.expiry=null;if(error&&error.name==='NotSupportedError')failed.add(row.id);});}
+   catch(_){row.pending=false;row.active=false;if(row.expiry)clearTimeout(row.expiry);row.expiry=null;}
   }
   function rowFor(id,bus,loop){
    const spec=catalog[id];if(!spec||failed.has(id))return null;
    const el=make();el.preload=loop?'metadata':'auto';el.loop=loop;el.src=spec.src;
-   const row={id,bus,el,token:0,pending:false,active:false,mix:0,target:1,gain:spec.gain===undefined?1:spec.gain};
+   const row={id,bus,el,loop,expiry:null,token:0,pending:false,active:false,mix:0,target:0,retiring:false,gain:spec.gain===undefined?1:spec.gain};
    el.addEventListener('error',()=>{failed.add(row.id);stop(row);});
    el.addEventListener('ended',()=>{row.active=false;});return row;
   }
@@ -41,10 +44,11 @@
    const wanted=desired();
    for(const bus of ['music','ambience']){
     const id=level(bus)>0?wanted[bus]:null;
-    for(const row of loops.filter(r=>r.bus===bus))row.target=row.id===id?1:0;
-    if(id&&!loops.some(r=>r.bus===bus&&r.id===id)){
-     // At most two streams per bus, even under rapid scene changes.
-     const old=loops.filter(r=>r.bus===bus);if(old.length>=2){const victim=old.find(r=>r.target===0)||old[0];release(victim);loops.splice(loops.indexOf(victim),1);}
+    const rows=loops.filter(r=>r.bus===bus);
+    if(!id){for(const row of rows){row.target=0;row.retiring=true;}continue;}
+    if(!rows.some(r=>r.id===id&&!r.retiring)){
+     // Preserve the audible stream until the incoming play promise succeeds.
+     if(rows.length>=2){const victim=rows.find(r=>r.pending)||rows.reduce((a,b)=>a.mix<b.mix?a:b);release(victim);loops.splice(loops.indexOf(victim),1);}
      const row=rowFor(id,bus,true);if(row){row.el.volume=0;loops.push(row);safePlay(row);}
     }
    }
@@ -52,9 +56,14 @@
   function tick(){
    if(paused)return;
    for(const row of [...loops]){
-    row.mix+=Math.max(-.08,Math.min(.08,row.target-row.mix));
+    row.mix+=Math.max(-1/30,Math.min(1/30,row.target-row.mix));
     row.el.volume=Math.max(0,Math.min(1,level(row.bus)*row.gain*row.mix));
-    if(row.target===0&&row.mix<=.001){release(row);loops.splice(loops.indexOf(row),1);}
+    if(row.retiring&&!row.pending&&row.mix<=.001){release(row);loops.splice(loops.indexOf(row),1);}
+    // Overlap the final three seconds with a fresh stream; native loop is a
+    // safety net if a decoder stalls, never the normal loop boundary.
+    if(row.active&&row.target===1&&row.mix>=.99&&Number.isFinite(row.el.duration)&&row.el.duration>6&&row.el.currentTime>=row.el.duration-3&&!loops.some(r=>r!==row&&r.bus===row.bus)){
+     const next=rowFor(row.id,row.bus,true);if(next){next.el.volume=0;loops.push(next);safePlay(next);}
+    }
    }
   }
   function set(bus,change){
@@ -63,7 +72,7 @@
    if(typeof change.muted==='boolean')prefs[bus].muted=change.muted;
    try{storage.setItem('thornhaven_audio_v1',JSON.stringify(prefs));if(bus==='effects'){storage.setItem('thornhaven_sound_volume',String(prefs.effects.volume));storage.setItem('emberfall_sound_effects_v1',prefs.effects.muted?'off':'on');}}catch(_){}
    for(const row of [...voices,...loops]){row.el.volume=Math.max(0,Math.min(1,level(row.bus)*row.gain*(row.bus==='effects'?1:row.mix)));if(!level(row.bus))stop(row);}
-   reconcile();for(const row of loops)if(row.target&&level(row.bus))safePlay(row);
+   reconcile();for(const row of loops)if(!row.retiring&&(row.target||row.id===desired()[row.bus])&&level(row.bus))safePlay(row);
   }
   function effect(id){
    if(!unlocked||paused||!level('effects')||!catalog[id]||failed.has(id))return false;
@@ -73,7 +82,7 @@
    try{row.el.currentTime=0;}catch(_){return false;}row.el.volume=Math.min(1,level('effects')*row.gain);safePlay(row);return true;
   }
   function pause(){paused=true;for(const row of [...voices,...loops])stop(row);cooldown.clear();}
-  function resume(){paused=false;reconcile();for(const row of loops)if(row.target&&level(row.bus))safePlay(row);}
+  function resume(){paused=false;reconcile();for(const row of loops)if(!row.retiring&&(row.target||row.id===desired()[row.bus])&&level(row.bus))safePlay(row);}
   function unlock(){unlocked=true;resume();}
   function setScene(value,place=value){if(!['title','town','exploration','dungeon','combat'].includes(value))return;if(scene!==value||environment!==place){scene=value;environment=place;reconcile();}}
   return {effect,set,pause,resume,unlock,setScene,tick,preferences:()=>JSON.parse(JSON.stringify(prefs)),status:()=>({unlocked,paused,scene,voices:voices.length,loops:loops.length,failed:[...failed]})};

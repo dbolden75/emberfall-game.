@@ -11,7 +11,7 @@ catalog and verified media are populated. No placeholder beep assets were added.
 ## Completed code
 
 - `game-audio.js`: reusable streamed HTML audio engine, eight effect voices and
-  at most two streams per long-form bus, 1.3-second fades, per-cue rate limits,
+  at most two streams per long-form bus, 3-second playback-ready fades, per-cue rate limits,
   independent volume/mute preferences and migration of prior effects settings.
 - `audio-integration.js`: title/town/exploration/dungeon/combat selection, combat
   tail, gesture unlock/retry, background silence, and settings controls.
@@ -74,3 +74,21 @@ passed. Fresh baseline reconstruction plus overlay reproduced final HTML hash
 `62448268f320032ddbe1f37409bb5c3d7633eecc89481207771dc640b3959117`.
 Chromium audio UI, audio engine, JS/static-reference, release-candidate source
 pins and identity checks passed. No new APK or AAB was built.
+
+
+## Library handoff attempt and playback follow-up
+
+The confirmed Library source bundle (17,620,154 bytes) was requested through the
+current supported resolved-reference materialization helper. Initial download
+and one approved retry both returned `library file transfer failed: download
+failed`. No local archive exists; no bytes were extracted or validated. Network
+requests to OpenGameArt were not retried. Media count and packaged media size
+remain zero. The completed source bundle still needs an accessible supported
+transfer; do not treat a remote workspace path as locally acquired bytes.
+
+The engine now retains outgoing audio until the new play promise succeeds,
+overlaps the final three seconds of long tracks with a second stream, and expires
+effects whose playback has not started within 300 ms. Native media looping is
+only a decoder-stall safety net. New mocked-media tests cover held outgoing
+volume, overlap, bounded loop handoff and delayed-effect expiry. These changes
+have not yet been exercised against the source bundle or a physical device.
