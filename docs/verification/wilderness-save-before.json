@@ -1,0 +1,344 @@
+[
+  {
+    "cells": 0,
+    "slots": 1,
+    "bytes": 87769,
+    "samples": [
+      {
+        "totalMs": 4.199999999953434,
+        "parseMs": 1,
+        "stringifyMs": 1.1999999999534339,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.0999999998603016,
+        "parseMs": 0.9000000001396984,
+        "stringifyMs": 1.1999999997206032,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.5,
+        "parseMs": 1.0000000004656613,
+        "stringifyMs": 1.4999999995343387,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.2000000001862645,
+        "parseMs": 0.6999999999534339,
+        "stringifyMs": 1.4000000001396984,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.5,
+        "parseMs": 1.0999999998603016,
+        "stringifyMs": 1.5000000002328306,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 4.2999999998137355,
+        "parseMs": 1.0000000002328306,
+        "stringifyMs": 1.7999999998137355,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.7000000001862645,
+        "parseMs": 1.2000000001862645,
+        "stringifyMs": 1.1999999999534339,
+        "parses": 4,
+        "stringifies": 6
+      }
+    ],
+    "cloudRoundtrip": true
+  },
+  {
+    "cells": 0,
+    "slots": 4,
+    "bytes": 351073,
+    "samples": [
+      {
+        "totalMs": 12.900000000139698,
+        "parseMs": 3.900000000372529,
+        "stringifyMs": 4.199999999720603,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 12,
+        "parseMs": 4.199999999720603,
+        "stringifyMs": 3.8000000002793968,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 6.199999999953434,
+        "parseMs": 2.5,
+        "stringifyMs": 2.2999999998137355,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 6.5,
+        "parseMs": 2.5999999998603016,
+        "stringifyMs": 2.199999999953434,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 5.2000000001862645,
+        "parseMs": 2.0000000002328306,
+        "stringifyMs": 1.8999999999068677,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 5.7999999998137355,
+        "parseMs": 2.199999999953434,
+        "stringifyMs": 2,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 6,
+        "parseMs": 2.300000000046566,
+        "stringifyMs": 2.099999999627471,
+        "parses": 4,
+        "stringifies": 6
+      }
+    ],
+    "cloudRoundtrip": true
+  },
+  {
+    "cells": 512,
+    "slots": 1,
+    "bytes": 93716,
+    "samples": [
+      {
+        "totalMs": 4.199999999953434,
+        "parseMs": 1.1999999994877726,
+        "stringifyMs": 1.9000000001396984,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 4.900000000139698,
+        "parseMs": 1.1999999999534339,
+        "stringifyMs": 2.8999999999068677,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 5.300000000046566,
+        "parseMs": 1.2999999998137355,
+        "stringifyMs": 3.0000000002328306,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.7999999998137355,
+        "parseMs": 1.1999999997206032,
+        "stringifyMs": 1.8000000000465661,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.7000000001862645,
+        "parseMs": 1.2000000001862645,
+        "stringifyMs": 1.6999999999534339,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.8999999999068677,
+        "parseMs": 1.0999999998603016,
+        "stringifyMs": 1.7000000004190952,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 3.8999999999068677,
+        "parseMs": 1,
+        "stringifyMs": 2,
+        "parses": 4,
+        "stringifies": 6
+      }
+    ],
+    "cloudRoundtrip": true
+  },
+  {
+    "cells": 512,
+    "slots": 4,
+    "bytes": 374861,
+    "samples": [
+      {
+        "totalMs": 8.100000000093132,
+        "parseMs": 2.699999999953434,
+        "stringifyMs": 3.9000000001396984,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 7.399999999906868,
+        "parseMs": 2.9000000001396984,
+        "stringifyMs": 3,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 7.2000000001862645,
+        "parseMs": 2.8000000002793968,
+        "stringifyMs": 3.0999999998603016,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 7.399999999906868,
+        "parseMs": 2.5999999998603016,
+        "stringifyMs": 3.3999999999068677,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 11.5,
+        "parseMs": 4.099999999627471,
+        "stringifyMs": 3.600000000325963,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 10.399999999906868,
+        "parseMs": 4.399999999906868,
+        "stringifyMs": 3.5,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 10.300000000046566,
+        "parseMs": 4.300000000046566,
+        "stringifyMs": 3.8999999999068677,
+        "parses": 4,
+        "stringifies": 6
+      }
+    ],
+    "cloudRoundtrip": true
+  },
+  {
+    "cells": 36150,
+    "slots": 1,
+    "bytes": 481959,
+    "samples": [
+      {
+        "totalMs": 73.19999999995343,
+        "parseMs": 29.300000000046566,
+        "stringifyMs": 42,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 66.4000000001397,
+        "parseMs": 24.699999999953434,
+        "stringifyMs": 40.5,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 71.39999999990687,
+        "parseMs": 26.399999999674037,
+        "stringifyMs": 43.8000000002794,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 66.80000000004657,
+        "parseMs": 26.800000000046566,
+        "stringifyMs": 38.9000000001397,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 69.89999999990687,
+        "parseMs": 28.0999999998603,
+        "stringifyMs": 40.5,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 76.60000000009313,
+        "parseMs": 32.89999999990687,
+        "stringifyMs": 42.0999999998603,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 73.0999999998603,
+        "parseMs": 33.09999999939464,
+        "stringifyMs": 38.60000000032596,
+        "parses": 4,
+        "stringifies": 6
+      }
+    ],
+    "cloudRoundtrip": true
+  },
+  {
+    "cells": 36150,
+    "slots": 4,
+    "bytes": 1927833,
+    "samples": [
+      {
+        "totalMs": 167.80000000004657,
+        "parseMs": 68.70000000018626,
+        "stringifyMs": 66,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 130.5,
+        "parseMs": 65.20000000018626,
+        "stringifyMs": 61.60000000009313,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 121,
+        "parseMs": 52.5999999998603,
+        "stringifyMs": 65.89999999990687,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 118.20000000018626,
+        "parseMs": 54.9000000001397,
+        "stringifyMs": 60.699999999953434,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 120.5999999998603,
+        "parseMs": 58.5,
+        "stringifyMs": 59.300000000046566,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 118.19999999995343,
+        "parseMs": 56.89999999990687,
+        "stringifyMs": 58.99999999976717,
+        "parses": 4,
+        "stringifies": 6
+      },
+      {
+        "totalMs": 123.60000000009313,
+        "parseMs": 60.800000000046566,
+        "stringifyMs": 60.699999999953434,
+        "parses": 4,
+        "stringifies": 6
+      }
+    ],
+    "cloudRoundtrip": true
+  }
+]

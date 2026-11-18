@@ -116,6 +116,9 @@ jobs:
           node tools/wilderness-workflow-checks.cjs
           python3 tools/verify.py
           node tools/wilderness-slice-checks.cjs
+          node tools/wilderness-activity-checks.cjs
+          node tools/wilderness-player-navigation-checks.cjs
+          node tools/wilderness-save-transaction-checks.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -328,6 +331,9 @@ jobs:
           node tools/wilderness-workflow-checks.cjs
           python3 tools/verify.py
           node tools/wilderness-slice-checks.cjs
+          node tools/wilderness-activity-checks.cjs
+          node tools/wilderness-player-navigation-checks.cjs
+          node tools/wilderness-save-transaction-checks.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

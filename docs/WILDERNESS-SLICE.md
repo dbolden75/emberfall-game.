@@ -26,14 +26,15 @@ entities and does not multiply the other 80 world slots.
 Four main arms connect to the original roads. Two unequal outer loops branch
 around western lakes, northern stone shoulders, eastern woodland belts and
 southern wetland islands. Twelve authored terrain footprints and 1,851
-seeded, clustered trees provide obstacles and recognizable route choices.
+seeded, clustered trees initially provide obstacles and recognizable route choices
+(1,773 remain after the activity follow-up cuts six side trails/clearings).
 Open meadow bands and route shoulders separate clusters; the module does not
 repeat the original map template across the enlarged area. Road cuts, terrain
 footprints and tree trunks govern collision; the local map uses that terrain
-geometry under existing discovery fog. No new plot, named settlement, loot,
-quest or enemy reward is introduced. Existing activity remains concentrated in
-the old center: this is a traversal/terrain slice, not a completed encounter
-or reward-density pass for the outer loops.
+geometry under existing discovery fog. No new plot, named settlement, quest or reward rule is introduced. The follow-up
+activity manifest adds six sparse optional pockets using existing mechanics;
+see WILDERNESS-ACTIVITIES.md for placements, persistence and current evidence.
+This remains a prototype, not a content-complete region.
 
 At the existing 180–235 units/sec, an unobstructed full width takes about
 65–85 seconds rather than 16–21; full height takes 41–53 rather than 10–13.
@@ -61,7 +62,7 @@ engine-dependent JS object overhead of several MB in the worst case. There
 is no whole-region 24-unit BFS allocation (~255k cells at the new size).
 The existing fog canvas remains capped to a 1,024-pixel longest side (about
 2.55 MB RGBA here). Exhaustive exploration can still grow the existing saved
-64-unit fog dictionary to roughly 36k cells; saturated serialization/fog rebuild results are recorded in the review follow-up below. Saved enemy/gather counts do not grow.
+64-unit fog dictionary to roughly 36k cells; saturated serialization/fog rebuild results are recorded in the review follow-up below. The activity follow-up appends only eight enemies and thirteen gathering nodes.
 
 The 64-unit graph can miss an unusually narrow route, and budget exhaustion
 can reject a difficult tap destination. Production movement still checks the
@@ -153,9 +154,8 @@ metadata. Merge work must deliberately reconcile source-overlay ordering with
 other HTML overlays. The baseline hash assertion will make incompatible source
 changes explicit rather than silently dropping another branch's work.
 
-Before readiness: native Android profiling, combat-inclusive party playtesting,
-terrain-edge visual review, and a decision about meaningful encounters or
-existing activity redistribution in the outer area. No release or merge was
+Before readiness: native Android profiling, broader combat/balance playtesting,
+and terrain-edge visual review. No release or merge was
 requested or performed.
 
 
@@ -209,8 +209,9 @@ JSON; timings vary with concurrent browser load. Raster readback was used to
 include submitted canvas work. Browser storage is the existing QA in-memory
 adapter, not Android disk persistence. These numbers expose remaining cold-load
 and synchronous-save hitch risks; this draft is not native-performance ready.
-Changing the global persistence schema or bypassing save-integrity guards is
-outside this traversal slice. The added fog membership set is bounded by the
+These historical save measurements are superseded by the authorized save
+optimization in WILDERNESS-ACTIVITIES.md, which retains the existing schema and
+integrity guards. The added fog membership set is bounded by the
 region's explored-cell count but has engine-dependent memory overhead; native
 heap measurements remain outstanding.
 
@@ -226,5 +227,5 @@ was not merged or modified; its live questGuide/journal integration requires no
 coordinate migration here.
 
 Reproduce the long browser test with `python3 tools/browser-wilderness-endurance.py`;
-use `--fog-only` for the saturated fog/serialization test. This prototype still
-has no activities in the new outer area. No story, release or merge was added.
+use `--fog-only` for the saturated fog/serialization test. The subsequent activity/save follow-up is documented in WILDERNESS-ACTIVITIES.md.
+No story, release or merge was added.

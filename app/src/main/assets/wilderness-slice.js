@@ -98,5 +98,9 @@
   if(prev[goal]<0)return null;
   const path=[target];for(let i=goal;i!==source;i=prev[i])path.push(point(i));path.push(point(source));path.reverse();return path;
  };
- window.wildernessSlice={id,features,routes,core,treeCount:[...buckets.values()].reduce((n,a)=>n+a.length,0),cacheCellLimit:Math.ceil(15360/64)*Math.ceil(9600/64),queryExpansionLimit:12000};
+ function clearTrees(test){for(const [k,points] of buckets){const kept=points.filter(p=>!test(p[0],p[1]));if(kept.length)buckets.set(k,kept);else buckets.delete(k);}for(const k of walkGridCache.keys())if(k.startsWith(id+':'))walkGridCache.delete(k);}
+ function addTrail(route){routes.push(route);for(let i=1;i<route.length;i++)roadSegments.push([route[i-1],route[i]]);clearTrees((x,y)=>route.slice(1).some((b,i)=>segmentDistance(x,y,route[i],b)<140));}
+ function reserveClearing(x,y,r){clearTrees((px,py)=>Math.hypot(px-x,py-y)<r);}
+ function addObstacle(x,y,r){const k=key(x,y);if(!legacyBuckets.has(k))legacyBuckets.set(k,[]);legacyBuckets.get(k).push([x,y,r]);for(const k of walkGridCache.keys())if(k.startsWith(id+':'))walkGridCache.delete(k);}
+ window.wildernessSlice={id,features,routes,core,addTrail,reserveClearing,addObstacle,get treeCount(){return [...buckets.values()].reduce((n,a)=>n+a.length,0)},cacheCellLimit:Math.ceil(15360/64)*Math.ceil(9600/64),queryExpansionLimit:12000};
 })();

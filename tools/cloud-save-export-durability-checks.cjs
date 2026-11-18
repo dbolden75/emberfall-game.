@@ -10,6 +10,8 @@ assert(from>=0&&to>from,'Generated character save routine must exist');
 const code=fs.readFileSync(path.join(root,'app/src/main/assets/cloud-save.js'),'utf8');
 const a=code.indexOf('/* THORNHAVEN_CLOUD_EXPORT_DURABILITY_START */'),b=code.indexOf('/* THORNHAVEN_CLOUD_EXPORT_DURABILITY_END */');
 assert(a>=0&&b>a,'Cloud export preflight must exist');
+const api=fs.readFileSync(path.join(root,'app/src/main/assets/purchase-api.js'),'utf8');
+const guard=api.slice(api.indexOf('/* THORNHAVEN_SAVE_DURABILITY_GUARD_START */'),api.indexOf('/* THORNHAVEN_SAVE_DURABILITY_GUARD_END */'));
 function scenario(){
  let behavior='ok';
  const disk=new Map(),dom=new Map();
@@ -20,7 +22,7 @@ function scenario(){
    ACTIVE_SLOT_KEY:'emberfall_active_character_slot_v1',
    snapshotGameState:()=>structuredClone(state),
    document:{getElementById:id=>dom.get(id)||null,
-     createElement:()=>({style:{},setAttribute(){}}),body:{appendChild:el=>dom.set(el.id,el)}},
+     createElement:()=>({style:{},setAttribute(){},remove(){dom.delete(this.id)}}),body:{appendChild:el=>dom.set(el.id,el)}},
    console:{error(){},warn(){}},
    localStorage:{getItem:k=>disk.has(k)?disk.get(k):null,
      setItem(k,v){if(k===c.SAVE_SLOTS_KEY&&behavior==='silent')return;
@@ -28,7 +30,7 @@ function scenario(){
        disk.set(k,String(v));}},
    core:{SLOT_KEY:'emberfall_character_slots_v1',IDS:['slot1','slot2','slot3','slot4'],
      encode:slots=>JSON.stringify(slots)}};
- vm.createContext(c);vm.runInContext(html.slice(from,to)+'\n'+code.slice(a,b),c,{timeout:1000});
+ vm.createContext(c);vm.runInContext(html.slice(from,to)+'\n'+guard+'\n'+code.slice(a,b),c,{timeout:1000});
  return {c,hero,disk,dom,setMode:v=>behavior=v};
 }
 {
@@ -39,7 +41,7 @@ function scenario(){
  const x=scenario();x.c.saveGame();x.hero.inventory[0].count=9;x.setMode('silent');x.c.saveGame();
  x.c.titleMenuActive=true;
  assert.equal(JSON.parse(x.disk.get(x.c.SAVE_SLOTS_KEY)).slot1.state.player.inventory[0].count,2);
- assert.equal(x.c.saveSlots.slot1.state.player.inventory[0].count,9);
+ assert.equal(x.c.saveSlots.slot1.state.player.inventory[0].count,html.includes('saveGame.acceptsPreparedSnapshot=true')?2:9,'prepared writer publishes only verified data');
  assert.throws(()=>x.c.verifiedBackupText(),/not safely stored/);
  x.c.titleMenuActive=false;x.setMode('ok');x.c.saveGame();x.c.titleMenuActive=true;
  assert.equal(JSON.parse(x.c.verifiedBackupText()).slot1.state.player.inventory[0].count,9);
