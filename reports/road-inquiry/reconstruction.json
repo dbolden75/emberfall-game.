@@ -1,0 +1,34 @@
+{
+  "workspace": "/workspace/road-inquiry-reconstruct-fskg1zqf",
+  "html_sha256": "84dfaf9ecb23278f5729dc3d98641f9ee129e9da1aa1dc26b8b1892aa97d777b",
+  "identical": true,
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "tools/restore-game-source.py"
+      ],
+      "exit": 0,
+      "stdout": "Thornhaven 1.0.68 HTML reconstructed, SHA-256 verified: 9fa2d220141f329467e7d1978ca628f78dc2a6975c46eb7f2d55221e701cec88\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "tools/restore-1.0.69.py"
+      ],
+      "exit": 0,
+      "stdout": "PASS: 1.0.69 native game restored from hash-verified baseline and 20 immutable source chunks\nPASS: Last Lantern content and shared solidAreas geometry hook applied\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "tools/verify-release-candidate-169.py"
+      ],
+      "exit": 0,
+      "stdout": "{\"result\": \"PASS\", \"version\": \"1.0.69\", \"versionCode\": 171, \"requiredAssetsVerified\": 10, \"nativePreviewExcluded\": true}\n",
+      "stderr": ""
+    }
+  ]
+}

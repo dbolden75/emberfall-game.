@@ -452,6 +452,13 @@ function safeTownQuestFlags(quests){
   if(typeof lantern!=='object'||Array.isArray(lantern))return false;
   if(!['accepted','claimed','cleared','bell','register','inventory','yard','nave','stalker','captain'].every(key=>lantern[key]==null||typeof lantern[key]==='boolean'))return false;
  }
+ const inquiry=quests.road_inquiry;
+ if(inquiry!=null){
+  if(typeof inquiry!=='object'||Array.isArray(inquiry))return false;
+  if(inquiry.version!=null&&inquiry.version!==1)return false;
+  if(!['accepted','road','harbor','corroborated','revealed','legacy'].every(key=>inquiry[key]==null||typeof inquiry[key]==='boolean'))return false;
+  if(inquiry.method!=null&&!['paper','witness'].includes(inquiry.method))return false;
+ }
  const counsel=quests.veil_counsel;
  if(counsel!=null){
   if(typeof counsel!=='object'||Array.isArray(counsel))return false;
