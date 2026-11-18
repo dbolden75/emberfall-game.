@@ -8,6 +8,8 @@ on:
       - main
       # Targeted nonbreaking atlas QA before merging PR #302.
       - feature/alabama-inspired-atlas
+      # Exercise audio/TTS changes and save-preserving 1.0.70 upgrades on disposable Android emulators.
+      - feat/thornhaven-audio
       # Run the full matrix for new fixes without editing this list each time.
       - 'fix/**'
       - 'qa/**'
