@@ -60,6 +60,8 @@ jobs:
           python3 -m pip install --disable-pip-version-check playwright==1.57.0
           python3 tools/browser-interactive-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-interactive-qa
+          python3 tools/browser-companion-conversation-qa.py --assets app/src/main/assets \
+            --evidence-dir reports/browser-companion-conversation-qa
           python3 tools/browser-camp-story-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-camp-story-qa
           python3 tools/browser-gathering-qa.py --assets app/src/main/assets \
@@ -80,6 +82,7 @@ jobs:
           path: |
             reports/browser-interactive-qa/*.png
             reports/browser-camp-story-qa/*.png
+            reports/browser-companion-conversation-qa/*.png
             reports/browser-gathering-qa/*.png
             reports/browser-pet-combat-qa/*.png
             reports/browser-joystick-qa/*.png
@@ -149,6 +152,7 @@ jobs:
           python3 tools/browser-interactive-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-release-qa
           # Preserve camp story, real edge-travel and early-game resource progression in the APK itself.
           # Source-only browser QA cannot detect an outdated packaged HTML or companion script.
+          python3 tools/browser-companion-conversation-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-companion-conversation-qa
           python3 tools/browser-camp-story-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-camp-story-qa
           python3 tools/browser-gathering-qa.py --assets "$compiled_dir/assets" --evidence-dir reports/browser-compiled-gathering-qa
           # Test the packaged pet-combat and purchase flows, not only restored source.
@@ -163,6 +167,7 @@ jobs:
           path: |
             reports/browser-compiled-release-qa/*.png
             reports/browser-compiled-camp-story-qa/*.png
+            reports/browser-compiled-companion-conversation-qa/*.png
             reports/browser-compiled-gathering-qa/*.png
             reports/browser-compiled-pet-combat-qa/*.png
             reports/browser-compiled-purchase-qa/*.png

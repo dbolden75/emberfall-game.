@@ -65,5 +65,8 @@ for start, stop, insertion in changes:
 merged.extend(base[cursor:])
 updated = b''.join(merged)
 assert hashlib.sha256(updated).hexdigest() == '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24', 'v1.0.69 release HTML digest mismatch'
+# Keep the authenticated release baseline intact; add the reviewed feature entry.
+assert updated.count(b'</body>') == 1
+updated = updated.replace(b'</body>', b'<script src="companion-conversations.js"></script></body>', 1)
 html_path.write_bytes(updated)
 print('PASS: 1.0.69 native game restored from hash-verified baseline and 20 immutable source chunks')
