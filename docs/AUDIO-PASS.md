@@ -1,3 +1,19 @@
+# Real audio asset integration (November 18, 2026)
+
+The prior transfer blocker below is now resolved by integrating the verified files on the producing executor through the normal repository workflow. This branch now packages 17 Ogg Vorbis files (7,227,798 bytes) mapped to 18 cues. The catalog is no longer empty. No public release or merge is authorized.
+
+Town/exploration/combat tracks are loudness-normalized to -22 LUFS target with -3 dB true-peak target. Exploration and combat trailing silence is trimmed. Forest is amplified 20 dB with a safety limiter. Tomb ambience targets -28 LUFS. The engine overlaps long-form boundaries for three seconds. These operations and real decoding do not prove the musical seams sound natural.
+
+Dungeon currently uses the combat score at a lower gain; fishing uses a coin reward cue, not water foley. These choices remain provisional until listening review. Per-file creators, source links, original/member/output SHA256, exact transformations, sizes and durations are in art-licenses/audio/provenance.json. Original per-item CC0 page snapshots and Kenney license are retained alongside it.
+
+Checks passed on the producing executor: all 17 packaged media decode, contain signal and stay below sample clipping; 18-cue coverage, no unused/missing media, SHA256 pins and CC0 provenance checks; existing mock engine checks; source restoration, JS/static references, release candidate source gates, current browser integration and package identity. Local Chromium launch aborts in this executor, so actual browser playback, subjective listening, Android/Bluetooth/focus testing and a new signed APK/AAB remain unverified.
+
+Reproduce from a verified source bundle with `python3 tools/prepare-audio-assets.py SOURCE_BUNDLE`; test assets with `node tools/audio-assets-checks.cjs` (FFmpeg required).
+
+---
+
+## Historical implementation and blocked-transfer record (superseded for asset status)
+
 # Audio implementation work in progress
 
 This branch is NOT a completed real-audio pass and must not be released. Media

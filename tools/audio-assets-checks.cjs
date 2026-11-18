@@ -1,0 +1,11 @@
+/* Licensed media existence, catalog coverage, hash, decode and signal checks. */
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto'),cp=require('node:child_process');
+const root=path.resolve(__dirname,'..'),assets=path.join(root,'app/src/main/assets'),ctx={window:{}};
+vm.runInNewContext(fs.readFileSync(path.join(assets,'audio-catalog.js'),'utf8'),ctx);
+const catalog=ctx.window.ThornhavenAudioCatalog,provenance=JSON.parse(fs.readFileSync(path.join(root,'art-licenses/audio/provenance.json'))),pins=JSON.parse(fs.readFileSync(path.join(root,'source-payload/audio-sha256.json')));
+const expected=['step','attack','hit','quest','level','menu','spell','heal','loot','mining','woodcutting','fishing','town','exploration','combat','dungeon','forest','tomb'];
+assert.deepEqual(Object.keys(catalog).sort(),expected.sort());
+const used=new Set();for(const [id,spec] of Object.entries(catalog)){assert.match(spec.src,/^audio\/[a-z]+\.ogg$/);assert(spec.gain>0&&spec.gain<=1);assert(fs.existsSync(path.join(assets,spec.src)),id);used.add(spec.src);}
+const files=fs.readdirSync(path.join(assets,'audio')).map(x=>'audio/'+x);assert.deepEqual([...used].sort(),files.sort(),'unused media');assert.equal(provenance.assets.length,files.length);
+for(const src of used){const key='app/src/main/assets/'+src,p=path.join(root,key),data=fs.readFileSync(p),hash=crypto.createHash('sha256').update(data).digest('hex'),record=provenance.assets.find(x=>x.path===key);assert(record);assert.equal(record.license,'CC0-1.0');assert.equal(hash,record.sha256);assert.equal(hash,pins[key]);assert(record.author&&record.source_url&&record.source_sha256&&record.transformation);const decoded=cp.spawnSync('ffmpeg',['-v','error','-i',p,'-f','f32le','-ac','1','-ar','8000','-'],{maxBuffer:16*1024*1024});assert.equal(decoded.status,0,src);assert(decoded.stdout.length>100);let peak=0;for(let i=0;i<decoded.stdout.length;i+=4)peak=Math.max(peak,Math.abs(decoded.stdout.readFloatLE(i)));assert(peak>.001&&peak<1,src+' invalid/silent/clipped peak '+peak);}
+console.log('PASS: 18 catalog cues, 17 media files, CC0 provenance, SHA256 pins, real FFmpeg decoding and non-silent unclipped peaks');
