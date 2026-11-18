@@ -140,7 +140,7 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' 'dc19c3b5702af2b89902c6173cb071af37966dcadd3b3782fd2a3c2921be2e62' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '539b218f1762505876d634572c45c4de516ee02017e8d992a2a8b508a01197f7' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 172' app/build.gradle
           grep -q "versionName '1.0.70'" app/build.gradle
           # Keep a byte-exact copy of the uninstrumented production-variant
@@ -313,7 +313,7 @@ jobs:
         run: |
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
-          printf '%s  %s\n' 'dc19c3b5702af2b89902c6173cb071af37966dcadd3b3782fd2a3c2921be2e62' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '539b218f1762505876d634572c45c4de516ee02017e8d992a2a8b508a01197f7' 'app/src/main/assets/index.html' | sha256sum -c -
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

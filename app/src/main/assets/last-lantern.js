@@ -6,7 +6,7 @@
  'use strict';
  const id='last_lantern', quest='last_lantern';
  // Closed until an approved later-story reveal explicitly authorizes this hero.
- // No production code sets this flag; QA alone enables it to exercise the lair.
+ // road-inquiry.js grants earned access and preserves explicit legacy knowledge.
  const access=(quests=townQuestState)=>quests?._lastLanternAccess?.revealed===true;
  const entry={id:'lantern_road',x:650,y:315,label:'LAST LANTERN · RUINED CHURCH'};
  const objects=[
