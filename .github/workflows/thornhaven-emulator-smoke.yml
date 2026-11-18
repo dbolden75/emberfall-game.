@@ -106,9 +106,19 @@ jobs:
         run: |
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
+          printf '%s  %s\n' '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24' 'app/src/main/assets/index.html' | sha256sum -c -
+          python3 tools/apply-wilderness-slice.py
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify development overlay after baseline authentication
+        run: |
+          node tools/wilderness-workflow-checks.cjs
+          python3 tools/verify.py
+          node tools/wilderness-slice-checks.cjs
+          node tools/wilderness-activity-checks.cjs
+          node tools/wilderness-player-navigation-checks.cjs
+          node tools/wilderness-save-transaction-checks.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -139,7 +149,6 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 171' app/build.gradle
           grep -q "versionName '1.0.69'" app/build.gradle
           # Keep a byte-exact copy of the uninstrumented production-variant
@@ -313,9 +322,18 @@ jobs:
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
           printf '%s  %s\n' '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24' 'app/src/main/assets/index.html' | sha256sum -c -
+          python3 tools/apply-wilderness-slice.py
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify development overlay after baseline authentication
+        run: |
+          node tools/wilderness-workflow-checks.cjs
+          python3 tools/verify.py
+          node tools/wilderness-slice-checks.cjs
+          node tools/wilderness-activity-checks.cjs
+          node tools/wilderness-player-navigation-checks.cjs
+          node tools/wilderness-save-transaction-checks.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

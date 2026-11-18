@@ -1,0 +1,124 @@
+{
+  "node": {
+    "total": 137,
+    "passed": 125,
+    "baselineReleaseIdentity": "passed on authenticated baseline before overlay",
+    "blocked": [
+      {
+        "test": "tools/android-back-navigation-save-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/cloud-picker-native-callback-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-connection-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-launch-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-legacy-offer-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-ownership-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-purchase-callback-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-restore-list-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-snapshot-guard-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-unfetched-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-refresh-race-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-refresh-runtime-checks.cjs",
+        "reason": "javac unavailable"
+      }
+    ]
+  },
+  "python": [
+    {
+      "test": "tools/test-release-instructions.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-android-upgrade-preflight.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-offline-signing.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-play-bundle-signing.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-aab-manifest-identity.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-android-billing-manifest.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-bug-report-version.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-release-native-parity.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test_atomic_release_publish.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-ci-artifact-extraction.py",
+      "passed": true,
+      "output": ""
+    },
+    {
+      "test": "tools/test-release-payload-duplicates.py",
+      "passed": true,
+      "output": ""
+    }
+  ],
+  "postFinalFogChanges": [
+    "soft-fog-checks.cjs",
+    "wilderness-fog-checks.cjs",
+    "wilderness-workflow-checks.cjs",
+    "runtime-integration-checks.cjs",
+    "verify.py"
+  ],
+  "browserInteractive": "passed portrait and landscape, save/resume",
+  "workflowYaml": "all workflow YAML parsed",
+  "normalSpeedRoutes": "both final-source closed loops passed with pet and human; zero collision samples, zero recovery snaps"
+}

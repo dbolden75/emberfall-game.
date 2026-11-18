@@ -25,7 +25,7 @@ function attempt(failKey){
   SAVE_SLOTS_KEY:'emberfall_character_slots_v1',
   ACTIVE_SLOT_KEY:'emberfall_active_character_slot_v1',
   snapshotGameState(){return {player:{name:'Newer',class:'warrior',level:2,hp:27}};},
-  localStorage:{setItem(key,val){
+  localStorage:{getItem(key){return storage[key]??null;},setItem(key,val){
    writes.push(key);
    if(key===failKey)throw Object.assign(new Error('QuotaExceededError'),{name:'QuotaExceededError'});
    storage[key]=String(val);

@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "scope": "Headless Chromium in-memory storage only; not Play/Android/native device",
+  "results": [
+    {
+      "orientation": "portrait",
+      "viewport": [
+        420,
+        900
+      ],
+      "created_hero": "QAPortrait",
+      "character_in_save": true,
+      "world_map_region": "rimewatch",
+      "world_map_detail_updated": true,
+      "page_errors": 0,
+      "town_transitions": [
+        "ashvale",
+        "sunmere",
+        "brackenford",
+        "stonewatch"
+      ],
+      "same_page_continue": true,
+      "fresh_page_resume": true
+    },
+    {
+      "orientation": "landscape",
+      "viewport": [
+        900,
+        420
+      ],
+      "created_hero": "QALandscape",
+      "character_in_save": true,
+      "world_map_region": "rimewatch",
+      "world_map_detail_updated": true,
+      "page_errors": 0,
+      "town_transitions": [
+        "ashvale",
+        "sunmere",
+        "brackenford",
+        "stonewatch"
+      ],
+      "same_page_continue": true,
+      "fresh_page_resume": true
+    }
+  ]
+}

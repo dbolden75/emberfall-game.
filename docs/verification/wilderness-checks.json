@@ -1,0 +1,127 @@
+{
+  "node_checks": {
+    "total": 134,
+    "passed": 121,
+    "blocked": [
+      {
+        "test": "tools/android-back-navigation-save-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/cloud-picker-native-callback-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-connection-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-launch-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-legacy-offer-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-ownership-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-purchase-callback-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-restore-list-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-snapshot-guard-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-unfetched-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/release-identity-checks.cjs",
+        "reason": "release-only exact HTML hash; passed separately on authenticated baseline"
+      },
+      {
+        "test": "tools/native-billing-refresh-race-checks.cjs",
+        "reason": "javac unavailable"
+      },
+      {
+        "test": "tools/native-billing-refresh-runtime-checks.cjs",
+        "reason": "javac unavailable"
+      }
+    ]
+  },
+  "python_gates": [
+    {
+      "test": "tools/test-release-instructions.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-android-upgrade-preflight.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-offline-signing.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-play-bundle-signing.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-aab-manifest-identity.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-android-billing-manifest.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-bug-report-version.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-release-native-parity.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test_atomic_release_publish.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-ci-artifact-extraction.py",
+      "passed": true
+    },
+    {
+      "test": "tools/test-release-payload-duplicates.py",
+      "passed": true
+    }
+  ],
+  "focused": {
+    "bounds": {
+      "minX": -7178,
+      "maxX": 8138,
+      "minY": -4455,
+      "maxY": 5065
+    },
+    "treeCount": 1851,
+    "objectives": 137,
+    "queries": 423,
+    "p50ms": 32.75506199999927,
+    "p95ms": 59.823983000000226,
+    "maxMs": 114.90167499999916,
+    "firstFourRouteLengths": [
+      4712,
+      7756.901016958035,
+      4861.368242422665,
+      7600
+    ],
+    "gridCells": 35760
+  }
+}

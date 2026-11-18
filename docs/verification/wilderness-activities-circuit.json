@@ -1,0 +1,58 @@
+{
+  "state": {
+    "start": 11186.900000000373,
+    "waypoints": 35,
+    "reached": 35,
+    "kills": [
+      "elderwood_v1_ridge_1",
+      "elderwood_v1_ridge_2",
+      "elderwood_v1_wood_1",
+      "elderwood_v1_wood_2",
+      "elderwood_v1_wood_3",
+      "elderwood_v1_east_1",
+      "elderwood_v1_wetland_1",
+      "elderwood_v1_wetland_2"
+    ],
+    "gathered": [
+      "elderwood_v1_west_fish",
+      "elderwood_v1_ridge_copper",
+      "elderwood_v1_ridge_iron",
+      "elderwood_v1_ridge_silver",
+      "elderwood_v1_wood_1",
+      "elderwood_v1_wood_2",
+      "elderwood_v1_wood_3",
+      "elderwood_v1_east_copper",
+      "elderwood_v1_east_iron",
+      "elderwood_v1_wetland_wood_1",
+      "elderwood_v1_wetland_wood_2",
+      "elderwood_v1_wetland_fish",
+      "elderwood_v1_lower_fish"
+    ],
+    "sales": 4,
+    "heals": 0,
+    "collisions": 0,
+    "snaps": 0,
+    "maxLag": 146.0742526319792,
+    "damageTaken": 12,
+    "distance": 52379.00410131912,
+    "frames": 16381,
+    "done": true,
+    "speed": 190,
+    "initialLevel": 1,
+    "party": [
+      {
+        "id": "dalen",
+        "human": false
+      },
+      {
+        "id": "corin",
+        "human": true
+      }
+    ],
+    "seconds": 291.4103999999999,
+    "finalLevel": 3,
+    "hp": 147,
+    "coins": 52
+  },
+  "pageErrors": []
+}

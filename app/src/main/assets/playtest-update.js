@@ -15,6 +15,7 @@ function paint(){if(panel.hidden)return;const b=worldBounds(),w=canvas.clientWid
  // Use the same building and road coordinates as the playable region.
  g.fillStyle='#c9b48a';
  if(activeMap.town){for(const [x0,y0,x1,y1] of townPathRects(activeMap))g.fillRect(x0,y0,x1-x0,y1-y0);}
+ else if(mapId==='elderwood'&&window.drawWildernessLocalTerrain){window.drawWildernessLocalTerrain(g);g.fillStyle='#c9b48a';g.fillRect(-1418,270,3796,105);g.fillRect(462,-855,36,2320);for(const y of [-31,707])g.fillRect(-1418,y-12,3796,24);for(const x of [-153,1127])g.fillRect(x-12,-855,24,2320);}
  else if(usesOpenWorld()){g.fillRect(b.minX,270,b.maxX-b.minX,105);for(const y of [-48,690])g.fillRect(b.minX,y,b.maxX-b.minX,34);for(const x of [-170,1110])g.fillRect(x,b.minY,34,b.maxY-b.minY);}
  if(activeMap.town){const used=new Set(activeMap.npcs.map(n=>n.frontage));used.add('classHome');const buildings=[...used].map(k=>townFrontages[k]).filter(Boolean);for(const [x,y,w,h] of townOutlyingHouses)buildings.push({x,y,w,h});
   for(const f of buildings){g.fillStyle='#776653';g.fillRect(f.x,f.y,f.w,f.h);g.strokeStyle='#ead7ac';g.lineWidth=1/scale;g.strokeRect(f.x,f.y,f.w,f.h);if(f.label&&revealed(f.x+f.w/2,f.y+f.h)){g.fillStyle='#fff1cf';g.font=(9/scale)+'px sans-serif';g.fillText(f.label,f.x,f.y+f.h/2);}}

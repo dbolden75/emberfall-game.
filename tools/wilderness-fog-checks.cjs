@@ -1,0 +1,15 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const made=[];const context=()=>({builds:0,stamps:0,cleared:[],setTransform(){this.builds++},createRadialGradient(){return{addColorStop(){}}},fillRect(...rect){if(this.globalCompositeOperation==='destination-out')this.cleared.push(rect);},drawImage(){this.stamps++}});
+const root={document:{createElement(){const c={width:0,height:0,ctx:context(),getContext(){return this.ctx}};made.push(c);return c;}},window:{localExplorationRevision:1},mapId:'elderwood',townQuestState:{_localExploration:{elderwood:{'0,0':1,'1,0':1}}}};
+vm.createContext(root);vm.runInContext(fs.readFileSync('app/src/main/assets/soft-fog.js','utf8'),root);
+const target={save(){},restore(){},drawImage(){}},bounds={minX:-7178,maxX:8138,minY:-4455,maxY:5065};
+const draw=()=>root.window.drawSoftExplorationFog(target,bounds),layer=made[0].ctx;
+draw();assert.equal(layer.stamps,2);assert.equal(layer.builds,1);
+root.townQuestState._localExploration.elderwood['2,0']=1;root.window.localExplorationRevision++;draw();assert.equal(layer.stamps,3);assert.equal(layer.builds,1,'new cell must not rebuild existing fog');
+root.window.localExplorationRevision++;draw();assert.equal(layer.stamps,3,'revision without additions must not restamp');
+delete root.townQuestState._localExploration.elderwood['0,0'];root.window.localExplorationRevision++;draw();assert.equal(layer.builds,2,'deletions must restore opaque fog');
+root.townQuestState._localExploration.elderwood={'7,7':1};draw();assert.equal(layer.builds,3,'loaded character must reset');
+root.mapId='westwood';draw();root.mapId='elderwood';draw();assert.equal(layer.builds,5,'region switches must reset');
+assert(made[0].width<=1024&&made[0].height<=1024);assert(made[2].width<=12);assert.equal(layer.globalCompositeOperation,'source-over');
+const dense={};for(let y=0;y<3;y++)for(let x=0;x<3;x++)dense[x+','+y]=1;root.townQuestState._localExploration.elderwood=dense;const previousStamps=layer.stamps;draw();assert.equal(layer.stamps-previousStamps,8,'Only boundary cells need feather stamps');assert.deepEqual(layer.cleared.at(-1),[64,64,64,64],'Only the known interior cell is cleared');const cleared=layer.cleared.length;delete dense['1,1'];root.window.localExplorationRevision++;draw();assert.equal(layer.cleared.length,cleared,'Unexplored hole must not be cleared');
+console.log('PASS: incremental Elderwood fog, bounded raster stamp, deletion/reload/region invalidation; legacy fog separately tested');

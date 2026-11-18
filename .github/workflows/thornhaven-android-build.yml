@@ -39,6 +39,8 @@ jobs:
       - name: Verify source and regression tests
         run: |
           python3 tools/verify-release-candidate-169.py
+          node tools/release-identity-checks.cjs
+          python3 tools/apply-wilderness-slice.py
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
           python3 tools/test-android-upgrade-preflight.py
@@ -51,7 +53,11 @@ jobs:
           python3 tools/test_atomic_release_publish.py
           python3 tools/test-ci-artifact-extraction.py
           python3 tools/test-release-payload-duplicates.py
-          for test in tools/*checks.cjs; do node "$test"; done
+          for test in tools/*checks.cjs; do
+            # Release identity is checked above, before the development overlay.
+            [ "$test" = tools/release-identity-checks.cjs ] && continue
+            node "$test"
+          done
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

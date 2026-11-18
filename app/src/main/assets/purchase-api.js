@@ -485,11 +485,20 @@
    warnInvalidLiveState();
    return;
   }
-  const slot=activeSlotId,result=saveWithoutReadback(...args);
+  // The real game accepts the validated snapshot. Older embedders/tests keep
+  // the original fallback path; no write is deferred and no guard is bypassed.
+  const prepared=saveWithoutReadback.acceptsPreparedSnapshot===true;
+  const slot=activeSlotId,result=prepared?saveWithoutReadback(expected):saveWithoutReadback(...args);
   try{
-   const saved=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
-   if(!saved||JSON.stringify(saved[slot]?.state)!==JSON.stringify(expected))
-    throw new Error('Character save did not persist');
+   if(prepared){
+    if(!result||result.state!==expected||result.slot!==slot||
+       typeof result.rawSlots!=='string'||localStorage.getItem(SAVE_SLOTS_KEY)!==result.rawSlots)
+     throw new Error('Character save did not persist');
+   }else{
+    const saved=JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY)||'null');
+    if(!saved||JSON.stringify(saved[slot]?.state)!==JSON.stringify(expected))
+     throw new Error('Character save did not persist');
+   }
    document.getElementById('saveFailureWarning')?.remove();
   }catch(error){
    let warning=document.getElementById('saveFailureWarning');

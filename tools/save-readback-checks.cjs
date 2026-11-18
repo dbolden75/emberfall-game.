@@ -31,10 +31,11 @@ function scenario(mode='ok'){
       disk.set(key,String(value));}}
  };
  vm.createContext(c);vm.runInContext(actualSave,c,{timeout:1000});
- // The baseline generated saveGame does not see silent refusal: prove red first.
+ // The prepared-snapshot writer also verifies before publishing its cache.
+ // Historical writers rely on the later guard to detect silent refusal.
  if(mode==='silent'){
   c.saveGame();assert.equal(disk.has(c.SAVE_SLOTS_KEY),false,'baseline reproduces dropped write');
-  assert.equal(elements.has('saveFailureWarning'),false,'baseline misses silent failure');
+  assert.equal(elements.has('saveFailureWarning'),!!c.saveGame.acceptsPreparedSnapshot,'prepared writer detects silent refusal before publishing');
  }
  vm.runInContext(guard,c,{timeout:1000});c.saveGame();
  return {c,disk,elements,setMode:v=>behavior=v};
