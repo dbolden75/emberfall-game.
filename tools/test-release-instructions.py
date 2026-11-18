@@ -28,6 +28,14 @@ def main():
                      guide, 'documented current release identity')
     if documented != (version, code):
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md says {documented}; Android source is {(version, code)}')
+    # The draft branch must not direct Play operators to an unsigned artifact.
+    # The last maintained-signed upload can be older than Android Gradle.
+    signed_code = one(r'\*\*Release target:\*\* Thornhaven \*\*[0-9.]+\*\*, versionCode \*\*(\d+)\*\*',
+                      guide, 'maintained-signed release code')
+    play_candidate = one(r'current candidate versionCode (\d+) may not be available',
+                         guide, 'Play submission versionCode')
+    if play_candidate != signed_code or int(signed_code) >= int(code):
+        raise SystemExit('FAIL: Play instructions do not match last maintained-signed release')
     documented_package = one(r'^Package: ([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)', guide,
                              'documented package')
     if documented_package != package:
