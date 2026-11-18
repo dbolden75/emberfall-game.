@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed when promoting Thornhaven v1.0.69 without its complete approved payload.
+"""Fail closed when promoting Thornhaven v1.0.70 without its complete approved payload.
 
 Run after restore-game-source.py. This only reads source files and never edits saves.
 """
@@ -22,9 +22,9 @@ code = int(field(r"^\s*versionCode\s+(\d+)"))
 version = field(r"^\s*versionName\s+'([^']+)'")
 assert package == "com.vaelbrink.ashvale.newjourney", "Changed package risks existing saves"
 if code != 172 and version != "1.0.70":
-    print(f"PASS: package preserved; 1.0.69 gate not applicable to {version}/{code}")
+    print(f"PASS: package preserved; 1.0.70 gate not applicable to {version}/{code}")
     raise SystemExit(0)
-assert (code, version) == (172, "1.0.70"), "Incomplete 1.0.69 version promotion"
+assert (code, version) == (172, "1.0.70"), "Incomplete 1.0.70 version promotion"
 
 expected = {
     "app/src/main/assets/index.html": "4255396addb1741cc18f8c21c35f86e3204d308e09bd0edfe17ccb11eb0212a3",

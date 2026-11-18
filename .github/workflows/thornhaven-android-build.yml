@@ -76,6 +76,9 @@ jobs:
           python3 tools/browser-joystick-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-joystick-qa
           python3 tools/browser-last-lantern-qa.py
+          python3 tools/browser-audio-qa.py
+          python3 tools/browser-audio-media-qa.py
+          python3 tools/browser-voice-qa.py
           # Run each orientation in its own Chromium process to bound 26-MB HTML memory.
           python3 tools/browser-purchase-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-purchase-qa --orientation portrait
