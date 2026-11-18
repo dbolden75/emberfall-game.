@@ -94,6 +94,15 @@ def main():
         # Failed retries must preserve an existing verified release artifact.
         previous = b'PREVIOUS VERIFIED RELEASE (mock fixture)'
         signed.write_bytes(previous)
+        # New audio must never be signed using the already issued 171/1.0.69
+        # identity. This safety gate runs before any signing utilities.
+        audio_marker = assets / 'audio-integration.js'
+        audio_marker.write_text('// fixture marker; no production audio loaded')
+        blocked_audio = invoke()
+        assert blocked_audio.returncode != 0, 'reused-version audio APK accepted'
+        assert 'Refusing audio release with reused versionCode' in (blocked_audio.stdout + blocked_audio.stderr)
+        assert signed.read_bytes() == previous, 'audio collision altered prior release'
+        audio_marker.unlink()
         for overrides, reason in [
             ({'FAKE_NO_V3': '1'}, 'missing v3 accepted'),
             ({'FAKE_DEBUGGABLE': '1'}, 'debuggable release accepted'),
