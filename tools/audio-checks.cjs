@@ -40,5 +40,26 @@ const create=require('../app/src/main/assets/game-audio.js');
  incoming.duration=10;incoming.currentTime=7.1;cross.tick();const restart=made.at(-1);assert.notEqual(restart,incoming);assert.equal(restart.src,incoming.src);
  restart.resolve();await flush();for(let i=0;i<35;i++)cross.tick();assert.ok(incoming.paused);assert.equal(cross.status().loops,1,'Loop handoff remains bounded');
  time+=1000;cross.effect('hit');const delayed=made.at(-1);time+=301;delayed.resolve();await flush();assert.ok(delayed.paused,'Expired effect cannot sound after delayed decode');cross.pause();
+ // A never-settling WebView play() promise must not lock music forever.
+ // A later user gesture may safely retry once the 5-second watchdog expires.
+ let timerId=0;const pendingTimers=new Map();
+ const stalledAudio=create({
+  makeAudio:()=>new Media(),storage:{getItem:()=>null,setItem(){}},now:()=>time,catalog,
+  scheduleTimeout:(fn,delay)=>{const id=++timerId;pendingTimers.set(id,{fn,delay});return id;},
+  cancelTimeout:id=>pendingTimers.delete(id)
+ });
+ stalledAudio.set('ambience',{muted:true});
+ mode='deferred';stalledAudio.unlock();const stalled=made.at(-1);
+ assert.equal(stalled.plays,1);
+ const timers=[...pendingTimers.values()];
+ assert.equal(timers.length,1);assert.equal(timers[0].delay,5000,'Loop starts a bounded pending-play watchdog');
+ timers[0].fn();assert.ok(stalled.paused,'Expired stream should stop awaiting WebView forever');
+ assert.equal(pendingTimers.size,0);
+ mode='ok';stalledAudio.unlock();await flush();
+ assert.equal(stalled.plays,2,'New trusted gesture retries expired stream');
+ assert.ok(!stalled.paused);
+ stalled.resolve();await flush();
+ assert.ok(!stalled.paused,'Late old promise must not stop the retried stream');
+ stalledAudio.pause();
  console.log('PASS audio: gesture retry, repeated events, voice/stream bounds, zero/mutes, preferences/storage failure, absent/broken assets, late play, pause/resume and scene transitions');
 })().catch(e=>{console.error(e);process.exitCode=1;});
