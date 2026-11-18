@@ -1,0 +1,53 @@
+/* An atlas, not a board of square cards. Labels retain semantic buttons. */
+#travelScreen .worldPanel{border-radius:18px;background:#111d19;border-color:#96805a;overflow:hidden}
+#travelScreen .screenHead{background:linear-gradient(100deg,#182c25,#0d1915);padding:8px 18px}
+#travelScreen .screenHead h2{font:small-caps 24px Georgia,serif;letter-spacing:.06em}
+#travelScreen .atlasScroller{background:#0d1b16;border:0;border-radius:12px;box-shadow:inset 0 0 36px #0008}
+#travelScreen .atlasView{filter:none;background:#183425;overflow:hidden;border-radius:8px}
+#travelScreen .atlasFog{opacity:.23;mix-blend-mode:multiply}
+#travelScreen .atlasToolbar{justify-content:flex-start;padding:4px 8px;gap:6px}
+#travelScreen .atlasToolbar button,#atlasRegionSelect{border-radius:24px;min-height:44px;background:#1a3027;border:1px solid #7e7958;color:#f2dfb2;padding:8px 14px;font:12px system-ui}
+#travelScreen .atlasToolbar button[aria-pressed=true]{background:#76623a;border-color:#dac08a}
+#atlasRegionSelect{max-width:210px;flex:1;min-width:120px}
+#travelScreen .atlasView .mapLabel{display:none}
+#travelScreen .atlasNode,#travelScreen .atlasOverview .atlasNode{width:44px;height:44px;min-height:44px;border:0!important;background:transparent!important;box-shadow:none!important;outline:0;max-width:none;border-radius:50%;padding:0}
+#travelScreen .atlasNode:before{content:'';display:block;position:absolute;left:19px;top:19px;width:7px;height:7px;border-radius:50%;border:1px solid #f5deb1;background:#574e36;box-shadow:0 1px 4px #000}
+#travelScreen .atlasNode .atlasStamp,#travelScreen .atlasNode .mapKind{display:none!important}
+#travelScreen .atlasNode .mapName{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);width:max-content;max-width:140px;font:600 13px Georgia,serif;color:#f4e4c0;background:#17291ee8;padding:5px 10px;border:1px solid #b09a64;border-radius:2px 10px;box-shadow:0 2px 8px #0008;text-shadow:0 1px #000}
+#travelScreen .atlasTown .mapName,#travelScreen .atlasNode[aria-current=location] .mapName,#travelScreen .atlasNode[data-selected=true] .mapName,#travelScreen .atlasNode:focus-visible .mapName,#travelScreen .atlasNode:hover .mapName{display:block;z-index:10}
+#travelScreen .atlasTown:before{width:10px;height:10px;left:17px;top:17px;background:#b98f43;transform:rotate(45deg);border-radius:2px;box-shadow:0 0 0 4px #1a271c80,0 0 12px #fee2a8}
+#travelScreen .atlasNode[aria-current=location]:before{width:14px;height:14px;left:14px;top:14px;background:#a8ede2;border:2px solid #efffe5;box-shadow:0 0 0 5px #83dfbd44,0 0 18px #fff}
+#travelScreen .atlasNode[aria-current=location] .mapName{color:#e7fff1;background:#1c4b3b;border-color:#c3e1ab}
+#travelScreen .atlasNode.questDestination:before{background:#f1bc50;box-shadow:0 0 0 6px #e4bd5444,0 0 16px #eac465}
+#travelScreen .atlasNode.questDestination:after{display:none}
+#travelScreen .atlasNode:focus-visible{outline:2px solid #fff0bf!important;outline-offset:0}
+#travelScreen .atlasNode.unexplored{visibility:hidden!important}
+#travelScreen .atlasRoutes summary{border:0;padding:0 10px;color:#bbbc9d;font-size:11px}
+#travelScreen #atlasSelection{padding:8px 14px;font:12px/1.45 system-ui;max-height:24vh;overflow:auto;white-space:pre-line;color:#d9d6bc;background:#14251d;border-radius:10px}
+.atlasStory{margin:8px 0 0;padding:8px 0 0;border-top:1px solid #7a785144;display:grid;gap:4px;white-space:normal}
+.atlasStory strong{font:18px Georgia;color:#e8cf98}.atlasStory span{font:12px/1.5 Georgia;color:#c7ceb7}
+.atlasCartouche{position:absolute;top:2.5%;left:3%;font:700 clamp(12px,2vw,24px) Georgia;letter-spacing:.13em;color:#eed19b;text-shadow:0 2px 6px #000;pointer-events:none}
+.atlasCompass{position:absolute;bottom:5%;left:4%;font:50px Georgia;color:#dfc082;text-shadow:0 2px 4px #000;display:grid;text-align:center;line-height:1;pointer-events:none}.atlasCompass span{font:12px Georgia}.atlasCompass small{font:7px Georgia;letter-spacing:.1em;margin-top:5px}
+@media(max-width:600px){#travelScreen .screenHead h2{font-size:19px}.atlasToolbar button,#atlasRegionSelect{font-size:10px!important;padding:5px 9px!important}.atlasToolbar{gap:4px!important}#travelScreen .atlasNode .mapName{font-size:10px;max-width:90px;padding:3px 6px}#travelScreen #atlasSelection{font-size:10px;max-height:20vh}.atlasStory strong{font-size:14px}.atlasStory span{font-size:11px}}
+/* Towns are printed on the cartographer's atlas; visiting is still required for compass travel. */
+#travelScreen .atlasNode.atlasTown.unexplored{visibility:visible!important}
+#travelScreen .atlasNode[data-travel-to=wayfarers_camp] .mapName{top:auto;bottom:100%;font-size:10px}
+/* Undo legacy absolute fullscreen overlays: controls must not cover the terrain. */
+#travelScreen .worldPanel{display:flex;flex-direction:column;background:#101f18}
+#travelScreen .screenHead,#travelScreen .screenMeta,#travelScreen .screenFoot{position:relative;inset:auto;flex-shrink:0;max-width:none;width:auto;z-index:5}
+#travelScreen .screenHead{padding:6px 10px;min-height:48px;pointer-events:auto}
+#travelScreen .screenHead>div{padding:0;background:transparent;border:0}
+#travelScreen .screenMeta{padding:0 12px 5px;background:transparent;margin:0}
+#travelScreen .screenFoot{padding:5px 10px;display:flex!important;justify-content:flex-end}
+#travelScreen .screenFoot button{min-width:130px;min-height:44px;font:14px Georgia;border-radius:24px;background:#243c2c;border:1px solid #a99465}
+#travelScreen .travelDestinations{position:relative;inset:auto;display:flex;flex:1;min-height:0;flex-direction:column;gap:4px;padding:0 6px!important}
+#travelScreen .atlasToolbar{position:relative;inset:auto;max-width:none;flex-shrink:0;border:0;background:transparent;order:0}
+#travelScreen .atlasRoutes{position:relative;inset:auto;max-width:none;flex-shrink:0;border:0;background:transparent;padding:0;order:2}
+#travelScreen .atlasRoutes summary{min-height:28px}
+#travelScreen .atlasScroller{position:relative;inset:auto;min-height:100px;flex:1;display:flex;align-items:flex-start;order:1}
+#travelScreen .atlasView{margin:auto}
+#travelScreen #atlasSelection{position:relative;inset:auto;width:auto;max-width:none;flex-shrink:0;order:3;max-height:20vh;border:0;border-radius:8px;background:#14261e;margin:0}
+@media(orientation:landscape) and (max-height:560px){#travelScreen .screenHead{min-height:40px;padding:2px 10px}#travelScreen .screenMeta{display:none}#travelScreen .atlasRoutes,#travelScreen .screenFoot{display:none!important}#travelScreen #atlasSelection{max-height:15vh;font-size:10px;padding:4px 10px}}
+/* The campsite and Ashvale are neighbors: stagger labels, never move world coordinates. */
+#travelScreen .atlasNode[data-travel-to=ashvale] .mapName{top:auto!important;bottom:calc(100% + 8px)!important}
+#travelScreen .atlasNode[data-travel-to=wayfarers_camp] .mapName{left:calc(100% + 5px)!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;max-width:125px;background:#16372a;color:#f0e9bd;border:1px solid #d6bd7c;box-shadow:0 2px 6px #0008}

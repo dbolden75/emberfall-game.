@@ -67,7 +67,7 @@ assert(options.some(line=>line.includes("matrix.api-level == 34 && matrix.orient
 assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}'));
 // Derive the evidence artifact version from Gradle; stale 1.0.67 names must
-// not survive a 1.0.68 test run or mislead Play release reviewers.
+// not survive a 1.0.69 test run or mislead Play release reviewers.
 const versions=fs.readFileSync('app/build.gradle','utf8').split(String.fromCharCode(10))
   .filter(line=>line.trim().startsWith('versionCode '));
 assert.equal(versions.length,1,'Expected exactly one versionCode');

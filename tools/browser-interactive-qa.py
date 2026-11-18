@@ -22,6 +22,10 @@ SCRIPT_TAG = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>')
 
 def html_for_browser(assets: Path, seed: dict | None = None) -> str:
     html = (assets / "index.html").read_text(encoding="utf-8")
+    for name in re.findall(r'<link rel="stylesheet" href="([^"]+)">', html):
+        assert ':' not in name and '..' not in Path(name).parts
+        html = html.replace(f'<link rel="stylesheet" href="{name}">',
+                            '<style>' + (assets / name).read_text(encoding='utf-8') + '</style>')
     scripts = SCRIPT_TAG.findall(html)
     if len(scripts) < 5:
         raise AssertionError(f"Unexpectedly few game script references ({len(scripts)})")
@@ -29,6 +33,9 @@ def html_for_browser(assets: Path, seed: dict | None = None) -> str:
         if ":" in script_name or script_name.startswith("/") or ".." in Path(script_name).parts:
             raise AssertionError(f"Invalid external script path: {script_name!r}")
         script = (assets / script_name).read_text(encoding="utf-8")
+        if script_name == 'immersive-atlas.js':
+            artwork = base64.b64encode((assets / 'art/atlas-painted-v1.png').read_bytes()).decode()
+            script = script.replace("'art/atlas-painted-v1.png'", "'data:image/png;base64," + artwork + "'")
         # Script tags here are QA's in-memory transport, NOT changes to the app.
         html = html.replace(f'<script src="{script_name}"></script>', f"<script>\n{script}\n</script>")
     if SCRIPT_TAG.search(html):
@@ -69,7 +76,13 @@ def check_orientation(browser, assets: Path, output: Path, orientation: str, wid
     hero = "QAPortrait" if orientation == "portrait" else "QALandscape"
     page.locator("#characterName").fill(hero)
     page.get_by_role("button", name="Begin Journey").click()
+    assert page.locator('#hudDetails').is_hidden(), 'Party details must start collapsed'
+    assert page.locator('#compactHealth').is_visible(), 'Health must remain visible'
+    page.locator('#hudDetailsToggle').click()
+    assert page.locator('#hudDetailsToggle').get_attribute('aria-expanded') == 'true'
     page.locator("body").get_by_text(hero + " · Warrior", exact=False).first.wait_for(state="visible")
+    page.locator('#hudDetailsToggle').click()
+    assert page.locator('#hudDetails').is_hidden(), 'Party details failed to collapse'
     assert page.get_by_role("button", name="INTERACT").is_visible(), "No gameplay interaction button"
     save = page.evaluate("window.__qaStorage")
     assert "local:emberfall_character_slots_v1" in save, "No character slots persisted by game"
@@ -100,6 +113,7 @@ def check_orientation(browser, assets: Path, output: Path, orientation: str, wid
     assert not errors, f"Uncaught game JavaScript errors: {errors[:5]}"
     # Test actual Android-packaged atlas pixels, not the historically divergent
     # root browser prototype. CSS screenshots alone can hide a blank canvas.
+    page.wait_for_function("document.getElementById('themedWorldMap')?.dataset.atlasArtwork === 'painted-v1'")
     atlas_render = page.evaluate("""() => {
         const canvas = document.getElementById('themedWorldMap');
         if (!canvas) return null;
