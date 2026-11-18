@@ -12,6 +12,8 @@ BILLING_QUERY = 'com.android.vending.billing.InAppBillingService.BIND'
 PROXY = 'com.android.billingclient.api.ProxyBillingActivity'
 PROXY_V2 = 'com.android.billingclient.api.ProxyBillingActivityV2'
 MAIN = 'com.emberfall.ashvale.MainActivity'
+PROFILE_RECEIVER = 'androidx.profileinstaller.ProfileInstallReceiver'
+PROFILE_PERMISSION = 'android.permission.DUMP'
 
 
 def parse_manifest(binary):
@@ -127,6 +129,8 @@ def validate(nodes, version_code):
         issues.append('Unexpected app package (must not change installation/save identity)')
     if len(root) != 1 or root[0].get('versionCode') != version_code:
         issues.append('APK versionCode does not match configured release')
+    if len(root) != 1 or root[0].get('versionName') != '1.0.69':
+        issues.append('APK versionName is not the configured 1.0.69 release')
     sdks = entries('manifest/uses-sdk')
     if len(sdks) != 1 or sdks[0].get('minSdkVersion') != 24 or sdks[0].get('targetSdkVersion') != 36:
         issues.append('Unexpected minSdk or targetSdk in compiled APK')
@@ -145,6 +149,21 @@ def validate(nodes, version_code):
         matches = [a for a in activities if a.get('name') == name]
         if len(matches) != 1 or matches[0].get('exported') is not expected_exported:
             issues.append(f'Compiled activity missing or unsafe exported flag: {name}')
+    # The game exposes privileged WebView bridges, so no additional Android
+    # component may silently become public. The AndroidX Profile Installer
+    # receiver is an exception only while protected by platform DUMP permission.
+    for kind in ('activity', 'activity-alias', 'service', 'receiver', 'provider'):
+        for component in entries('manifest/application/' + kind):
+            name = component.get('name')
+            exported = component.get('exported')
+            if kind == 'activity' and name == MAIN and exported is True:
+                continue
+            if (kind == 'receiver' and name == PROFILE_RECEIVER
+                    and exported is True
+                    and component.get('permission') == PROFILE_PERMISSION):
+                continue
+            if exported is not False:
+                issues.append(f'Unexpected or unprotected exported Android component: {kind}/{name}')
     return issues
 
 

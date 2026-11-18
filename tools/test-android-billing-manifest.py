@@ -13,7 +13,7 @@ spec.loader.exec_module(module)
 
 def fixture():
     return [
-        ('manifest', {'package': module.PACKAGE, 'versionCode': 171}),
+        ('manifest', {'package': module.PACKAGE, 'versionCode': 171, 'versionName': '1.0.69'}),
         ('manifest/uses-sdk', {'minSdkVersion': 24, 'targetSdkVersion': 36}),
         ('manifest/application', {'allowBackup': False}),
         ('manifest/uses-permission', {'name': module.BILLING_PERMISSION}),
@@ -21,6 +21,7 @@ def fixture():
         ('manifest/application/activity', {'name': module.MAIN, 'exported': True}),
         ('manifest/application/activity', {'name': module.PROXY, 'exported': False}),
         ('manifest/application/activity', {'name': module.PROXY_V2, 'exported': False}),
+        ('manifest/application/receiver', {'name': module.PROFILE_RECEIVER, 'exported': True, 'permission': module.PROFILE_PERMISSION}),
     ]
 
 
@@ -34,6 +35,39 @@ class BinaryManifestGateTests(unittest.TestCase):
                 data = fixture()
                 data[0][1][key] = value
                 self.assertTrue(module.validate(data, 171))
+
+    def test_release_version_name_is_pinned(self):
+        for name in ('1.0.68', '1.0.70', '', None):
+            with self.subTest(name=name):
+                data = fixture()
+                data[0][1]['versionName'] = name
+                self.assertTrue(any('versionName' in issue for issue in module.validate(data, 171)))
+
+    def test_unexpected_exported_components_are_blocked(self):
+        for kind in ('activity', 'activity-alias', 'service', 'receiver', 'provider'):
+            for flag in (True, None, 1, 'true'):
+                with self.subTest(kind=kind, flag=flag):
+                    data = fixture()
+                    data.append((f'manifest/application/{kind}', {
+                        'name': 'com.example.UnexpectedComponent', 'exported': flag
+                    }))
+                    self.assertTrue(any('unprotected exported' in issue
+                                        for issue in module.validate(data, 171)))
+        for kind in ('service', 'receiver', 'provider', 'activity-alias'):
+            with self.subTest(kind=kind):
+                data = fixture()
+                data.append((f'manifest/application/{kind}', {
+                    'name': 'com.example.SafeComponent', 'exported': False
+                }))
+                self.assertEqual(module.validate(data, 171), [])
+
+    def test_profile_receiver_must_remain_platform_permission_protected(self):
+        for permission in (None, '', 'com.example.DUMP'):
+            with self.subTest(permission=permission):
+                data = fixture()
+                data[-1][1]['permission'] = permission
+                self.assertTrue(any('unprotected exported' in issue
+                                    for issue in module.validate(data, 171)))
 
     def test_backup_flag_and_sdk_levels_fail_closed(self):
         for entry, key, value in [(2, 'allowBackup', True), (1, 'minSdkVersion', 23), (1, 'targetSdkVersion', 35)]:
