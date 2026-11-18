@@ -6,10 +6,10 @@ ANCHOR = 'const campDamageBefore=damageEnemy;'
 OLD = "if(area==='whisperwood'&&s?.accepted&&!journalPaused('camp_patrol')&&s.kills<3)"
 NEW = OLD.replace("&&s.kills<3", "&&s.method!=='repair'&&s.kills<3")
 def block():
-    return '// BEGIN EARLY QUEST CHOICES\n' + (ROOT / 'app/src/main/assets/early-quest-choices.js').read_text() + (ROOT / 'app/src/main/assets/ashvale-quest-choices.js').read_text() + '// END EARLY QUEST CHOICES\n'
+    return '// BEGIN EARLY QUEST CHOICES\n' + (ROOT / 'app/src/main/assets/early-quest-choices.js').read_text() + (ROOT / 'app/src/main/assets/ashvale-quest-choices.js').read_text() + (ROOT / 'app/src/main/assets/brackenford-quest-choices.js').read_text() + '// END EARLY QUEST CHOICES\n'
 PATCHES = [
     (OLD, NEW),
-    ("if(!humanQuestReady(id)||journalPaused(id)||!st||!st.accepted", "if(!humanQuestReady(id)||journalPaused(id)||st?.method==='shelter'||st?.method==='accounts'||!st||!st.accepted"),
+    ("if(!humanQuestReady(id)||journalPaused(id)||!st||!st.accepted", "if(!humanQuestReady(id)||journalPaused(id)||st?.method==='shelter'||st?.method==='accounts'||st?.method==='diversion'||st?.method==='reserve'||!st||!st.accepted"),
     ("interactQuest({questId:key});openHumanStory(id);", "interactQuest({questId:key});if(!townQuestDefs[key].choiceBased)openHumanStory(id);"),
 ]
 def apply(html):

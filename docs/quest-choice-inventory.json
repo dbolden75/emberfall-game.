@@ -330,19 +330,19 @@
       "id": "bracken_patrol",
       "title": "Redfen Patrol",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "brackenford-quest-choices.js",
+      "consequence": "Clear the direct trail with three kills/three resin, or spend three resin covering twelve active seconds at a signal. Diversion changes the following reserve-medicine cost from two to four bottles."
     },
     {
       "id": "bracken_herbs",
       "title": "Marsh Samples",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "brackenford-quest-choices.js",
+      "consequence": "Distill two fresh Fen Stalker samples to unlock a venom-for-medicine barter, or reserve and deliver two/four potions, depleting shared shop stock until normal delivery. All combinations earn the seal."
     },
     {
       "id": "stonewatch_sweep",

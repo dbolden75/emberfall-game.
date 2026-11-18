@@ -464,6 +464,17 @@ function safeTownQuestFlags(quests){
   for(const flag of ['built','fieldRead','accountRead'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
   if(row.restAt!=null&&(!Number.isSafeInteger(row.restAt)||row.restAt<0))return false;
  }
+ // Redfen's timed crossing and reserved medicine are character-local.
+ for(const [key,methods] of [['bracken_patrol',['clear_route','diversion']],['bracken_herbs',['brew','reserve']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['signal','delivered'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  if(row.held!=null&&(!Number.isFinite(row.held)||row.held<0||row.held>12))return false;
+  if(row.method==='diversion'&&(!Number.isFinite(row.held)||typeof row.signal!=='boolean'))return false;
+  if(row.reserved!=null&&![2,4].includes(row.reserved))return false;
+  if(row.method==='reserve'&&(![2,4].includes(row.reserved)||typeof row.delivered!=='boolean'))return false;
+ }
  const lanternAccess=quests._lastLanternAccess;
  if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
  const lantern=quests.last_lantern;
