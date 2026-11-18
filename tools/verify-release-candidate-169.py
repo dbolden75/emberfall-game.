@@ -26,8 +26,9 @@ if code != 171 and version != "1.0.69":
 assert (code, version) == (171, "1.0.69"), "Incomplete 1.0.69 version promotion"
 
 expected = {
+    "app/src/main/assets/typed-npc-questions.js": "6da2381ca3047163cb9d4dc4cda0d3034479eba8fd1b5619fbdbf44acb104794",
     "app/src/main/assets/companion-conversations.js": "cded629c7f31df1807f8012920ba794cd52efc94d3af7ce28e57c4986eee222d",
-    "app/src/main/assets/index.html": "22d4d109078cbcedc7973c205dc8ea3064c4a02ebbf40ca495fbc87aa13e147c",
+    "app/src/main/assets/index.html": "9897737243aa0f441262932b3bc64e7c9e408f54875302a0c95abac877026449",
     "app/src/main/assets/compact-hud.js": "31767d516d7d5afd78088627ce83c1bcc152d1a3de3ee7aea1e2ef2ada6f5fff",
     "app/src/main/assets/immersive-atlas.css": "1906ac055b55bfca73b898c8564d512b49d85c823cb1c316682f8b5460ad63e8",
     "app/src/main/assets/immersive-atlas.js": "357240a78caf57ce20b0464f92dbd8778dbab9e653f89ac3fe9b613a1aa1cb28",
@@ -44,8 +45,8 @@ for path, wanted in expected.items():
     assert hashlib.sha256(source.read_bytes()).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
 
 html = (root / "app/src/main/assets/index.html").read_text()
-# The sole HTML change is a script tag after the authenticated release baseline.
-feature_tag = '<script src="companion-conversations.js"></script>'
+# The only HTML changes are the two feature script tags after the authenticated release baseline.
+feature_tag = '<script src="companion-conversations.js"></script><script src="typed-npc-questions.js"></script>'
 assert html.count(feature_tag) == 1
 assert hashlib.sha256(html.replace(feature_tag, '').encode()).hexdigest() == '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24'
 assert (root / 'app/src/main/assets/companion-conversations.js').is_file()
