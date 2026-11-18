@@ -53,11 +53,28 @@ def run(browser,orientation,width,height):
  page.wait_for_timeout(350)
  page.screenshot(path=str(OUT/f'{orientation}-decision.png'))
  page.get_by_role('button',name='Prepare a witness ledger',exact=True).click()
+ page.evaluate("pauseJournalQuest('veil_counsel')")
+ page.get_by_role('button',name='Confirm this recommendation',exact=True).click()
+ assert page.evaluate('!townQuestState.veil_counsel.choice')
+ talk('vaelis')
+ assert page.get_by_role('button',name='Prepare a witness ledger',exact=True).count()==0
+ page.wait_for_timeout(350);page.screenshot(path=str(OUT/f'{orientation}-paused.png'))
+ page.get_by_role('button',name='Other matters',exact=True).click()
+ assert page.evaluate("npcConversation.npc.vampireId==='vaelis'")
+ page.locator('#adventureScreen .screenClose').click()
+ page.evaluate("resumeJournalQuest('veil_counsel')")
+ talk('vaelis')
+ page.get_by_role('button',name='Prepare a witness ledger',exact=True).click()
  page.get_by_role('button',name='Confirm this recommendation',exact=True).click()
  assert page.evaluate("townQuestState.veil_counsel.choice==='testimony'")
  page.wait_for_timeout(350)
  page.screenshot(path=str(OUT/f'{orientation}-consequence.png'))
  page.get_by_role('button',name='Leave',exact=True).click()
+ talk('mirelle')
+ page.evaluate("pauseJournalQuest('veil_counsel')")
+ page.get_by_role('button',name='Record the unresolved concern',exact=True).click()
+ assert page.evaluate('!townQuestState.veil_counsel.response')
+ page.evaluate("resumeJournalQuest('veil_counsel')")
  talk('mirelle')
  page.get_by_role('button',name='Record the unresolved concern',exact=True).click()
  assert page.evaluate('townQuestState.veil_counsel.response')
@@ -83,7 +100,7 @@ def run(browser,orientation,width,height):
    assert 'After the decision' not in page.locator('#adventureScreen').inner_text()
  assert not errors,errors
  page.close()
- return {'orientation':orientation,'passed':['default closed','real NPC interaction and evidence review','three differing proposals','confirmed recommendation and branch-specific follow-up','partial/completed document reload','reentry consequences','gate removed hides new content'],'pageErrors':errors}
+ return {'orientation':orientation,'passed':['default closed','real NPC interaction and evidence review','three differing proposals','confirmed recommendation and branch-specific follow-up','partial/completed document reload','reentry consequences','paused stale confirmation/follow-up blocked; resume and ordinary conversation work','gate removed hides new content'],'pageErrors':errors}
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--browser',default=shutil.which('chromium') or shutil.which('google-chrome'))

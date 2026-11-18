@@ -140,8 +140,12 @@
  const counselReady=()=>['reviewed','mirelle','vaelis','orven'].every(key=>counselRead()[key]===true);
  function counselOpen(n){
   if(!counselNear(n))return;
+  if(journalPaused(counselId)){
+   openAdventureDialog(n.name+' · Discussion paused','The Weight of a Record is paused. Resume it from Quest Journal → Paused to continue. Other conversations remain available.',[{label:'Other matters',action:()=>{if(counselNear(n))conversationBefore(n);}},{label:'Leave',action:()=>{}}]);return;
+  }
   const s=counselState(),who=n.vampireId;
-  const current=()=>counselNear(n)&&counselRead()===s;
+  const sameCharacter=()=>counselNear(n)&&counselRead()===s;
+  const current=()=>sameCharacter()&&!journalPaused(counselId);
   if(s.choice){
    const follow=followups[s.choice],choices=[];
    if(!s.response&&who===follow.who)choices.push({label:'Record the unresolved concern',action:()=>{
@@ -149,7 +153,7 @@
     counselState().response=true;saveGame();ui();
     openAdventureDialog('A recommendation with limits',follow.note+'\n\nOnly your chosen document has been prepared and annotated. The other proposals remain unadopted. The disagreement is not over.',[{label:'Keep this knowledge in the journal',action:()=>{}}]);
    }});
-   choices.push({label:'Other matters',action:()=>{if(current())conversationBefore(n);}},{label:'Leave',action:()=>{}});
+   choices.push({label:'Other matters',action:()=>{if(sameCharacter())conversationBefore(n);}},{label:'Leave',action:()=>{}});
    openAdventureDialog(n.name+' · After the decision',priorities[s.choice].replies[who]+'\n\n'+priorities[s.choice].result+'\n\n'+(s.response?follow.note:'Before filing your recommendation, hear the remaining concern from '+vampireNpcDefs[follow.who].name+'.'),choices);return;
   }
   const choices=[];
@@ -170,7 +174,7 @@
     counselState().choice=key;saveGame();ui();counselOpen(n);
    }},{label:'Keep considering',action:()=>counselOpen(n)}]);
   }});
-  choices.push({label:'Other matters',action:()=>{if(current())conversationBefore(n);}},{label:'Leave',action:()=>{}});
+  choices.push({label:'Other matters',action:()=>{if(sameCharacter())conversationBefore(n);}},{label:'Leave',action:()=>{}});
   openAdventureDialog(n.name+' · The Weight of a Record','Veilhaven offers sanctuary, but its residents disagree about what that requires beyond its shores. Nobody here speaks for every vampire.\n\n'+(s.reviewed?'Hear Mirelle at the clinic, Orven near the watch and Vaelis in the square. Return to Vaelis after hearing all three.':'You have secured the Last Lantern records. Review what they establish before asking the residents how to respond.'),choices);
  }
  const conversationBefore=openNpcConversation;
