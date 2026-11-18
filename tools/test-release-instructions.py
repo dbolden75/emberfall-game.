@@ -24,7 +24,7 @@ def main():
     code = one(r'^\s*versionCode\s+(\d+)\s*$', gradle, 'Android versionCode')
     if package != 'com.vaelbrink.ashvale.newjourney':
         raise SystemExit('FAIL: Android application ID changed, existing installs/saves at risk')
-    documented = one(r'^Current main development source: ([^,\n]+), Android versionCode (\d+)(?=[,.])',
+    documented = one(r'^Current (?:main|audio-branch) development source: ([^,\n]+), Android versionCode (\d+)(?=[,.])',
                      guide, 'documented current release identity')
     if documented != (version, code):
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md says {documented}; Android source is {(version, code)}')
@@ -41,7 +41,13 @@ def main():
     preflight_guide = guide.split(section_header, 1)[1].split('BUILD-STATUS.txt', 1)[0]
     candidates = re.findall(r'^python3 tools/android-upgrade-preflight\.py\s+(\S+)',
                             preflight_guide, re.M)
-    expected_candidate = f'/path/to/Thornhaven-{version}-maintained-key.apk'
+    # The source may be newer than the last signed APK; never suggest
+    # installing the current unsigned audio development candidate.
+    continuity_for_signed = (ROOT / 'THORNHAVEN_CONTINUITY.md').read_text(encoding='utf-8')
+    signed_candidates = re.findall(r'Canonical signed ([0-9.]+) APK SHA-256', continuity_for_signed)
+    if len(signed_candidates) != 1:
+        raise SystemExit('FAIL: ambiguous maintained-signed preflight candidate')
+    expected_candidate = f'/path/to/Thornhaven-{signed_candidates[0]}-maintained-key.apk'
     if len(candidates) != 2 or candidates != [expected_candidate] * 2:
         raise SystemExit(
             f'FAIL: upgrade preflight examples must use current signed APK '

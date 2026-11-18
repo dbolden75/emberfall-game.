@@ -1,6 +1,6 @@
 # Thornhaven build and test workflow
 
-Current main development source: 1.0.69, Android versionCode 171.
+Current audio-branch development source: 1.0.70, Android versionCode 172. This is an unsigned draft; the maintained-signed 1.0.69 release remains the last installable candidate.
 
 Current candidate integrates owner-approved browser v11: compact Party HUD, painted atlas, smoother movement/following, terrain/scale improvements and nonnegative defeated-enemy health. Native save keys and bridge retained. New build/signing/Play acceptance pending; previous 1.0.68 evidence below is historical.
 

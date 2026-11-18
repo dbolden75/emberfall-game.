@@ -21,5 +21,16 @@ replace("victim.hitTime=.2;battleVfx", "playSfx('hit');victim.hitTime=.2;battleV
 replace("if(player.walking&&footstepClock<=0){playSfx('step');footstepClock=.34}", "")
 replace("const tutorial=tutorialState();if(tutorial.active&&!tutorial.steps.move)", "if(Math.hypot(player.x-tutorialStartX,player.y-tutorialStartY)>.1&&footstepClock<=0){playSfx('step');footstepClock=.34}const tutorial=tutorialState();if(tutorial.active&&!tutorial.steps.move)")
 replace('</body>', '<script src="audio-catalog.js"></script><script src="game-audio.js"></script><script src="audio-integration.js"></script><script src="npc-voice.js"></script><script src="npc-voice-integration.js"></script></body>')
+# Original reviewed v1.0.69 source remains authenticated and immutable.
+gradle=(root/'app/build.gradle').read_text()
+if "versionCode 172" in gradle:
+ assert "versionName '1.0.70'" in gradle, 'Unexpected audio Android release identity'
+ for old,new in (
+  ('New Journey · v1.0.69','New Journey · v1.0.70'),
+  ('Version 1.0.69 · Ashvale Reach','Version 1.0.70 · Ashvale Reach'),
+  ("const context=()=>({build:'1.0.69'","const context=()=>({build:'1.0.70'"),
+ ):
+  assert s.count(old)==1, 'Version promotion anchor changed: '+old
+  s=s.replace(old,new,1)
 path.write_text(s)
 print('Audio overlay SHA-256:',hashlib.sha256(path.read_bytes()).hexdigest())

@@ -16,7 +16,7 @@ gradle = (root / 'app/build.gradle').read_text()
 code = re.findall(r"(?m)^\s*versionCode\s+(\d+)\s*$", gradle)
 version = re.findall(r"(?m)^\s*versionName\s+'([^']+)'\s*$", gradle)
 assert len(code) == len(version) == 1, 'Missing Android version field'
-if (code[0], version[0]) != ('171', '1.0.69'):
+if (code[0], version[0]) not in (('171', '1.0.69'), ('172', '1.0.70')):
     assert (code[0], version[0]) == ('170', '1.0.68'), 'Unsupported source/version combination'
     print('1.0.69 overlay skipped for original 1.0.68')
     raise SystemExit(0)
