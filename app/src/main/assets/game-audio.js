@@ -7,6 +7,7 @@
   const make=options.makeAudio||(()=>new Audio());
   let storage=options.storage;try{storage=storage||root.localStorage;}catch(_){}
   const now=options.now||(()=>Date.now()), catalog=options.catalog||root.ThornhavenAudioCatalog||{};
+  const schedule=options.scheduleTimeout||setTimeout, cancel=options.cancelTimeout||clearTimeout;
   const prefs=JSON.parse(JSON.stringify(defaults)), voices=[], loops=[], cooldown=new Map(), failed=new Set();
   let unlocked=false, paused=true, scene='title', environment='exploration', sequence=0;
   try {
@@ -17,19 +18,21 @@
    if(!saved){const v=storage.getItem('thornhaven_sound_volume');if(v!==null&&Number.isFinite(Number(v)))prefs.effects.volume=Math.max(0,Math.min(1,Number(v)));prefs.effects.muted=storage.getItem('emberfall_sound_effects_v1')==='off';}
   } catch (_) {}
   const level=bus=>prefs[bus].muted?0:prefs[bus].volume;
-  function stop(row){if(row.expiry)clearTimeout(row.expiry);row.expiry=null;row.token=++sequence;row.pending=false;row.el.pause();row.active=false;}
+  function stop(row){if(row.expiry)cancel(row.expiry);row.expiry=null;row.token=++sequence;row.pending=false;row.el.pause();row.active=false;}
   function release(row){stop(row);row.el.removeAttribute('src');row.el.load();}
   function safePlay(row) {
    if(paused||!unlocked||row.pending||row.active||failed.has(row.id))return;
    const token=row.token=++sequence;row.pending=true;const requestedAt=now();
-   if(!row.loop)row.expiry=setTimeout(()=>{if(row.token===token&&row.pending)stop(row);},300);
+   // WebView play() promises can remain unresolved indefinitely. Bound pending
+   // music/ambience as well as effects, so a later trusted gesture may retry.
+   row.expiry=schedule(()=>{if(row.token===token&&row.pending)stop(row);},row.loop?5000:300);
    try {Promise.resolve(row.el.play()).then(()=>{
     if(row.token!==token){if(!row.pending&&!row.active)row.el.pause();return;}
-    row.pending=false;if(row.expiry)clearTimeout(row.expiry);row.expiry=null;
+    row.pending=false;if(row.expiry)cancel(row.expiry);row.expiry=null;
     if(paused||(!row.loop&&now()-requestedAt>300)){stop(row);return;}row.active=true;
     if(row.loop){row.target=1;row.retiring=false;for(const other of loops)if(other!==row&&other.bus===row.bus){other.target=0;other.retiring=true;}}
-   },error=>{if(row.token!==token)return;row.pending=false;row.active=false;if(row.expiry)clearTimeout(row.expiry);row.expiry=null;if(error&&error.name==='NotSupportedError')failed.add(row.id);});}
-   catch(_){row.pending=false;row.active=false;if(row.expiry)clearTimeout(row.expiry);row.expiry=null;}
+   },error=>{if(row.token!==token)return;row.pending=false;row.active=false;if(row.expiry)cancel(row.expiry);row.expiry=null;if(error&&error.name==='NotSupportedError')failed.add(row.id);});}
+   catch(_){row.pending=false;row.active=false;if(row.expiry)cancel(row.expiry);row.expiry=null;}
   }
   function rowFor(id,bus,loop){
    const spec=catalog[id];if(!spec||failed.has(id))return null;
