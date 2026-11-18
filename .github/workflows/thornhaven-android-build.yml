@@ -36,6 +36,7 @@ jobs:
         run: node scripts/test-atlas-geography.cjs
       - name: Verify source and regression tests
         run: |
+          python3 tools/verify-release-candidate-169.py
           python3 tools/verify.py
           python3 tools/test-release-instructions.py
           python3 tools/test-android-upgrade-preflight.py
