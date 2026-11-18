@@ -2,12 +2,13 @@
 """Actual Chromium UI/integration checks; does not claim listening or Android testing."""
 import importlib.util
 from pathlib import Path
+import shutil
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('browser_qa',root/'tools/browser-interactive-qa.py')
 helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+ browser=p.chromium.launch(executable_path=(shutil.which('chromium') or shutil.which('google-chrome')),headless=True,args=['--no-sandbox'])
  page=browser.new_page(viewport={'width':412,'height':915})
  errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
  page.set_content(helper.html_for_browser(root/'app/src/main/assets'),wait_until='load')

@@ -3,6 +3,7 @@
 import functools,json,threading
 from http.server import ThreadingHTTPServer,SimpleHTTPRequestHandler
 from pathlib import Path
+import shutil
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
 ASSETS=ROOT/'app/src/main/assets'
@@ -26,7 +27,7 @@ base=f'http://127.0.0.1:{server.server_port}'
 report={'scope':'Real Chromium, not human listening or Android','checks':{}}
 try:
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  browser=p.chromium.launch(executable_path=(shutil.which('chromium') or shutil.which('google-chrome')),headless=True,args=['--no-sandbox'])
   page=browser.new_page();errors=[]
   page.on('pageerror',lambda e:errors.append(str(e)))
   page.on('console',lambda m:errors.append(m.text) if m.type=='error' else None)

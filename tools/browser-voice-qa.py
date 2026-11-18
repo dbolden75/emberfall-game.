@@ -2,12 +2,13 @@
 """Actual game DOM with a recording native bridge; not native speech or listening."""
 import importlib.util,json
 from pathlib import Path
+import shutil
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('browser_qa',root/'tools/browser-interactive-qa.py');helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
 bridge='''<script>window.voiceCalls=[];window.voiceState='ready';window.ThornhavenNativeVoice={status:()=>voiceState,stop:()=>voiceCalls.push({kind:'stop'}),speak:(speakerId,profile,text,volume)=>voiceCalls.push({kind:'speak',speakerId,profile,text,volume})};</script>'''
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+ browser=p.chromium.launch(executable_path=(shutil.which('chromium') or shutil.which('google-chrome')),headless=True,args=['--no-sandbox'])
  page=browser.new_page(viewport={'width':412,'height':915});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.set_content(helper.html_for_browser(root/'app/src/main/assets').replace('<head>','<head>'+bridge,1),wait_until='load')
  page.wait_for_function('window.ThornhavenVoice')
