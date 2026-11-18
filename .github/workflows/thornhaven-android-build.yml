@@ -203,6 +203,12 @@ jobs:
             --gradle app/build.gradle \
             --activity app/src/main/java/com/emberfall/ashvale/MainActivity.java \
             --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
+      - name: Verify offline NPC speech bridge is present in compiled APK and AAB
+        run: |
+          python3 tools/compiled-npc-voice-payload-check.py \
+            --apk app/build/outputs/apk/release/app-release-unsigned.apk \
+            --aab app/build/outputs/bundle/release/app-release.aab \
+            --assets app/src/main/assets
       - name: Validate Google Play bundle format and QA-generated universal APK
         shell: bash
         run: |
