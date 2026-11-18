@@ -67,3 +67,7 @@ updated = b''.join(merged)
 assert hashlib.sha256(updated).hexdigest() == '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24', 'v1.0.69 release HTML digest mismatch'
 html_path.write_bytes(updated)
 print('PASS: 1.0.69 native game restored from hash-verified baseline and 20 immutable source chunks')
+
+# Keep the historical payload immutable; apply the independently maintained audio delta.
+import runpy
+runpy.run_path(str(root / "tools/apply-audio-overlay.py"))
