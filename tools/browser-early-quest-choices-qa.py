@@ -63,6 +63,6 @@ def run(browser,orientation,width,height):
 
 if __name__=='__main__':
  with sync_playwright() as p:
-  browser=p.chromium.launch(headless=True,executable_path=shutil.which('chromium'),args=['--no-sandbox'])
+  browser=p.chromium.launch(headless=True,executable_path=shutil.which('chromium') or shutil.which('google-chrome') or shutil.which('chromium-browser'),args=['--no-sandbox'])
   results=[run(browser,'portrait',412,915),run(browser,'landscape',915,412)];browser.close()
  (OUT/'results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results))
