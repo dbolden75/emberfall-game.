@@ -115,6 +115,70 @@
   }
   return true;
  };
+ // An optional, original disagreement inside the neutral sanctuary. The same
+ // explicit reveal gate and secured evidence are required on every callback.
+ const counselId='veil_counsel';
+ const counselRead=()=>townQuestState[counselId]||{};
+ const counselState=()=>townQuestState[counselId]||(townQuestState[counselId]={});
+ const counselEligible=()=>access()&&read().claimed===true&&evidence(read());
+ const positions={
+  mirelle:'Refuge first. If we turn the clinic into an inquiry desk, frightened people may stop coming. I will prepare a private welcome note: care without testimony, feeding or any promise of loyalty. But keeping every warning private could leave the next wagon unchallenged.',
+  vaelis:'A record that can be challenged is stronger than a rumor. I want a witness ledger that distinguishes what was seen from what was inferred, including Orven’s part. No witness owes us a name. Yet careful records take time while the wagons keep moving.',
+  orven:'I want a road-watch brief: wagon markings and safe ways to report a sighting, never a list of people to hunt. I once guarded those wagons. Let that stay in the record. Waiting can cost lives, but frightened watchers could mistake an innocent traveler for a raider.'
+ };
+ const priorities={
+  refuge:{label:'Prepare a refuge note',result:'Mirelle has prepared a refuge note: care is unconditional; testimony is optional. Vaelis keeps the source evidence separate. Orven’s proposed road watch remains deferred.',replies:{mirelle:'The refuge note is ready. Nobody has to earn a bandage by telling us their story.',vaelis:'I have kept your source record separate from the clinic note. I still want a witness ledger; privacy must not become an excuse to forget responsibility.',orven:'I will respect the clinic’s boundary. I still worry about the next wagon. You have not asked me to organize watchers.'}},
+  testimony:{label:'Prepare a witness ledger',result:'Vaelis has prepared a witness ledger separating observation from inference. Orven’s admission is included as his own account, not proof about Briar Hollow. Mirelle records no patient names. The road-watch proposal remains deferred.',replies:{mirelle:'The ledger contains no patient names from me. Care must remain available to people who will never testify.',vaelis:'The ledger is ready. The cut rope suggests a method, not a proven identity. The inventory gives codes, not destinations we can claim to know.',orven:'My admission is in the ledger. I guarded raider wagons elsewhere; I cannot name the attackers at Briar Hollow. Recording that limit does not excuse what I did.'}},
+  watch:{label:'Prepare a road-watch brief',result:'Orven has prepared a road-watch brief limited to sightings and safe reporting. It grants no authority to pursue, detain or punish anyone. Mirelle’s clinic remains outside the watch; Vaelis retains the evidence. No patrol or rescue is claimed.',replies:{mirelle:'The clinic will not supply names to the watch. Bring anyone who needs help here, without demanding a report.',vaelis:'I attached the limits of our evidence to the brief. R-7 is still a code, not a destination or a warrant.',orven:'The brief is ready: observe, withdraw safely, report. No pursuit and no hunting by ancestry. Nobody has been sent out on your word alone.'}}
+ };
+ const followups={
+  refuge:{who:'orven',note:'Orven adds a boundary to the refuge note: a person who has escaped a wagon may fear being recognized by a former guard. He offers to stay away from clinic arrivals unless someone asks to speak with him. His help must not make refuge feel like another checkpoint.'},
+  testimony:{who:'mirelle',note:'Mirelle adds a witness safeguard: silence, injury and a refusal to give a name must never be entered as evidence against a person. She will offer care before anyone asks for an account. The ledger now records that limit beside its invitation to testify.'},
+  watch:{who:'vaelis',note:'Vaelis adds a correction procedure: each reported sighting must keep the observer’s uncertainty attached. A matching wagon mark is not proof of an abduction. An unconfirmed report must be corrected rather than quietly copied into a list of enemies.'}
+ };
+ function counselNear(n){return counselEligible()&&mapId==='veilhaven'&&maps.veilhaven.npcs.includes(n)&&Math.hypot(player.x-n.x,player.y-n.y)<=88;}
+ const counselReady=()=>['reviewed','mirelle','vaelis','orven'].every(key=>counselRead()[key]===true);
+ function counselOpen(n){
+  if(!counselNear(n))return;
+  const s=counselState(),who=n.vampireId;
+  const current=()=>counselNear(n)&&counselRead()===s;
+  if(s.choice){
+   const follow=followups[s.choice],choices=[];
+   if(!s.response&&who===follow.who)choices.push({label:'Record the unresolved concern',action:()=>{
+    if(!current()||counselRead().choice!==s.choice||counselRead().response)return;
+    counselState().response=true;saveGame();ui();
+    openAdventureDialog('A recommendation with limits',follow.note+'\n\nOnly your chosen document has been prepared and annotated. The other proposals remain unadopted. The disagreement is not over.',[{label:'Keep this knowledge in the journal',action:()=>{}}]);
+   }});
+   choices.push({label:'Other matters',action:()=>{if(current())conversationBefore(n);}},{label:'Leave',action:()=>{}});
+   openAdventureDialog(n.name+' · After the decision',priorities[s.choice].replies[who]+'\n\n'+priorities[s.choice].result+'\n\n'+(s.response?follow.note:'Before filing your recommendation, hear the remaining concern from '+vampireNpcDefs[follow.who].name+'.'),choices);return;
+  }
+  const choices=[];
+  if(!s.reviewed)choices.push({label:'Review the secured evidence',action:()=>{
+   if(!current()||counselRead().choice||!journalCanAccept(counselId))return;
+   counselState().reviewed=true;saveGame();ui();
+   openAdventureDialog('The Weight of a Record','The register remembers travelers offered shelter without a declaration of belief. The cut rope suggests a repeated method, not the identity of Briar Hollow’s attackers. The inventory lists supplies and two unexplained codes. It names no missing resident.\n\nThese records justify a response to specific raiders, not guilt assigned to every vampire. What should your recommendation support first?',[{label:'Hear this resident’s position',action:()=>counselOpen(n)}]);
+  }});
+  else choices.push({label:'Hear '+n.name+'’s proposal',action:()=>{
+   if(!current()||counselRead().choice)return;
+   counselState()[who]=true;saveGame();ui();
+   openAdventureDialog(n.name+' · A different priority',positions[who],[{label:'Continue the discussion',action:()=>counselOpen(n)},{label:'Consider the other residents',action:()=>{}}]);
+  }});
+  if(who==='vaelis'&&counselReady())for(const [key,d] of Object.entries(priorities))choices.push({label:d.label,action:()=>{
+   if(!current()||!counselReady()||counselRead().choice)return;
+   openAdventureDialog('Endorse a first step',d.result+'\n\nThis records your recommendation permanently. It does not settle the disagreement or bind anyone to your service.',[{label:'Confirm this recommendation',action:()=>{
+    if(!current()||!counselReady()||counselRead().choice)return;
+    counselState().choice=key;saveGame();ui();counselOpen(n);
+   }},{label:'Keep considering',action:()=>counselOpen(n)}]);
+  }});
+  choices.push({label:'Other matters',action:()=>{if(current())conversationBefore(n);}},{label:'Leave',action:()=>{}});
+  openAdventureDialog(n.name+' · The Weight of a Record','Veilhaven offers sanctuary, but its residents disagree about what that requires beyond its shores. Nobody here speaks for every vampire.\n\n'+(s.reviewed?'Hear Mirelle at the clinic, Orven near the watch and Vaelis in the square. Return to Vaelis after hearing all three.':'You have secured the Last Lantern records. Review what they establish before asking the residents how to respond.'),choices);
+ }
+ const conversationBefore=openNpcConversation;
+ openNpcConversation=function(n){if(n?.vampireId&&counselNear(n))return counselOpen(n);return conversationBefore(n);};
+ const counselCatalogBefore=questCatalog,counselGuideBefore=questGuide;
+ const counselDetail=()=>counselRead().choice?priorities[counselRead().choice].result+'\n'+(counselRead().response?followups[counselRead().choice].note:'Next: hear the unresolved concern from '+vampireNpcDefs[followups[counselRead().choice].who].name+'.'):'Review the secured records with a Veilhaven resident. Hear Mirelle, Orven and Vaelis, then recommend a first step to Vaelis. No payment or allegiance is required.';
+ questCatalog=function(){const rows=counselCatalogBefore();if(counselEligible())rows.push({id:counselId,title:'The Weight of a Record',desc:counselDetail(),reward:'A recorded recommendation; no currency or equipment',active:!!counselRead().reviewed&&!counselRead().response,done:!!counselRead().choice&&!!counselRead().response});return rows;};
+ questGuide=function(q){return q.id===counselId&&counselEligible()?{destination:'veilhaven',detail:counselDetail(),progress:['mirelle','vaelis','orven'].filter(key=>counselRead()[key]).length+'/3 residents heard',ready:counselReady()&&!counselRead().choice}:counselGuideBefore(q);};
  // Completed/partial discoveries remain readable in the normal quest journal.
  const rawCatalog=questCatalog;
  questCatalog=function(){const rows=rawCatalog(),q=rows.find(q=>q.id===quest),s=read();if(!q)return rows;q.desc+='\n'+[s.bell?'Bell: a severed rope, a repeated method without proof of identity.':'',s.register?'Register: shelter for travelers, boat crews and children.':'',s.inventory?'Inventory: oil, blankets, bandages, axles; R-7 and the Third Mooring. No names or code key.':''].filter(Boolean).join('\n');return rows;};

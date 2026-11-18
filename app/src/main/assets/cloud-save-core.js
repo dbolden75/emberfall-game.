@@ -452,6 +452,12 @@ function safeTownQuestFlags(quests){
   if(typeof lantern!=='object'||Array.isArray(lantern))return false;
   if(!['accepted','claimed','cleared','bell','register','inventory','yard','nave','stalker','captain'].every(key=>lantern[key]==null||typeof lantern[key]==='boolean'))return false;
  }
+ const counsel=quests.veil_counsel;
+ if(counsel!=null){
+  if(typeof counsel!=='object'||Array.isArray(counsel))return false;
+  if(!['reviewed','mirelle','vaelis','orven','response'].every(key=>counsel[key]==null||typeof counsel[key]==='boolean'))return false;
+  if(counsel.choice!=null&&!['refuge','testimony','watch'].includes(counsel.choice))return false;
+ }
  const briar=quests.briar_hollow;
  if(briar!=null){
   if(typeof briar!=='object'||Array.isArray(briar))return false;

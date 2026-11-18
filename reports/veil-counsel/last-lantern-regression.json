@@ -1,0 +1,30 @@
+[
+  {
+    "orientation": "landscape",
+    "passed": [
+      "closed default story gate; QA-only unlock",
+      "UI entry/exit/reentry",
+      "keyboard movement through both doors",
+      "four telegraphs and dodge",
+      "dialogue pauses pending attack",
+      "combat-control clearance",
+      "evidence and reward",
+      "partial/completed document reload"
+    ],
+    "pageErrors": []
+  },
+  {
+    "orientation": "portrait",
+    "passed": [
+      "closed default story gate; QA-only unlock",
+      "UI entry/exit/reentry",
+      "keyboard movement through both doors",
+      "four telegraphs and dodge",
+      "dialogue pauses pending attack",
+      "combat-control clearance",
+      "evidence and reward",
+      "partial/completed document reload"
+    ],
+    "pageErrors": []
+  }
+]
