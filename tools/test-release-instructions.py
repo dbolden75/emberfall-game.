@@ -28,6 +28,10 @@ def main():
                      guide, 'documented current release identity')
     if documented != (version, code):
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md says {documented}; Android source is {(version, code)}')
+    play_candidate = one(r'current candidate versionCode (\d+) may not be available',
+                         guide, 'Play submission versionCode')
+    if play_candidate != code:
+        raise SystemExit(f'FAIL: Play submission instructions use stale code {play_candidate}; Android Gradle requires {code}')
     documented_package = one(r'^Package: ([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)', guide,
                              'documented package')
     if documented_package != package:

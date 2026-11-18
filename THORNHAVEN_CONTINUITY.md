@@ -1,5 +1,17 @@
 # Thornhaven — Continuity and Release Handover
 
+## Current 1.0.69 release handover — November 18, 2026
+
+- **Identity:** `com.vaelbrink.ashvale.newjourney`, versionName `1.0.69`, versionCode **171**, original save keys/81 game regions retained.
+- Latest independently verified maintained-key signed candidate: **1.0.69**, code 171, source [`2c57469a`](https://github.com/dbolden75/emberfall-game./commit/2c57469a). GitHub main [`fedca249`](https://github.com/dbolden75/emberfall-game./commit/fedca24985f507f7e546ea0f7a94c9a44356eff3) passed [post-merge Android CI](https://github.com/dbolden75/emberfall-game./actions/runs/44283591292), with compiled non-revision game/native assets matching the signed candidate. This is CI and offline parity, **not** a Play release.
+- Canonical signed 1.0.69 APK SHA-256: [private Drive backup](https://drive.google.com/file/d/1mG3TkziZ57x1Pe-klXa6qqPfLlqTSMfq/view); SHA-256 `fc9cd5cb8eb2cbc51d45e52e0c30604be9d57572cb567a8e5e63d0238b4d9541`; 41,442,899 bytes.
+- Canonical signed 1.0.69 AAB SHA-256: [private Drive backup](https://drive.google.com/file/d/12zeAVsIz_6g-r97E8fFskWGceeCjcSPe/view); SHA-256 `6efb75b13265bbbeb25727409efcc62b1b4292de5a559037dfbe5333603b4dfc`; 40,962,262 bytes.
+- Original maintained upload certificate SHA-256 `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22` matches historical maintained-key 1.0.57; it need not match Google-managed *app signing* certificate on an installed Play APK.
+- **Outstanding gate:** Play Console must accept **171** and verify upload-key identity; Play-delivered upgrades, real Samsung save retention, Billing purchase/acknowledgement/restore, and physical gameplay are still unverified. **Never uninstall/clear installed app data.**
+
+### Historical 1.0.67/1.0.68 handover notes (not the active release)
+
+
 ## New atlas playtest — November 16, 2026
 
 Version **1.0.68**, versionCode **170**, same maintained package and original signing certificate. [Signed APK](https://drive.google.com/file/d/1hYREtx837zysrzqKnXqkMU4SZiKPqOxf/view); [signed AAB](https://drive.google.com/file/d/1jvQoewsmOPvG1d6I6AJFWck1bPxd-SoN/view). Built from atlas commit `1343da4e`; [Android build #43859590946](https://github.com/dbolden75/emberfall-game./actions/runs/43859590946) and [7/7 emulator jobs #43859591084](https://github.com/dbolden75/emberfall-game./actions/runs/43859591084) passed. All 25 game assets match reconstructed source and APK/AAB. APK v2/v3 signatures, 16 KiB alignment, AAB signature, and native payload parity passed.
@@ -15,11 +27,11 @@ Updated 2026-11-15. This document is safe for the public repository. **Never** a
 
 - Player-facing title: **Thornhaven**; historical project names are Emberfall and Vaelbrink. Repository: `dbolden75/emberfall-game.` (trailing period is intentional).
 - Established Google Play application ID: `com.vaelbrink.ashvale.newjourney`. **Do not change the application ID, WebView origin, established save keys or maintained signing certificate.**
-- Latest independently verified maintained-key signed candidate: **1.0.67**, versionCode **169**, merged GitHub main [`5bfb31d3`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) after PR #298. The change prevents old clients from silently erasing future top-level world, quest and currency fields during saving or purchase delivery. Older PR #291/297 candidates are superseded.
+- Historical maintained-key candidate: **1.0.67**, versionCode **169**, merged GitHub main [`5bfb31d3`](https://github.com/dbolden75/emberfall-game./commit/5bfb31d398392199bc475f3c23290d5b9ff8084b) after PR #298. The change prevents old clients from silently erasing future top-level world, quest and currency fields during saving or purchase delivery. Older PR #291/297 candidates are superseded.
 - Original-key signed historical **1.0.57** release APK for certificate continuity: versionCode 159. The two separate 1.0.57 **dev-test** APKs use different signers and are **not** safe in-place upgrade bases.
 - Maintained signing certificate SHA-256: `38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22`. This is the public certificate fingerprint, **not** a signing key.
-- Canonical signed 1.0.67 APK SHA-256: [private Drive backup](https://drive.google.com/file/d/1_cy6Fh9K-IMKzQT2BZwR5IurVfWY-t9Q/view); SHA-256 `d3623239479d6800fc89d1d0c84688a735850a49b74742f1e2284cbac04588ab`; 37,624,860 bytes.
-- Canonical signed 1.0.67 AAB SHA-256: [private Drive backup](https://drive.google.com/file/d/1lNsoeRtLn-zkMzFGpJdCyzIDmlXd-VXe/view); SHA-256 `a9094a779c813c513da61a7be82ed87ca6a292584884b0adcf968c8001e672ce`; 37,201,532 bytes.
+- Historical signed 1.0.67 APK SHA-256: [private Drive backup](https://drive.google.com/file/d/1_cy6Fh9K-IMKzQT2BZwR5IurVfWY-t9Q/view); SHA-256 `d3623239479d6800fc89d1d0c84688a735850a49b74742f1e2284cbac04588ab`; 37,624,860 bytes.
+- Historical signed 1.0.67 AAB SHA-256: [private Drive backup](https://drive.google.com/file/d/1lNsoeRtLn-zkMzFGpJdCyzIDmlXd-VXe/view); SHA-256 `a9094a779c813c513da61a7be82ed87ca6a292584884b0adcf968c8001e672ce`; 37,201,532 bytes.
 - Release evidence and unresolved gates: [issue #6](https://github.com/dbolden75/emberfall-game./issues/6) and [BUILD-WORKFLOW.md](BUILD-WORKFLOW.md). [BUILD-STATUS.txt](BUILD-STATUS.txt) is a historical log.
 
 ## What has actually passed
@@ -42,11 +54,11 @@ Updated 2026-11-15. This document is safe for the public repository. **Never** a
 
 ## Supported build paths
 
-- Primary unsigned Android CI: `.github/workflows/thornhaven-android-build.yml`, which uses the maintained Gradle Android project and validates package identity for 1.0.67 (169).
+- Primary unsigned Android CI: `.github/workflows/thornhaven-android-build.yml`, which uses the maintained Gradle Android project and validates package identity for 1.0.69 (171).
 - Legacy `.github/workflows/android-apk.yml` is now a compatibility dispatcher to that same maintained Android build, **not** the old alternate `com.thornhaven.game` Capacitor package (corrected in PR67).
 - `.github/workflows/thornhaven-emulator-smoke.yml` runs disposable Android emulator tests with **debug** signatures.
 - `.github/workflows/thornhaven-release.yml` can sign only if all original maintained-key secrets are present and verified. The normal safe route is to sign the CI-produced **unsigned** payload offline using the original maintained credentials. Do not invent a new keystore, embed secrets in source, or claim an unsigned artifact can update the Play app.
-- The maintained-signed candidate uses `versionCode 169`; choose a fresh higher code **only if** Play Console confirms 169 is already allocated, then perform a clean build and sign with the original maintained credential.
+- The historical maintained-signed candidate used `versionCode 169`; choose a fresh higher code **only if** Play Console confirms 169 is already allocated, then perform a clean build and sign with the original maintained credential.
 
 ## Product and project continuity
 
