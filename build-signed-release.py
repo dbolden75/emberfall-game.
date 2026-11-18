@@ -89,6 +89,12 @@ def main():
     code = re.search(r'(?m)^\s*versionCode\s+(\d+)\s*$', gradle_config)
     if not version or not code or not package or package.group(1) != 'com.vaelbrink.ashvale.newjourney':
         raise SystemExit('Refusing release: missing version or maintained applicationId changed')
+    # The signed 1.0.69 / versionCode 171 candidate already exists. An audio
+    # upgrade must not reuse that code: Play may reject it and an in-place APK
+    # update would not reliably supersede the installed release.
+    if (ROOT / 'app/src/main/assets/audio-integration.js').is_file() and (
+            int(code.group(1)) <= 171 or version.group(1) == '1.0.69'):
+        raise SystemExit('Refusing audio release with reused versionCode: require code >171 and a new versionName')
     output = args.output or Path('dist') / f'Thornhaven-{version.group(1)}.apk'
 
     props = dict(line.strip().split('=', 1) for line in args.signing_properties.read_text().splitlines()
