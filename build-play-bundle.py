@@ -51,6 +51,12 @@ def main():
     if not package or package.group(1) != 'com.vaelbrink.ashvale.newjourney' or not version or not code:
         raise SystemExit('Refusing AAB: maintained package ID or release version is missing')
 
+    # Baseline versionCode 171 is already a maintained-signed candidate.
+    # Do not sign the new audio payload as an indistinguishable Play update.
+    if (ROOT / 'app/src/main/assets/audio-integration.js').is_file() and (
+            int(code.group(1)) <= 171 or version.group(1) == '1.0.69'):
+        raise SystemExit('Refusing audio release with reused versionCode: require code >171 and a new versionName')
+
     env = os.environ.copy()
     env.update(ANDROID_HOME=args.sdk, JAVA_HOME=args.jdk)
     gradle_args = [args.gradle, '--no-daemon']
