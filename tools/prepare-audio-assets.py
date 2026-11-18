@@ -19,9 +19,17 @@ for cue,file,role,gain,filter in rows:
  if not orig:orig=next(x for x in source_manifest['assets'] if x['file']==('kenney-rpg.zip' if file.startswith('kenney/') else 'rubberduck.zip'))
  if '/' not in file:assert sha(src)==orig['sha256'],file
  cmd=['ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(src),'-af',filter,'-ar','44100','-ac',str(2 if music else 1),'-c:a','libvorbis','-q:a','3',str(dst)]
- subprocess.run(cmd,check=True);subprocess.run(['ffmpeg','-v','error','-i',str(dst),'-f','null','-'],check=True)
+ subprocess.run(cmd,check=True)
+ postprocessing=None
+ if cue=='fishing':
+  intermediate_sha=sha(dst);tmp=dst.with_suffix('.headroom.ogg')
+  postargs=['-hide_banner','-loglevel','error','-y','-i',str(dst),'-af','volume=-3dB','-c:a','libvorbis','-q:a','3',str(tmp)]
+  subprocess.run(['ffmpeg']+postargs,check=True);tmp.replace(dst)
+  postprocessing={'reason':'Native-rate decoded peak 1.027382 exceeded full scale; add 3 dB headroom.','input_sha256':intermediate_sha,'arguments':postargs[:5]+['PREVIOUS_OUTPUT']+postargs[6:-1]+['OUTPUT']}
+ subprocess.run(['ffmpeg','-v','error','-i',str(dst),'-f','null','-'],check=True)
  info=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','json',str(dst)]))
  records.append(dict(path=str(dst.relative_to(root)),cue=cue,author=orig['author'],title=orig['title'],source_url=orig['source'],download_url=orig['download'],license='CC0-1.0',license_url=source_manifest['license_url'],source_member=file,source_sha256=sha(src),original_download_sha256=orig['sha256'],transformation=[x.replace(str(a.source),'SOURCE_BUNDLE') for x in cmd[1:-1]]+['OUTPUT'],sha256=sha(dst),bytes=dst.stat().st_size,duration=float(info['format']['duration'])))
+ if postprocessing:records[-1]['postprocessing']=postprocessing
  catalog[cue]={'src':'audio/'+dst.name,'gain':gain}
 catalog['dungeon']={'src':'audio/combat.ogg','gain':.35}
 (root/'app/src/main/assets/audio-catalog.js').write_text('/* Verified CC0 media; provenance: art-licenses/audio/provenance.json. */\nwindow.ThornhavenAudioCatalog=Object.freeze('+json.dumps(catalog,indent=2)+');\n')

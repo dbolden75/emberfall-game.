@@ -593,9 +593,28 @@
         "3",
         "OUTPUT"
       ],
-      "sha256": "91ea743d167dacf4eb05560eddc17ba609dc6e9a8a1a3e948397a0545d8f5966",
-      "bytes": 9286,
-      "duration": 0.615986
+      "sha256": "0c583e2abca6a8421c7661ad8ece3bd5044e93f52fa7942fdf961ecc306d9669",
+      "bytes": 9013,
+      "duration": 0.615986,
+      "postprocessing": {
+        "reason": "Native-rate decoded peak 1.027382 exceeded full scale; add 3 dB headroom.",
+        "input_sha256": "91ea743d167dacf4eb05560eddc17ba609dc6e9a8a1a3e948397a0545d8f5966",
+        "arguments": [
+          "-hide_banner",
+          "-loglevel",
+          "error",
+          "-y",
+          "-i",
+          "PREVIOUS_OUTPUT",
+          "-af",
+          "volume=-3dB",
+          "-c:a",
+          "libvorbis",
+          "-q:a",
+          "3",
+          "OUTPUT"
+        ]
+      }
     }
   ]
 }

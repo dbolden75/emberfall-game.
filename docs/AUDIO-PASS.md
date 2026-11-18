@@ -1,110 +1,70 @@
-# Real audio asset integration (November 18, 2026)
+# Thornhaven first audio pass — draft QA
 
-The prior transfer blocker below is now resolved by integrating the verified files on the producing executor through the normal repository workflow. This branch now packages 17 Ogg Vorbis files (7,227,798 bytes) mapped to 18 cues. The catalog is no longer empty. No public release or merge is authorized.
+The branch bundles 17 CC0 OGG files (7,227,525 bytes) behind 18 catalog cues.
+Town, exploration and battle scores, forest and tomb ambience, and recorded
+movement/combat/spell/heal/loot/gathering/UI effects replace the six oscillators.
+Dungeon currently shares the battle recording at lower gain. Fishing uses a coin
+reward cue provisionally; it is not a water recording. Physical-device audition
+is still required before judging musical fit, repetition or mix balance.
 
-Town/exploration/combat tracks are loudness-normalized to -22 LUFS target with -3 dB true-peak target. Exploration and combat trailing silence is trimmed. Forest is amplified 20 dB with a safety limiter. Tomb ambience targets -28 LUFS. The engine overlaps long-form boundaries for three seconds. These operations and real decoding do not prove the musical seams sound natural.
+## Runtime and source integrity
 
-Dungeon currently uses the combat score at a lower gain; fishing uses a coin reward cue, not water foley. These choices remain provisional until listening review. Per-file creators, source links, original/member/output SHA256, exact transformations, sizes and durations are in art-licenses/audio/provenance.json. Original per-item CC0 page snapshots and Kenney license are retained alongside it.
+`game-audio.js` streams music/ambience, caps effects at eight voices and long
+streams at two per bus, overlaps loop boundaries for three seconds, and holds
+outgoing audio until incoming playback succeeds. Effects expire after 300 ms of
+startup delay. Separate volume/mute preferences survive reload and migrate the
+existing effects keys without changing saves. Trusted gestures unlock playback;
+pagehide/visibility/focus events pause it, and Android resume dispatches pageshow.
 
-Checks passed on the producing executor: all 17 packaged media decode, contain signal and stay below sample clipping; 18-cue coverage, no unused/missing media, SHA256 pins and CC0 provenance checks; existing mock engine checks; source restoration, JS/static references, release candidate source gates, current browser integration and package identity. Local Chromium launch aborts in this executor, so actual browser playback, subjective listening, Android/Bluetooth/focus testing and a new signed APK/AAB remain unverified.
+`audio-integration.js` selects title/town/exploration/dungeon/combat soundscapes
+with a combat release tail. `apply-audio-overlay.py` adds cues to successful
+existing gameplay events; footsteps require actual movement. Story, compact HUD,
+painted atlas, followers, gameplay, save format and billing remain unchanged.
 
-Reproduce from a verified source bundle with `python3 tools/prepare-audio-assets.py SOURCE_BUNDLE`; test assets with `node tools/audio-assets-checks.cjs` (FFmpeg required).
+Historical source payload pins remain enforced. Final HTML is reconstructed
+through the baseline-pinned audio overlay; unrelated approved asset hashes stay
+unchanged. `source-payload/audio-sha256.json` pins added audio sources and media.
+No package/version bump, signing-key change, merge, release or deployment.
 
----
+## Provenance and processing
 
-## Historical implementation and blocked-transfer record (superseded for asset status)
+`art-licenses/audio/provenance.json` records each output's author, exact source
+member, source URL, original source/archive SHA-256, CC0 license, transformation,
+output SHA-256, duration and size. Saved source-page evidence and Kenney's bundled
+license accompany it; `art-licenses/audio/CREDITS.md` lists voluntary attribution.
+`tools/prepare-audio-assets.py` reproduces processing from the verified source
+bundle. This executor acquired the prepared media via the repository, not Library.
 
-# Audio implementation work in progress
+Exploration/battle silence margins were trimmed, music gain staged conservatively,
+and forest ambience raised 20 dB before limiting. Real native-rate decoding found
+fishing peak 1.027382: the follow-up applies 3 dB attenuation, records the
+intermediate hash and postprocessing command, and updates output provenance/pins.
+The original 8 kHz mono check could miss peaks; asset tests now inspect every
+channel at the native sample rate. No subjective listening has been performed.
 
-This branch is NOT a completed real-audio pass and must not be released. Media
-acquisition is blocked: OpenGameArt page and file requests return HTTP 403 from
-the environment network proxy, including an approved escalated download attempt.
-The catalog is explicitly empty. There are no new licensed media files bundled,
-no downloaded archive to inspect, no media SHA-256 provenance, and no audition.
-The previous oscillators are replaced, so this WIP branch is silent until the
-catalog and verified media are populated. No placeholder beep assets were added.
+## Verification and reproduction
 
-## Completed code
+- `node tools/audio-checks.cjs`: mocked failure/race tests, gesture retry,
+  repeated events, zero/mute, storage failure, missing assets, late promises,
+  readiness-gated fades, loop handoffs, expiry and bounded concurrency.
+- `node tools/audio-assets-checks.cjs`: catalog coverage, no missing/unused media,
+  17 provenance/hash records, real FFmpeg decode and native-rate signal peaks.
+- `python3 tools/browser-audio-media-qa.py`: real Chromium decodes all 17 files;
+  verifies advancing media clocks and nonzero Web Audio analyser signals,
+  overlapping scene/loop streams, repeated effects, zero/mute, paused clocks,
+  resume, rapid transitions, actual game settings and persisted preferences.
+  Active game pagehide/pageshow wiring is checked with real playing media.
+  Console/page/media failures fail the test. Report: reports/audio-browser-media.json.
+- `python3 tools/verify.py`, `python3 tools/verify-release-candidate-169.py`,
+  `node tools/release-identity-checks.cjs`: JS/static references and source pins.
+- `python3 tools/test-release-native-parity.py`: 12 archive-parity fixture tests;
+  these do not establish parity for a newly built APK/AAB.
+- All 136 `tools/*checks.cjs` pass, including the Java-dependent guards. This host
+  contains OpenJDK compiler module 21.0.12.1 despite lacking a `javac` launcher.
+  A temporary launcher invokes `/usr/bin/java com.sun.tools.javac.Main "$@"`;
+  no compiler download or system package modification was needed.
 
-- `game-audio.js`: reusable streamed HTML audio engine, eight effect voices and
-  at most two streams per long-form bus, 3-second playback-ready fades, per-cue rate limits,
-  independent volume/mute preferences and migration of prior effects settings.
-- `audio-integration.js`: title/town/exploration/dungeon/combat selection, combat
-  tail, gesture unlock/retry, background silence, and settings controls.
-- `apply-audio-overlay.py`: deterministic, baseline-pinned source edits for the
-  six legacy effects, successful gathering/loot, spell/heal and damage events;
-  footsteps require actual movement. Story and simulation remain unchanged.
-- Android resume dispatches pageshow, paired with its existing pause/pagehide.
-- Historical payload hashes remain enforced. Only the intended final HTML digest
-  changed; new audio sources have additive pins in audio-sha256.json.
-
-## Required asset handoff
-
-The parent researcher verified CC0 on each item page (2026-11-18). This executor
-could not independently retrieve those pages or files. These are candidate
-provenance records, NOT claims that downloaded media has been verified:
-
-| Role | Author | Item page | Download filename |
-|---|---|---|---|
-| Town | cynicmusic | https://opengameart.org/content/town-theme-rpg | TownTheme.mp3 |
-| Exploration | pauliuw | https://opengameart.org/content/the-field-of-dreams | the_field_of_dreams.mp3 |
-| Battle | Wolfgang_ | https://opengameart.org/content/battle-theme-0 | Battle.mp3 |
-| Forest | TinyWorlds | https://opengameart.org/content/forest-ambience | Forest_Ambience.mp3 |
-| Dungeon ambience | kindland | https://opengameart.org/content/forgoten-tomb-ambience | Forgoten_tombs_1.mp3 |
-| Effects | rubberduck | https://opengameart.org/content/80-cc0-rpg-sfx | 80-CC0-RPG-SFX_0.zip |
-
-Downloads are under `https://opengameart.org/sites/default/files/`. The proposed
-catalog keys are step, attack, hit, quest, level, menu, spell, heal, loot, mining,
-woodcutting, fishing; town, exploration, combat, dungeon; forest, tomb. Each row
-requires `{src:'audio/<file>', gain:<0..1>}`. Select matching recorded effects from
-the inspected archive. Dungeon can initially share a conservatively mixed battle
-score if listening confirms suitability. Do not infer looping quality from names.
-
-Before completing: save source-page license evidence and original-file/archive
-hashes; record exact source members, author, CC0 URL, transformation command,
-output hash/duration/size per bundled file; transcode long files conservatively,
-check decode integrity and peaks, inspect loop seams, and audition on Android.
-Add an asset-integrity test that rejects missing catalog files and unused media.
-Update audio-sha256.json for the actual catalog and every media file.
-
-## Validation boundaries
-
-`node tools/audio-checks.cjs` exercises the engine with mock media: repeated
-cues, bounded concurrency, zero volumes, mute persistence, blocked autoplay and
-next-gesture retry, missing/broken assets, failed storage, late promises after
-pause, resume and rapid transitions. `python3 tools/browser-audio-qa.py` uses real
-Chromium for controls, trusted unlock, persistence and lifecycle wiring; it is
-not playback validation with the currently empty catalog.
-
-`python3 tools/verify.py` checks JS and static references. The release candidate
-and identity source gates verify the intended HTML and untouched existing asset
-hashes. Native parity tests use fixture archives, not a new APK/AAB. The host has
-Java runtime only, no javac or Android SDK; native checks/build remain pending.
-No release, signing-key change, deployment, merge, physical phone audition or
-Bluetooth/interruption/audio-focus test has occurred.
-
-Local verification on 2026-11-18: 123 of 135 `tools/*checks.cjs` passed.
-The remaining 12 invoke unavailable javac (including the snapshot guard, whose
-message reports `javac: undefinedundefined`). All 12 native parity fixture tests
-passed. Fresh baseline reconstruction plus overlay reproduced final HTML hash
-`62448268f320032ddbe1f37409bb5c3d7633eecc89481207771dc640b3959117`.
-Chromium audio UI, audio engine, JS/static-reference, release-candidate source
-pins and identity checks passed. No new APK or AAB was built.
-
-
-## Library handoff attempt and playback follow-up
-
-The confirmed Library source bundle (17,620,154 bytes) was requested through the
-current supported resolved-reference materialization helper. Initial download
-and one approved retry both returned `library file transfer failed: download
-failed`. No local archive exists; no bytes were extracted or validated. Network
-requests to OpenGameArt were not retried. Media count and packaged media size
-remain zero. The completed source bundle still needs an accessible supported
-transfer; do not treat a remote workspace path as locally acquired bytes.
-
-The engine now retains outgoing audio until the new play promise succeeds,
-overlaps the final three seconds of long tracks with a second stream, and expires
-effects whose playback has not started within 300 ms. Native media looping is
-only a decoder-stall safety net. New mocked-media tests cover held outgoing
-volume, overlap, bounded loop handoff and delayed-effect expiry. These changes
-have not yet been exercised against the source bundle or a physical device.
+Real browser signal measurements are automated evidence, not human listening.
+No Android SDK, adb, sdkmanager or installed Gradle is available; no new Android
+APK/AAB was built. Physical Android/WebView, Bluetooth/audio-focus interruptions,
+phone loudness, performance and subjective loop/music suitability remain untested.
