@@ -1,4 +1,4 @@
-Provisional release candidate: 1.0.70/code172, pending highest uploaded Play versionCode confirmation. No signed 1.0.70 artifacts exist yet. The signed evidence below belongs to prior releases. Audio plus dormant Last Lantern only; PR313/314/315 excluded.
+Provisional release candidate: 1.0.70/code172, pending highest uploaded Play code confirmation. Audio plus the evidence-led reveal, Last Lantern and political counsel are integrated; PR313/314/315 excluded. Release held pending verification, signing and Play access. No signed 1.0.70 artifacts exist; all signed evidence below belongs to prior releases. Seeded-prerequisite browser QA is not a full normal-speed campaign playthrough.
 
 # Thornhaven build and test workflow
 

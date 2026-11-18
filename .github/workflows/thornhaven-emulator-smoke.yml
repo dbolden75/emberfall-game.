@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      # Held candidate: verify native behavior after story integration.
       - integration/thornhaven-1.0.70-rc-20261118
       # Targeted nonbreaking atlas QA before merging PR #302.
       - feature/alabama-inspired-atlas
