@@ -140,6 +140,25 @@ def main():
             if marker not in workflow or workflow.index(preflight_gate) > workflow.index(marker):
                 raise SystemExit('FAIL: signed release tests must precede maintained-key handling')
     print('PASS: both Android workflows enforce upgrade-preflight safety before signing')
+
+    # The audio catalog checks invoke FFmpeg to decode every actual OGG file.
+    # A release workflow that omits FFmpeg fails before signing, even if
+    # the ordinary Android build and emulator jobs have all passed.
+    for workflow_path in ('.github/workflows/thornhaven-android-build.yml',
+                          '.github/workflows/thornhaven-release.yml'):
+        workflow = (ROOT / workflow_path).read_text(encoding='utf-8')
+        ffmpeg_step = '      - name: Install FFmpeg for native-rate audio validation'
+        ffmpeg_install = 'sudo apt-get install -y --no-install-recommends ffmpeg'
+        if workflow.count(ffmpeg_step) != 1 or workflow.count(ffmpeg_install) != 1:
+            raise SystemExit(f'FAIL: {workflow_path} must install FFmpeg for source audio validation')
+        source_tests = ('      - name: Verify source and regression tests'
+                        if workflow_path.endswith('thornhaven-android-build.yml')
+                        else '      - name: Verify source, gameplay and save regression suites')
+        if (workflow.count(source_tests) != 1 or
+                workflow.index(ffmpeg_step) >= workflow.index(source_tests) or
+                workflow.index(ffmpeg_install) >= workflow.index(source_tests)):
+            raise SystemExit(f'FAIL: {workflow_path} must install FFmpeg before audio regression suites')
+    print('PASS: unsigned and maintained-key release workflows install FFmpeg before audio validation')
     # An edit to the gameplay source or regression scripts must not silently
     # skip Android CI. A skipped build is not proof of a tested release.
     build_workflow = (ROOT / '.github/workflows/thornhaven-android-build.yml').read_text(encoding='utf-8')
