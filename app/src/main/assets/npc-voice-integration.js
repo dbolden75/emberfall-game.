@@ -2,20 +2,20 @@
 (function(){
  'use strict';
  const voice=window.ThornhavenVoice=window.ThornhavenCreateVoice();
- let latest=null,background=false,blurred=false;
+ let latest=null,npcGeneration=null,background=false,blurred=false;
  const panel=document.getElementById('adventureScreen');
  const profile=n=>/^Tilda\b/.test(n.name||'')?'merchant':/^Edda\b/.test(n.name||'')?'carpenter':/^Sera\b/.test(n.name||'')?'courier':null;
- function stop(){latest=null;voice.stop();}
+ function stop(){latest=null;npcGeneration=null;voice.stop();}
  function say(n,text){
   const p=profile(n);if(!p)return;
-  latest={speakerId:npcAgentKey(n),profile:p,text};voice.speak(latest);controls();
+  latest={speakerId:npcAgentKey(n),profile:p,text};voice.speak(latest);npcGeneration=voice.generation();controls();
  }
  function description(){const p=voice.preferences(),state=voice.status();return p.muted||p.volume===0?'NPC voice muted.':state==='ready'?'Android device speech · offline voice':state==='loading'?'Device voice loading · use Replay when ready.':state==='no-offline-english'?'No installed offline English voice. Dialogue text remains available.':'Device speech unavailable here. Dialogue text remains available.';}
  function controls(){
   let row=document.getElementById('npcVoiceControls');if(row)row.remove();if(!latest)return;
   row=document.createElement('div');row.id='npcVoiceControls';
   const status=document.createElement('small');status.id='npcVoiceStatus';status.textContent=description();status.style.display='block';
-  const replay=document.createElement('button');replay.type='button';replay.textContent='Replay voice';replay.addEventListener('click',()=>{if(latest)voice.speak(latest);status.textContent=description();});
+  const replay=document.createElement('button');replay.type='button';replay.textContent='Replay voice';replay.addEventListener('click',()=>{if(latest){voice.speak(latest);npcGeneration=voice.generation();}status.textContent=description();});
   const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Stop voice';cancel.addEventListener('click',()=>voice.stop());
   row.append(status,replay,cancel);panel.querySelector('.screenFoot').appendChild(row);
  }
@@ -27,7 +27,14 @@
  const dialogBefore=openAdventureDialog;openAdventureDialog=function(...args){stop();return dialogBefore(...args);};
  const closeBefore=closePanel;closePanel=function(id){if(id==='adventureScreen')stop();return closeBefore(id);};
  const mapBefore=setMap;setMap=function(...args){stop();return mapBefore(...args);};
- new MutationObserver(()=>{if(panel.hidden||!panel.classList.contains('npcTalkView'))stop();}).observe(panel,{attributes:true,attributeFilter:['hidden','class']});
+ new MutationObserver(()=>{
+  if(panel.hidden){stop();return;} // Hiding the shared dialog cancels any owner.
+  if(latest&&!panel.classList.contains('npcTalkView')){
+   // A pending NPC mutation must not cancel a newer companion/API request.
+   if(voice.generation()===npcGeneration)voice.stop();
+   latest=null;npcGeneration=null;
+  }
+ }).observe(panel,{attributes:true,attributeFilter:['hidden','class']});
  function sync(){if(background||blurred||document.hidden){voice.suspend();}else voice.resume();}
  window.addEventListener('pagehide',()=>{background=true;sync();});
  window.addEventListener('pageshow',()=>{background=false;blurred=false;sync();});

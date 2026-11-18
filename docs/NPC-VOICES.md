@@ -58,7 +58,11 @@ than truncated or queued. Call after the final dialogue text is shown, and call
 cancels NPC speech; call `speak` after opening a new dialog, never before.
 
 `set({volume:0..1, muted:boolean})`, `preferences()`, `status()`, `suspend()` and
-`resume()` are also available. Preferences live only in `thornhaven_voice_v1`,
+`resume()` are also available. `generation()` exposes an opaque monotonically
+increasing request token: every speak/stop invalidates earlier ownership. The
+NPC observer only cancels a class-change utterance if it still owns that token;
+a newer companion request survives pending NPC DOM mutations. Hiding/closing the
+shared dialog still stops every owner. Preferences live only in `thornhaven_voice_v1`,
 not character saves or music/SFX settings. `resume()` enables future explicit
 requests and never speaks by itself. Status is `loading`, `ready`,
 `no-offline-english` or `unavailable`. Initialization does not queue the opening

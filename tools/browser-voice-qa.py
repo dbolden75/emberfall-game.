@@ -23,6 +23,38 @@ with sync_playwright() as p:
   reply=page.evaluate('npcAgentMemory(npcConversation.npc).history.at(-1).reply')
   assert page.evaluate("voiceCalls.filter(c=>c.kind==='speak').at(-1).text")==reply
   coverage.append({'profile':profile,'speaker':last['speakerId'],'greeting':greeting})
+ # Generic/companion-style callers own their new utterance after opening a dialog.
+ # Await the actual MutationObserver checkpoint, not merely synchronous JS state.
+ result=page.evaluate('''async()=>{
+  openAdventureDialog('Companion advice','Existing companion-style text.',[]);
+  ThornhavenVoice.speak({speakerId:'companion:test',profile:'courier',text:'Existing companion-style text.'});
+  const count=voiceCalls.length;await new Promise(resolve=>queueMicrotask(resolve));
+  return {before:count,after:voiceCalls.length,last:voiceCalls.at(-1)};
+ }''')
+ assert result['before']==result['after'] and result['last']['kind']=='speak' and result['last']['speakerId']=='companion:test'
+ page.evaluate("closePanel('adventureScreen')");assert page.evaluate('voiceCalls.at(-1).kind')=='stop'
+ # Replacing a real NPC dialog still stops its speech immediately.
+ page.evaluate("openNpcConversation({name:'Sera',npcStoryId:'npc_sera'});openAdventureDialog('Other panel','Other text.',[])")
+ assert page.evaluate('voiceCalls.at(-1).kind')=='stop'
+ # Direct class changes cancel the owning NPC, but not a later external request.
+ result=page.evaluate('''async()=>{
+  openNpcConversation({name:'Sera',npcStoryId:'npc_sera'});
+  document.getElementById('adventureScreen').classList.remove('npcTalkView');
+  await new Promise(resolve=>queueMicrotask(resolve));return voiceCalls.at(-1).kind;
+ }''');assert result=='stop'
+ result=page.evaluate('''async()=>{
+  openNpcConversation({name:'Sera',npcStoryId:'npc_sera'});
+  document.getElementById('adventureScreen').classList.remove('npcTalkView');
+  ThornhavenVoice.speak({speakerId:'companion:new',text:'A newer visible reply.'});
+  const count=voiceCalls.length;await new Promise(resolve=>queueMicrotask(resolve));
+  return {before:count,after:voiceCalls.length,last:voiceCalls.at(-1)};
+ }''');assert result['before']==result['after'] and result['last']['speakerId']=='companion:new'
+ # Direct hiding cancels even a generic/API-owned utterance.
+ result=page.evaluate('''async()=>{
+  document.getElementById('adventureScreen').hidden=true;
+  await new Promise(resolve=>queueMicrotask(resolve));return voiceCalls.at(-1).kind;
+ }''');assert result=='stop'
+ page.evaluate("openNpcConversation({name:'Sera',npcStoryId:'npc_sera'})")
  # Rapid replacement reads only new lines, never the accumulated history.
  page.evaluate("askNpc('Any news around here?');askNpc('How are you?')")
  assert page.evaluate("voiceCalls.filter(c=>c.kind==='speak').at(-1).text===npcAgentMemory(npcConversation.npc).history.at(-1).reply")
@@ -49,5 +81,5 @@ with sync_playwright() as p:
  assert page.evaluate('ThornhavenVoice.preferences().volume')==.4
  assert not errors,errors
  browser.close()
-(root/'reports').mkdir(exist_ok=True);(root/'reports/voice-browser.json').write_text(json.dumps({'scope':'Real Chromium DOM, recording native bridge; no synthesized audio','coverage':coverage,'errors':errors},indent=2)+'\n')
-print('PASS: actual NPC greetings/replies unchanged, three profiles, rapid skip, replay/stop, map/close/background cancellation, no stale resume, separate persisted controls and missing-engine text fallback; native bridge mocked')
+(root/'reports').mkdir(exist_ok=True);(root/'reports/voice-browser.json').write_text(json.dumps({'scope':'Real Chromium DOM, recording native bridge; no synthesized audio','coverage':coverage,'observer_ownership':{'companion_after_open_survives':True,'npc_replacement_stops':True,'newer_request_survives_class_mutation':True,'hidden_stops_any_owner':True},'errors':errors},indent=2)+'\n')
+print('PASS: actual NPC greetings/replies unchanged, three profiles, generation-safe companion/NPC observer ownership, rapid skip, replay/stop, map/close/background cancellation, no stale resume, separate persisted controls and missing-engine text fallback; native bridge mocked')
