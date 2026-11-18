@@ -2,6 +2,7 @@
   {
     "orientation": "landscape",
     "passed": [
+      "closed default story gate; QA-only unlock",
       "UI entry/exit/reentry",
       "keyboard movement through both doors",
       "four telegraphs and dodge",
@@ -15,6 +16,7 @@
   {
     "orientation": "portrait",
     "passed": [
+      "closed default story gate; QA-only unlock",
       "UI entry/exit/reentry",
       "keyboard movement through both doors",
       "four telegraphs and dodge",

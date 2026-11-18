@@ -20,6 +20,13 @@
     "Play-delivered update",
     "live Billing"
   ],
-  "generated_html_sha256": "586da746f64d2f3f77f065e32f3a79a7122a3f37ebfdbcc17dc7c522a03185e7",
-  "module_sha256": "7cdfcfd13597d2bb0375c4f3f1de794650242eb4a4378a54be84ba8b6152f0f2"
+  "generated_html_sha256": "4ec8c677822276ac2c6d2e2c372cdc44b75ba8d1fdc3d698c401c4065b416faf",
+  "module_sha256": "a3bf83080c510b3c18f1857e1cf89b2548db932642a42fce8f91868dfe00d585",
+  "story_gate": {
+    "default": "closed",
+    "state": "townQuestState._lastLanternAccess.revealed === true",
+    "production_unlock": "none; approved reveal decision pending",
+    "qa": "only isolated test characters/storage",
+    "existing_early_spoilers": "reported in docs/LAST-LANTERN.md; unrelated stories unchanged"
+  }
 }

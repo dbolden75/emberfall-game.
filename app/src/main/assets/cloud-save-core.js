@@ -445,6 +445,8 @@ function safeTownQuestFlags(quests){
  if(!safeTownStock(quests._townStock))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
  if(!safeVampireStory(quests._vampire))return false;
+ const lanternAccess=quests._lastLanternAccess;
+ if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
  const lantern=quests.last_lantern;
  if(lantern!=null){
   if(typeof lantern!=='object'||Array.isArray(lantern))return false;

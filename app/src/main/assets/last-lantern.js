@@ -5,6 +5,9 @@
 (() => {
  'use strict';
  const id='last_lantern', quest='last_lantern';
+ // Closed until an approved later-story reveal explicitly authorizes this hero.
+ // No production code sets this flag; QA alone enables it to exercise the lair.
+ const access=(quests=townQuestState)=>quests?._lastLanternAccess?.revealed===true;
  const entry={id:'lantern_road',x:650,y:315,label:'LAST LANTERN · RUINED CHURCH'};
  const objects=[
   {id:'lantern_return',x:80,y:490,label:'BRIAR HOLLOW · RETURN'},
@@ -31,12 +34,22 @@
   trees:[],stones:[],npcs:[],enemies:structuredClone(freshEnemies),gatherNodes:[],
   arrival:[80,490],solidAreas:[...masonry,...benches],worldObjects:objects,
   hint:'A Light Beneath the Ruins · churchyard → nave → undercroft. Return southwest at any time.'};
- maps.briarhollow.worldObjects.push(entry);
  mapConnections[id]={entries:{default:[80,490]},exits:[{trigger:'interact',x:80,y:490,radius:44,to:'briarhollow',entry:'from_lantern'}]};
  mapConnections.briarhollow.entries.from_lantern=[650,315];
- mapConnections.briarhollow.exits.push({trigger:'interact',x:650,y:315,radius:44,to:id,entry:'default'});
+ const outward={trigger:'interact',x:650,y:315,radius:44,to:id,entry:'default'};
  // Atlas route placement only: this is a separate explorable map, not a grid town.
- worldPositions[id]=[(worldPositions.briarhollow?.[0]||50)+2,(worldPositions.briarhollow?.[1]||50)+2];
+ const position=[(worldPositions.briarhollow?.[0]||50)+2,(worldPositions.briarhollow?.[1]||50)+2];
+ function syncAccess(quests=townQuestState){
+  const open=access(quests),objects=maps.briarhollow.worldObjects,exits=mapConnections.briarhollow.exits;
+  if(open){if(!objects.includes(entry))objects.push(entry);if(!exits.includes(outward))exits.push(outward);worldPositions[id]=position;}
+  else{const oi=objects.indexOf(entry),ei=exits.indexOf(outward);if(oi>=0)objects.splice(oi,1);if(ei>=0)exits.splice(ei,1);delete worldPositions[id];}
+ }
+ syncAccess();
+ const mapBefore=setMap;
+ setMap=function(destination,...args){syncAccess();if(destination===id&&!access())return false;return mapBefore(destination,...args);};
+ const detailsBefore=showAtlasDetails,travelBefore=travelTo;
+ showAtlasDetails=function(destination){if(destination===id&&!access()){document.getElementById('atlasSelection').textContent='This route is not available yet.';return false;}return detailsBefore(destination);};
+ travelTo=function(destination){if(destination===id&&!access())return false;return travelBefore(destination);};
  const read=()=>townQuestState[quest]||{};
  const state=()=>townQuestState[quest]||(townQuestState[quest]={accepted:true});
  const cleared=()=>maps[id].enemies.every(e=>!e.alive);
@@ -47,7 +60,7 @@
    progress:[s.bell,s.register,s.inventory].filter(Boolean).length+'/3 discoveries · '+maps[id].enemies.filter(e=>!e.alive).length+'/4 raiders',ready:cleared()&&evidence(s)&&!s.claimed};
  };
  const catalogBefore=questCatalog;
- questCatalog=function(){const s=read();return [...catalogBefore(),{id:quest,title:'A Light Beneath the Ruins',desc:guide().detail,reward:'65 crowns · 70 XP · an unresolved wagon-route lead',active:!!s.accepted&&!s.claimed,done:!!s.claimed}];};
+ questCatalog=function(){if(!access())return catalogBefore();const s=read();return [...catalogBefore(),{id:quest,title:'A Light Beneath the Ruins',desc:guide().detail,reward:'65 crowns · 70 XP · an unresolved wagon-route lead',active:!!s.accepted&&!s.claimed,done:!!s.claimed}];};
  const guideBefore=questGuide;
  questGuide=function(q){return q.id===quest?guide():guideBefore(q);};
  const killBefore=finishEnemy;
@@ -61,19 +74,25 @@
  applySavedGame=function(save){
   if(!save)return;
   maps[id].enemies.splice(0,maps[id].enemies.length,...structuredClone(freshEnemies));
+  syncAccess(save.townQuestState);
+  // A pre-gate development save cannot expose the lair without authorization.
+  // Preserve its discoveries/clearance, but resume outside on the existing road.
+  if(save.mapId===id&&!access(save.townQuestState))save={...save,mapId:'briarhollow',player:{...save.player,x:650,y:315}};
   loadBefore(save);
+  syncAccess();
   const s=read();for(const e of maps[id].enemies)if(s[e.lanternRaider]||s.cleared||s.claimed){e.alive=false;e.hp=0;e.respawnAt=0;}
  };
  const interactBefore=worldObjectInteract;
  worldObjectInteract=function(o){
   if(!o?.id?.startsWith('lantern_'))return interactBefore(o);
+  if(!access())return false;
   // Preserve normal proximity/map requirements even for delayed dialog callbacks.
   if(!(activeMap.worldObjects||[]).includes(o)||Math.hypot(player.x-o.x,player.y-o.y)>68)return false;
   if(o.id==='lantern_return')return takeMapExit(mapConnections[id].exits[0]);
   if(o.id==='lantern_road'){
    const prior=townQuestState.briar_hollow||{};
    openAdventureDialog('The Church of the Last Lantern','A roadside church once kept a lantern burning for boats and wagons. Its windows are boarded; hostile vampire raiders hold the ruins. This is an optional expedition, recommended for level 13+ with healing supplies. You may retreat at any time.\n\n'+(prior.claimed?'Ada is safe and the missing are remembered. This trail does not settle their fates.':prior.rescued?'Ada has reached safety. The church is a separate lead.':'Briar Hollow’s search for survivors remains separate; you can return to it at any time.'),[
-    {label:'Enter the ruined church',action:()=>{if(mapId!=='briarhollow'||Math.hypot(player.x-entry.x,player.y-entry.y)>68)return;if(!journalCanAccept(quest))return;state().accepted=true;takeMapExit(mapConnections.briarhollow.exits.find(e=>e.to===id));}},
+    {label:'Enter the ruined church',action:()=>{if(!access()||mapId!=='briarhollow'||Math.hypot(player.x-entry.x,player.y-entry.y)>68)return;if(!journalCanAccept(quest))return;state().accepted=true;takeMapExit(mapConnections.briarhollow.exits.find(e=>e.to===id));}},
     {label:'Stay on the road',action:()=>{}}
    ]);return true;
   }
@@ -98,10 +117,10 @@
  };
  // Completed/partial discoveries remain readable in the normal quest journal.
  const rawCatalog=questCatalog;
- questCatalog=function(){const rows=rawCatalog(),q=rows.find(q=>q.id===quest),s=read();q.desc+='\n'+[s.bell?'Bell: a severed rope, a repeated method without proof of identity.':'',s.register?'Register: shelter for travelers, boat crews and children.':'',s.inventory?'Inventory: oil, blankets, bandages, axles; R-7 and the Third Mooring. No names or code key.':''].filter(Boolean).join('\n');return rows;};
+ questCatalog=function(){const rows=rawCatalog(),q=rows.find(q=>q.id===quest),s=read();if(!q)return rows;q.desc+='\n'+[s.bell?'Bell: a severed rope, a repeated method without proof of identity.':'',s.register?'Register: shelter for travelers, boat crews and children.':'',s.inventory?'Inventory: oil, blankets, bandages, axles; R-7 and the Third Mooring. No names or code key.':''].filter(Boolean).join('\n');return rows;};
  const drawBefore=drawBriarHollow;
  drawBriarHollow=function(){
-  drawBefore();
+  drawBefore();syncAccess();if(!access())return;
   if(mapId==='briarhollow'){standArt('notice',entry.x,entry.y,42,'extras');if(Math.hypot(player.x-entry.x,player.y-entry.y)<210)drawLocationLabel(entry.x,entry.y-84,'LAST LANTERN · CHURCH →');return;}
   if(mapId!==id)return;
   const b=worldBounds(id),s=read();ctx.save();

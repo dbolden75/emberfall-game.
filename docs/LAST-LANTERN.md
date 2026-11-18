@@ -4,9 +4,19 @@ Scope: the first approved ruined-church lair, outside Briar Hollow. The four liv
 
 Base: `5f236f23deeb8aeadf8049ff84f367a07a7ee403` (main fetched November 18, 2026).
 
-## Playable route
+## Closed story gate — reveal decision still pending
 
-In Briar Hollow, interact with the Last Lantern sign at `(650,315)`, east of the remembrance stone. Choose **Enter the ruined church**. The separate `last_lantern` map has a churchyard, a nave with displaced benches and boarded windows, and an undercroft reached through a stair threshold. Both 100-pixel doorways remain open. The southwest return marker works during combat and after clearance.
+**Ordinary play cannot currently discover or enter Last Lantern.** Eligibility requires the character-local boolean `townQuestState._lastLanternAccess.revealed === true`. This is an isolated technical seam, not an invented reveal chapter. There is no production setter, developer-menu override, NPC unlock or automatic migration that grants it. Level, camp completion, Briar Hollow completion, elapsed time, visiting a map and accepting Night Visitor do not authorize access.
+
+When closed: no Briar entrance object/label/exit, no atlas position/selector entry, no Last Lantern journal/history entry, no new NPC or bestiary entry, and `setMap`, `travelTo`, direct atlas details and stale entrance callbacks cannot expose or enter it. The room definition remains registered for lossless save handling, but is unreachable. Opening the gate later restores the authored experience without rewriting its content.
+
+Tests explicitly seed this proposed milestone **only in isolated QA characters/storage** to exercise later-story gameplay. There is no shipped QA override and no write to ordinary player saves. Committed gameplay screenshots therefore depict QA-authorized later-story content, not a newly available early quest.
+
+Previously acquired Last Lantern discoveries, enemy defeats and rewards are retained. A development save physically inside the lair without the explicit flag resumes on Briar Hollow's road while keeping those records. No unrelated released quest is migrated. How to recognize legitimate advanced released characters, which approved event reveals vampires, and how that event grants this eligibility remain **unapproved integration decisions**; no level/quest heuristic substitutes for them.
+
+## Playable route after approved reveal integration
+
+Once the explicit per-character eligibility exists, in Briar Hollow, interact with the Last Lantern sign at `(650,315)`, east of the remembrance stone. Choose **Enter the ruined church**. The separate `last_lantern` map has a churchyard, a nave with displaced benches and boarded windows, and an undercroft reached through a stair threshold. Both 100-pixel doorways remain open. The southwest return marker works during combat and after clearance.
 
 This is a level-13 region using normal hero-relative scaling. Two Bloodbound Scouts use Blood Lunge; a Veil Stalker uses Veil Strike. Captain Veyr is a local raider captain using the existing Crimson Sweep pattern and boss minimum of hero level +2. The Crimson Elder's original encounter and definition are unchanged. There are no friendly civilians in the occupied lair.
 
@@ -22,7 +32,7 @@ The one geometry hook reads `solidAreas` through the existing `fixedSceneryAreas
 
 `townQuestState.last_lantern` contains only per-character booleans: acceptance, three discoveries, four defeated raider IDs, clearance and reward claim. Enemy positions/health use the existing indexed `mapStates.last_lantern` snapshots. Defeat flags are set before the normal combat save. Applying any character first resets this map's runtime enemies, then restores that character's snapshot and defeat flags. Old saves with no new map entry receive fresh encounters without inheriting another slot's clearance. Cloud validation recognizes the map and rejects malformed quest booleans.
 
-The historical hash gates still verify the original pinned 1.0.69 baseline after removing the **exact** current overlay; missing or edited generated content fails verification. The canonical module remains ordinary reviewable source, rather than replacing historical binary chunks. The generated HTML and restored atlas PNG are not committed.
+Closed-default, alternate-route and no-heuristic-unlock assertions accompany the gameplay checks. The historical hash gates still verify the original pinned 1.0.69 baseline after removing the **exact** current overlay; missing or edited generated content fails verification. The canonical module remains ordinary reviewable source, rather than replacing historical binary chunks. The generated HTML and restored atlas PNG are not committed.
 
 From a fresh checkout:
 
@@ -60,3 +70,15 @@ Browser QA uses real Chromium UI, frames, keyboard movement, dodge and held atta
 Local aggregate: **123 of 135 Node suites passed**. The remaining **12 failed at the unavailable `javac` prerequisite** (native back-navigation/cloud-picker/Billing checks); their native assertions were not run. No gameplay regression failure remains. Source syntax/asset checks, baseline-plus-overlay verification, atlas geography/world-map checks and focused runtime tests passed.
 
 Android build/emulator, physical Samsung touch/performance, Play-delivered updates and live Billing are unrun locally. No release, signing, merge or deployment was performed.
+
+## Existing early spoilers found (reported, not rewritten)
+
+These are pre-existing in the restored main game at the recorded base, outside this addition:
+
+- `briarInteract`: Ada explicitly says “Vampires” after the three local clues; the remembrance completion states that the raiders were vampires. The camp chapter already points the player to Briar Hollow.
+- `vampireMonsterDefs` and its placement loop: Bloodbound Scouts/Veil Stalkers are placed in accessible wilderness including Whisperwood, Redfen and Greenhollow without a later-story reveal gate.
+- `vampireBestiaryText` / `openBestiary`: the bestiary lists “VAMPIRE RAIDERS”, named types and encounter regions without a reveal check.
+- The `plainLabels` menu mapping calls Night Visitor “Vampire story” unconditionally. `startVampireStory` needs level 3/night/Ashvale and journal availability, not an approved later-story milestone. `openVampireStory` explicitly reveals Serin after three clue regions.
+- Veilhaven's atlas hint, Worldsend ferry description, charter and resident dialogue explicitly discuss vampires. They remain neutral; none is made the king or conflated with Auren/Hollow Regent.
+
+Coordinated pacing must decide those gates separately. This PR does not claim the whole game's early vampire exposure has been fixed, and does not invent the vampire king, a reveal chapter, or a new hero identity.

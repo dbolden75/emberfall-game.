@@ -14,6 +14,13 @@ vm.runInContext(`
  hasStarted=true;titleMenuActive=false;player.name='LanternQA';player.level=13;syncHeroStats();companions=[];
  const original=snapshotGameState(),briarBefore=JSON.stringify(townQuestState.briar_hollow);
  const m=maps.last_lantern;
+ assert(!questCatalog().some(q=>q.id==='last_lantern'));
+ assert(!maps.briarhollow.worldObjects.some(o=>o.id==='lantern_road'));
+ assert(!mapConnections.briarhollow.exits.some(e=>e.to==='last_lantern'));
+ assert(!worldPositions.last_lantern);assert(!vampireBestiaryText().includes('Last Lantern'));assert(!vampireBestiaryText().includes('Captain Veyr'));assert.equal(setMap('last_lantern',80,490,false),false);
+ const beforeClosedTravel=mapId;travelTo('last_lantern');showAtlasDetails('last_lantern');assert.equal(mapId,beforeClosedTravel);assert(!document.getElementById('atlasSelection').textContent.includes('Lantern'));
+ const savedQuestFlags=structuredClone(townQuestState);townQuestState.briar_hollow={claimed:true};townQuestState._camp={claimed:true,stage:3};townQuestState._vampire={accepted:true};townQuestState._visited={last_lantern:true};player.level=99;assert.equal(setMap('last_lantern',80,490,false),false);assert(!questCatalog().some(q=>q.id==='last_lantern'));townQuestState=savedQuestFlags;player.level=13;
+ townQuestState._lastLanternAccess={revealed:true};
  assert.equal(m.enemies.length,4);assert.equal(m.npcs.length,0);assert(!m.town&&!m.interior&&!m.respawnMs);
  for(const o of m.worldObjects){assert(!mapPlacementBlocked('last_lantern',o.x,o.y,14),o.id+' blocked');assert(findWalkingPath('last_lantern',{x:80,y:490},o,14),o.id+' unreachable');}
  for(const e of m.enemies){assert(!mapPlacementBlocked('last_lantern',e.x,e.y,14));assert(findWalkingPath('last_lantern',{x:80,y:490},e,14));}
@@ -45,6 +52,9 @@ vm.runInContext(`
  const core=ThornhavenCloudSaveCore,row={id:'slot1',updated:100,state:complete};
  const decoded=core.parse(core.encode({slot1:row},'slot1',100));assert.equal(core.assertRestorableMapLayout(decoded,maps),true);
  for(const key of ['accepted','claimed','cleared','bell','register','inventory','yard','nave','stalker','captain']){const bad=structuredClone(row);bad.state.townQuestState.last_lantern[key]='false';assert.throws(()=>core.parse(core.encode({slot1:bad},'slot1',100)));}
+ const gated=structuredClone(complete);delete gated.townQuestState._lastLanternAccess;applySavedGame(gated);assert.equal(mapId,'briarhollow');assert(townQuestState.last_lantern.claimed);assert(!questCatalog().some(q=>q.id==='last_lantern'));assert(!maps.briarhollow.worldObjects.some(o=>o.id==='lantern_road'));
+ townQuestState._lastLanternAccess={revealed:true};setMap('last_lantern',80,490,false);assert(m.enemies.every(e=>!e.alive));const preservedCoins=player.coins;use('lantern_light');assert.equal(player.coins,preservedCoins);
+ const badAccess=structuredClone(row);badAccess.state.townQuestState._lastLanternAccess={revealed:'true'};assert.throws(()=>core.parse(core.encode({slot1:badAccess},'slot1',100)));
  const legacy=structuredClone(original);delete legacy.mapStates.last_lantern;delete legacy.townQuestState.last_lantern;
  applySavedGame(legacy);assert(m.enemies.every(e=>e.alive));assert(!townQuestState.last_lantern);assert(!mapPlacementBlocked(mapId,player.x,player.y,player.r));
  for(const town of ['ashvale','sunmere','brackenford','stonewatch']){setMap(town,480,320,false);assert(!enemies.length);assert(npcs.length>0);}

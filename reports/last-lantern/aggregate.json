@@ -582,7 +582,7 @@
   {
     "test": "tools/release-identity-checks.cjs",
     "status": "passed",
-    "output": "PASS: 1.0.69 Android package identity and audited save-recovery game payload hash\n"
+    "output": "PASS: 1.0.69 package identity, pinned baseline and exact Last Lantern content overlay\n"
   },
   {
     "test": "tools/release-save-transaction-checks.cjs",
@@ -667,7 +667,7 @@
   {
     "test": "tools/world-runtime-checks.cjs",
     "status": "passed",
-    "output": "n-entry mock runtime regressions (not Android/Play testing).\nPASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.\nPASS: 388 class/region entry, frame and snapshot combinations (mocked graphics).\n"
+    "output": "12\nPASS: town entry, render cycles and save reload stonewatch NPCs: 12\nPASS: town entry, render cycles and save reload sunmere NPCs: 13\nPASS: four town-entry mock runtime regressions (not Android/Play testing).\nPASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.\nPASS: 388 class/region entry, frame and snapshot combinations (mocked graphics).\n"
   },
   {
     "test": "tools/xp-progress-import-checks.cjs",

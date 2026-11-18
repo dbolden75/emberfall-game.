@@ -31,7 +31,9 @@ def run(browser,orientation,width,height):
  page.get_by_role('button',name='Tap to Continue').click()
  page.locator('#characterName').fill('LanternQA'+orientation)
  page.get_by_role('button',name='Begin Journey').click()
- page.evaluate("() => {player.level=13;syncHeroStats();player.hp=player.max;companions=[];setMap('briarhollow',650,315,false);ui();}")
+ assert page.evaluate("!questCatalog().some(q=>q.id==='last_lantern')&&!maps.briarhollow.worldObjects.some(o=>o.id==='lantern_road')&&!mapConnections.briarhollow.exits.some(e=>e.to==='last_lantern')&&setMap('last_lantern',80,490,false)===false")
+ # QA-only authorization: no production progression event currently opens this gate.
+ page.evaluate("() => {townQuestState._lastLanternAccess={revealed:true};player.level=13;syncHeroStats();player.hp=player.max;companions=[];setMap('briarhollow',650,315,false);ui();}")
  page.screenshot(path=str(OUT/f'{orientation}-briar-entrance.png'),animations='disabled')
  # Actual Interact button and choice enter the optional map.
  page.locator('#attack').click()
@@ -101,7 +103,7 @@ def run(browser,orientation,width,height):
   assert page.evaluate('enemies.every(e=>!e.alive)')==claimed
  assert not errors,errors
  page.close()
- return {'orientation':orientation,'passed':['UI entry/exit/reentry','keyboard movement through both doors','four telegraphs and dodge','dialogue pauses pending attack','combat-control clearance','evidence and reward','partial/completed document reload'],'pageErrors':errors}
+ return {'orientation':orientation,'passed':['closed default story gate; QA-only unlock','UI entry/exit/reentry','keyboard movement through both doors','four telegraphs and dodge','dialogue pauses pending attack','combat-control clearance','evidence and reward','partial/completed document reload'],'pageErrors':errors}
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--browser',default=shutil.which('chromium') or shutil.which('google-chrome'))
