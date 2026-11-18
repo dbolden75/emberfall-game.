@@ -205,6 +205,7 @@ jobs:
             --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
       - name: Verify offline NPC speech bridge is present in compiled APK and AAB
         run: |
+          python3 tools/compiled-audio-release-checks.py
           python3 tools/compiled-npc-voice-payload-check.py \
             --apk app/build/outputs/apk/release/app-release-unsigned.apk \
             --aab app/build/outputs/bundle/release/app-release.aab \
