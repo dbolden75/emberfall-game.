@@ -20,6 +20,6 @@ replace("if(found.length){e.lootClaimed=true;", "if(found.length){playSfx('loot'
 replace("victim.hitTime=.2;battleVfx", "playSfx('hit');victim.hitTime=.2;battleVfx")
 replace("if(player.walking&&footstepClock<=0){playSfx('step');footstepClock=.34}", "")
 replace("const tutorial=tutorialState();if(tutorial.active&&!tutorial.steps.move)", "if(Math.hypot(player.x-tutorialStartX,player.y-tutorialStartY)>.1&&footstepClock<=0){playSfx('step');footstepClock=.34}const tutorial=tutorialState();if(tutorial.active&&!tutorial.steps.move)")
-replace('</body>', '<script src="audio-catalog.js"></script><script src="game-audio.js"></script><script src="audio-integration.js"></script></body>')
+replace('</body>', '<script src="audio-catalog.js"></script><script src="game-audio.js"></script><script src="audio-integration.js"></script><script src="npc-voice.js"></script><script src="npc-voice-integration.js"></script></body>')
 path.write_text(s)
 print('Audio overlay SHA-256:',hashlib.sha256(path.read_bytes()).hexdigest())
