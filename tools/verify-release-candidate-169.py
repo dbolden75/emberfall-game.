@@ -46,6 +46,7 @@ for path, wanted in expected.items():
     data = source.read_bytes()
     if path == 'app/src/main/assets/index.html':
         data = data.replace(b'New Journey \xc2\xb7 v1.0.70', b'New Journey \xc2\xb7 v1.0.69').replace(b'Version 1.0.70 \xc2\xb7 Ashvale Reach', b'Version 1.0.69 \xc2\xb7 Ashvale Reach').replace(b"const context=()=>({build:'1.0.70',map:", b"const context=()=>({build:'1.0.69',map:")
+        data = runpy.run_path(str(root / 'tools/apply-early-quest-choices.py'))['remove'](data.decode()).encode()
         data = runpy.run_path(str(root / 'tools/apply-last-lantern.py'))['remove'](data.decode()).encode()
     assert hashlib.sha256(data).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
 

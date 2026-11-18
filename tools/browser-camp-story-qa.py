@@ -64,7 +64,7 @@ def run_orientation(browser, assets, evidence_dir, orientation, width, height):
         page.get_by_role("button", name="Record the clue").click()
         move_to_and_interact(page, 335, 260)
         assert game_state(page)["stage"] == 2, "Letter did not advance the story"
-        page.get_by_role("button", name="Keep the letter in my journal").click()
+        page.get_by_role("button", name="Follow the footprints").click()
         move_to_and_interact(page, 480, 505)
         completion = game_state(page)
         assert completion["stage"] == 3 and completion["claimed"], completion

@@ -445,6 +445,17 @@ function safeTownQuestFlags(quests){
  if(!safeTownStock(quests._townStock))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
  if(!safeVampireStory(quests._vampire))return false;
+ // Explicit early quest methods; absent fields keep legacy objectives.
+ for(const [key,methods] of [['_camp',['pending','tracks','seal']],['_campPatrol',['clear','repair']],['regional_willowfen',['return','rehang']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  if(row.compared!=null&&typeof row.compared!=='boolean')return false;
+  if(row.markers!=null&&(!Array.isArray(row.markers)||row.markers.length>3||new Set(row.markers).size!==row.markers.length||!row.markers.every(i=>[0,1,2].includes(i))))return false;
+  if(key==='_campPatrol'&&row.method==='repair'&&!Array.isArray(row.markers))return false;
+  if(key==='_campPatrol'&&row.method!=null&&(!Number.isSafeInteger(row.completed)||row.completed<0))return false;
+  if(key==='regional_willowfen'&&row.method!=null&&(!Array.isArray(row.found)||row.found.length>3||new Set(row.found).size!==row.found.length||!row.found.every(i=>[0,1,2].includes(i))))return false;
+ }
  const lanternAccess=quests._lastLanternAccess;
  if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
  const lantern=quests.last_lantern;

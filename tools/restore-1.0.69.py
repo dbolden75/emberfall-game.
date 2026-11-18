@@ -72,6 +72,7 @@ print('PASS: 1.0.69 native game restored from hash-verified baseline and 20 immu
 import runpy
 runpy.run_path(str(root / 'tools/apply-audio-overlay.py'))
 runpy.run_path(str(root / 'tools/apply-last-lantern.py'), run_name='__main__')
+runpy.run_path(str(root / 'tools/apply-early-quest-choices.py'), run_name='__main__')
 if (code[0], version[0]) == ('172', '1.0.70'):
     content = html_path.read_text()
     for old in ('New Journey · v1.0.69', 'Version 1.0.69 · Ashvale Reach', "const context=()=>({build:'1.0.69',map:"):
