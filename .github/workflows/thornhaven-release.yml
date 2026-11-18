@@ -20,6 +20,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install FFmpeg for native-rate audio validation
+        if: ${{ hashFiles('tools/audio-assets-checks.cjs') != '' }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -hide_banner -version
       - name: Verify source, gameplay and save regression suites
         run: |
           # Signable releases must enforce the same Android atlas/save-topology gate as unsigned CI.
