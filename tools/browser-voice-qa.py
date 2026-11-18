@@ -12,6 +12,10 @@ with sync_playwright() as p:
  page.set_content(helper.html_for_browser(root/'app/src/main/assets').replace('<head>','<head>'+bridge,1),wait_until='load')
  page.wait_for_function('window.ThornhavenVoice')
  page.evaluate("leaveTitleMenu();hasStarted=true;player.name='Voice QA';setMap('ashvale',200,200,false)")
+ assert page.evaluate('ThornhavenVoice.preferences().muted') is True
+ page.evaluate("openNpcConversation(maps.ashvale.npcs.find(n=>/^Tilda\\b/.test(n.name)))")
+ assert page.evaluate("voiceCalls.filter(c=>c.kind==='speak').length")==0
+ page.evaluate("ThornhavenVoice.set({muted:false})")
  speakers=[("maps.ashvale.npcs.find(n=>/^Tilda\\b/.test(n.name))",'merchant'),("({name:'Edda the Carpenter',dialogueId:'edda'})",'carpenter'),("({name:'Sera',npcStoryId:'npc_sera'})",'courier')]
  coverage=[]
  for expression,profile in speakers:

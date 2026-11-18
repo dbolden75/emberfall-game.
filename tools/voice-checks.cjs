@@ -5,8 +5,12 @@ const bridge={status:()=>state,stop:()=>calls.push(['stop']),speak:(...args)=>ca
 const storage={getItem:k=>saved[k]??null,setItem:(k,v)=>saved[k]=v};
 const voice=create({bridge,storage});
 assert.equal(voice.generation(),0);
+assert.equal(voice.preferences().muted,true);
+assert(!voice.speak({speakerId:'npc:Tilda',text:'Silent by default'}));
+assert(!calls.some(c=>c[0]==='npc:Tilda'));
+voice.set({muted:false});
 assert(voice.speak({speakerId:'npc:Tilda',profile:'merchant',text:'Existing words.'}));
-assert.equal(voice.generation(),1);
+assert.equal(voice.generation(),3);
 assert.deepEqual(calls.at(-1),['npc:Tilda','merchant','Existing words.',.85]);
 voice.speak({speakerId:'npc:Edda',profile:'carpenter',text:'Next words.'});assert.equal(calls.at(-2)[0],'stop');
 const beforeStop=voice.generation();voice.stop();assert.equal(voice.generation(),beforeStop+1);
@@ -19,6 +23,4 @@ state='ready';assert(!voice.speak({speakerId:'npc:Tilda',text:'x'.repeat(3501)})
 const absent=create({storage:{getItem(){throw Error('blocked')},setItem(){throw Error('quota')}}});assert.equal(absent.status(),'unavailable');absent.set({volume:0});assert(!absent.speak({speakerId:'npc:x',text:'Offline text'}));
 console.log('PASS: voice identity, unchanged text, interruption, zero/mute persistence, background/no stale resume, missing/loading engine and failed storage');
 
-const fs=require('node:fs'),crypto=require('node:crypto');
-const html=fs.readFileSync('app/src/main/assets/index.html','utf8').replace('<script src="npc-voice.js"></script><script src="npc-voice-integration.js"></script>','');
-assert.equal(crypto.createHash('sha256').update(html).digest('hex'),'62448268f320032ddbe1f37409bb5c3d7633eecc89481207771dc640b3959117','Existing story/game/audio HTML changed');
+require('node:child_process').execFileSync('python3',['tools/verify-release-candidate-169.py'],{stdio:'inherit'});

@@ -4,8 +4,8 @@
  function create(options={}){
   const bridge=options.bridge||root.ThornhavenNativeVoice;
   let storage=options.storage;try{storage=storage||root.localStorage;}catch(_){}
-  let pref={volume:.85,muted:false},active=true,generation=0;
-  try{const p=JSON.parse(storage.getItem('thornhaven_voice_v1')||'null');if(p){if(typeof p.volume==='number'&&Number.isFinite(p.volume))pref.volume=Math.max(0,Math.min(1,p.volume));pref.muted=p.muted===true;}}catch(_){}
+  let pref={volume:.85,muted:true},active=true,generation=0;
+  try{const p=JSON.parse(storage.getItem('thornhaven_voice_v1')||'null');if(p){if(typeof p.volume==='number'&&Number.isFinite(p.volume))pref.volume=Math.max(0,Math.min(1,p.volume));pref.muted=p.muted!==false;}}catch(_){}
   function status(){try{return bridge&&typeof bridge.status==='function'?String(bridge.status()):'unavailable';}catch(_){return 'unavailable';}}
   function stop(){generation++;try{if(bridge)bridge.stop();}catch(_){} }
   function speak({speakerId,profile='merchant',text}={}){

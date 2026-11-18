@@ -20,6 +20,6 @@
   "app/src/main/assets/audio/mining.ogg": "fdb9b256266e18c6749a0f98bf09cb1fecd2d4f26769dab9c34bdf1d688ce748",
   "app/src/main/assets/audio/woodcutting.ogg": "a108cc9c4c55f354cb3872ec1695f931ee371cb680572321eb983c163f01fe5e",
   "app/src/main/assets/audio/fishing.ogg": "0c583e2abca6a8421c7661ad8ece3bd5044e93f52fa7942fdf961ecc306d9669",
-  "app/src/main/assets/npc-voice.js": "2fd0b7df350084246b345a4bf64d7ec2c4521d85128dcf1236e71fdd9af4f437",
+  "app/src/main/assets/npc-voice.js": "496a620fda5d697c82feda18bd30c9efdbbdae3c63189a6f3fa8da6402062bba",
   "app/src/main/assets/npc-voice-integration.js": "dd0ef033a99cf2cb1f4644484f86dd9b616b03bae6bbb34ff8067d86c61d1805"
 }

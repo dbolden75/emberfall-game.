@@ -6,6 +6,7 @@ Run after restore-game-source.py. This only reads source files and never edits s
 import hashlib
 import json
 import re
+import runpy
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
@@ -20,10 +21,10 @@ package = field(r"^\s*applicationId\s+'([^']+)'")
 code = int(field(r"^\s*versionCode\s+(\d+)"))
 version = field(r"^\s*versionName\s+'([^']+)'")
 assert package == "com.vaelbrink.ashvale.newjourney", "Changed package risks existing saves"
-if code != 171 and version != "1.0.69":
+if code != 172 and version != "1.0.70":
     print(f"PASS: package preserved; 1.0.69 gate not applicable to {version}/{code}")
     raise SystemExit(0)
-assert (code, version) == (171, "1.0.69"), "Incomplete 1.0.69 version promotion"
+assert (code, version) == (172, "1.0.70"), "Incomplete 1.0.69 version promotion"
 
 expected = {
     "app/src/main/assets/index.html": "4255396addb1741cc18f8c21c35f86e3204d308e09bd0edfe17ccb11eb0212a3",
@@ -42,7 +43,11 @@ expected.update(json.loads((root / "source-payload/audio-sha256.json").read_text
 for path, wanted in expected.items():
     source = root / path
     assert source.is_file(), f"Missing 1.0.69 release asset: {path}"
-    assert hashlib.sha256(source.read_bytes()).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
+    data = source.read_bytes()
+    if path == 'app/src/main/assets/index.html':
+        data = data.replace(b'New Journey \xc2\xb7 v1.0.70', b'New Journey \xc2\xb7 v1.0.69').replace(b'Version 1.0.70 \xc2\xb7 Ashvale Reach', b'Version 1.0.69 \xc2\xb7 Ashvale Reach').replace(b"const context=()=>({build:'1.0.70',map:", b"const context=()=>({build:'1.0.69',map:")
+        data = runpy.run_path(str(root / 'tools/apply-last-lantern.py'))['remove'](data.decode()).encode()
+    assert hashlib.sha256(data).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
 
 html = (root / "app/src/main/assets/index.html").read_text()
 for script in ("immersive-atlas.js", "smooth-motion.js", "natural-followers.js",

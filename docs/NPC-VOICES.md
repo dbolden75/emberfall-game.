@@ -1,3 +1,5 @@
+Release candidate 1.0.70: Android device speech is OFF (muted) by default. Explicit saved user choice is retained. No illustrative audition voices are bundled or approved; physical-device synthesis and listening remain pending. Music/SFX/ambience are independent.
+
 # NPC voices: first device-speech pass
 
 This draft uses Android's native TextToSpeech service, explicitly labeled

@@ -1,3 +1,5 @@
+Provisional integration candidate: **1.0.70 / versionCode 172**, pending confirmation of the highest uploaded Play code. Audio PR312 plus dormant Last Lantern PR316; PR313/314/315 excluded. No signed candidate artifacts yet. All signed hashes below refer to prior releases. Existing early vampire spoilers remain; late mystery pacing is not implemented.
+
 # Thornhaven: New Journey
 
 ## Current signed release candidate — November 18, 2026

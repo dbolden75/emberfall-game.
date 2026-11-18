@@ -1,0 +1,677 @@
+[
+  {
+    "test": "tools/android-back-navigation-save-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/android-back-navigation-save-checks.cjs:83:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/android-background-save-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 9 production background-save JavaScript scenarios and native lifecycle guards. Mocked storage, not device testing.\n"
+  },
+  {
+    "test": "tools/backup-debug-webview-saves-checks.cjs",
+    "status": "passed",
+    "output": "PASS: exported read-only archive with private permissions\nPASS: never overwrite an existing backup\nPASS: non-debuggable, ambiguous device, corrupt, empty, partial, mismatched, metadata-only and zero-byte LevelDB backups blocked\n"
+  },
+  {
+    "test": "tools/billing-catalog-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 15 shop/native SKUs agree; 4 retired SKUs excluded from new sales; Play activation remains unverified.\n"
+  },
+  {
+    "test": "tools/billing-catalog-consistency-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 15 registered Play IDs match native, storefront and delivery; 11 available in app, 4 retired but restorable; bundle and consumption checks passed.\nNOT VERIFIED: SKU activation/prices in Play Console or actual purchase and restoration.\n"
+  },
+  {
+    "test": "tools/briar-save-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: Briar Hollow clue arrays and Ada escape plans validated without changing older saves.\n"
+  },
+  {
+    "test": "tools/character-slot-delete-checks.cjs",
+    "status": "passed",
+    "output": "PASS: eight WebView character-deletion regressions including quota, silent rejection, active-slot guard and legacy fallback.\n"
+  },
+  {
+    "test": "tools/character-slot-save-checks.cjs",
+    "status": "passed",
+    "output": "PASS: ten real HTML slot cases including failed character application and UI rendering rollback.\n"
+  },
+  {
+    "test": "tools/cloud-enemy-health-checks.cjs",
+    "status": "passed",
+    "output": "PASS: corrupt enemy max-health ratios are refused before save writes; valid/legacy snapshots work\n"
+  },
+  {
+    "test": "tools/cloud-enemy-null-state-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 5 corrupt enemy null fields refused atomically; zero/false and historical omitted fields preserved\n"
+  },
+  {
+    "test": "tools/cloud-future-cooldown-checks.cjs",
+    "status": "passed",
+    "output": "PASS: impossible future gathering/respawn deadlines rejected atomically, valid and historical saves preserved\n"
+  },
+  {
+    "test": "tools/cloud-picker-native-callback-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/cloud-picker-native-callback-checks.cjs:246:12)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/cloud-picker-result-isolation-checks.cjs",
+    "status": "passed",
+    "output": "PASS (source gate): unique SAVE/LOAD request-code routing and stale-result isolation\nNOT VERIFIED: real out-of-order document provider callbacks on Samsung.\n"
+  },
+  {
+    "test": "tools/cloud-save-checks.cjs",
+    "status": "passed",
+    "output": "tained.\nPASS: malformed town home containers rejected before lossy import; historical homes preserved.\nPASS: interrupted and silent Cloud Save writes roll back exact local slots, selection and recovery; emergency recovery retained if rollback fails.\n"
+  },
+  {
+    "test": "tools/cloud-save-coin-integrity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 4 valid/historical coin amounts and 6 corrupt amounts; local and zero-write restore checks\n"
+  },
+  {
+    "test": "tools/cloud-save-defense-level-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 138 defense upgrade, compatibility and no-write recovery assertions\n"
+  },
+  {
+    "test": "tools/cloud-save-equal-revision-checks.cjs",
+    "status": "passed",
+    "output": "PASS: timestamp collisions cannot silently overwrite divergent characters; recovery and ordinary imports work.\n"
+  },
+  {
+    "test": "tools/cloud-save-experience-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 3 impossible XP records rejected; 7 legitimate/historical XP records accepted; failed restore left storage untouched\n"
+  },
+  {
+    "test": "tools/cloud-save-export-durability-checks.cjs",
+    "status": "passed",
+    "output": "PASS: normal Cloud Save export; silent write refusal; quota failure; verified retry; cold-start title normalization; character-switch safety.\n"
+  },
+  {
+    "test": "tools/cloud-save-failure-atomicity-checks.cjs",
+    "status": "passed",
+    "output": " any saved byte\nPASS unrecoverable rollback keeps old slots in verified recovery copy\nPASS successful import keeps pre-import save retrievable\nPASS stale save review does not overwrite newer local progress\nPASS: 9 Cloud Save failure-atomicity checks\n"
+  },
+  {
+    "test": "tools/cloud-save-first-hunt-checks.cjs",
+    "status": "passed",
+    "output": "PASS 92 First Hunt Cloud Save regression assertions\n"
+  },
+  {
+    "test": "tools/cloud-save-forward-home-chest-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 38 forward-home-chest protection, no-write and historical-save assertions.\n"
+  },
+  {
+    "test": "tools/cloud-save-gender-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 4 valid/legacy gender states preserved; 6 malformed imports and local rows rejected without writes\n"
+  },
+  {
+    "test": "tools/cloud-save-hero-gear-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 35 corrupt hero-gear imports rejected without save writes; valid and historical slots preserved.\n"
+  },
+  {
+    "test": "tools/cloud-save-hero-vitals-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 16 invalid hero vital snapshots rejected during import and local review; historical/valid values preserved.\n"
+  },
+  {
+    "test": "tools/cloud-save-human-movement-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 16 invalid human movement/combat snapshots rejected with zero writes; 5 valid/legacy snapshots accepted.\n"
+  },
+  {
+    "test": "tools/cloud-save-inherited-item-id-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 35 inherited item-id corruption cases rejected before writes; 6 valid/historical cases accepted\n"
+  },
+  {
+    "test": "tools/cloud-save-inventory-uniqueness-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 15 duplicate backup cases rejected without writes; 5 valid/historical states accepted\n"
+  },
+  {
+    "test": "tools/cloud-save-item-catalog-checks.cjs",
+    "status": "passed",
+    "output": "PASS: Cloud Save restore preflight blocks six unsupported item-loss paths and preserves legacy/known inventory.\n"
+  },
+  {
+    "test": "tools/cloud-save-local-slot-metadata-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 4 damaged slot headings require extra consent and byte-exact recovery; 2 valid/historical local rows accepted\n"
+  },
+  {
+    "test": "tools/cloud-save-map-id-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 8 unknown/inherited regions refused without writes; all packaged outdoor/interior regions and recovery import preserved.\n"
+  },
+  {
+    "test": "tools/cloud-save-map-layout-checks.cjs",
+    "status": "passed",
+    "output": "PASS map-layout compatibility: current/legacy saves accepted; 9 lossy cases rejected before restore.\n"
+  },
+  {
+    "test": "tools/cloud-save-mapstate-compatibility-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 30 map-state safety, atomic-restore and compatibility assertions.\n"
+  },
+  {
+    "test": "tools/cloud-save-pet-movement-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 14 corrupt pet movement/timer states rejected with zero writes; 4 valid/legacy pets accepted.\n"
+  },
+  {
+    "test": "tools/cloud-save-pet-null-state-checks.cjs",
+    "status": "passed",
+    "output": "PASS: explicit-null hp/max rejected with zero writes; six current/legacy pet snapshots accepted\n"
+  },
+  {
+    "test": "tools/cloud-save-pet-version-checks.cjs",
+    "status": "passed",
+    "output": "PASS: seven invalid pet version/equipment imports rejected with zero storage writes; five current/legacy snapshots preserved.\n"
+  },
+  {
+    "test": "tools/cloud-save-premium-appearance-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 5 historical/valid premium appearances preserved; 8 lossy selections rejected with no writes\n"
+  },
+  {
+    "test": "tools/cloud-save-purchase-ledger-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 6 valid/historical and 13 invalid purchase-ledger backup cases, including local-read and zero-write restore protection\n"
+  },
+  {
+    "test": "tools/cloud-save-purchased-boost-integrity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 10 valid/legacy boost cases, 18 malformed purchased boost cases rejected before any storage writes\n"
+  },
+  {
+    "test": "tools/cloud-save-recovery-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS: recovery preserved across empty/null imports; real/corrupt slots backed up; interrupted imports safe\n"
+  },
+  {
+    "test": "tools/cloud-save-slot-metadata-checks.cjs",
+    "status": "passed",
+    "output": "PASS: character selector metadata must agree with imported gameplay, invalid imports leave storage untouched; legacy headers remain optional.\n"
+  },
+  {
+    "test": "tools/cloud-save-speed-limit-checks.cjs",
+    "status": "passed",
+    "output": "PASS 28 extreme-speed Cloud Save and no-write assertions\n"
+  },
+  {
+    "test": "tools/cloud-save-town-stock-checks.cjs",
+    "status": "passed",
+    "output": "PASS 93 town shop inventory/restore assertions\n"
+  },
+  {
+    "test": "tools/cloud-save-world-coordinates-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 14 invalid world coordinates rejected; valid/legacy snapshots and existing local saves preserved.\n"
+  },
+  {
+    "test": "tools/companion-active-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: corrupted active flags rejected before live game normalization; valid/historical pets compatible.\n"
+  },
+  {
+    "test": "tools/companion-health-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: invalid pet health is rejected before game normalization can silently kill pets.\n"
+  },
+  {
+    "test": "tools/companion-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: Cloud Save refuses malformed, duplicate and unrecognized pet imports; existing pet records still load.\n"
+  },
+  {
+    "test": "tools/companion-local-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "Companion local-save protection: 34/34 mocked WebView scenarios passed\n"
+  },
+  {
+    "test": "tools/corrupt-slot-overwrite-checks.cjs",
+    "status": "passed",
+    "output": "letion blocks all damaged character maps (including unrelated inactive slot damage); healthy inactive slot deletion still works. Mocked WebView.\nPASS: public Google Play checkout blocks damaged slots and allows verified recovery. Mocked Play bridge.\n"
+  },
+  {
+    "test": "tools/current-browser-release-checks.cjs",
+    "status": "passed",
+    "output": "PASS: current browser presentation integrated with native save/bridge and load order preserved (static)\n"
+  },
+  {
+    "test": "tools/dan-level-only-premium-checks.cjs",
+    "status": "passed",
+    "output": "PASS: TheDanCode has no free premium grants; old test data preserved but ignored; Play ownership, bundle restores, and normal checkout remain intact.\n"
+  },
+  {
+    "test": "tools/dungeon-loot-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: dungeon-loot chest/treasure flags validated before restore, historical formats compatible.\n"
+  },
+  {
+    "test": "tools/dungeon-rune-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: shrine rune progress import safety, local recovery, and valid older snapshots\n"
+  },
+  {
+    "test": "tools/durable-entitlement-replay-checks.cjs",
+    "status": "passed",
+    "output": "PASS: verified durable entitlements recover missing/stale ownership without replaying consumables; corrupted ledgers reject delivery.\n"
+  },
+  {
+    "test": "tools/emulator-matrix-checks.cjs",
+    "status": "passed",
+    "output": "PASS (static): Android 14/15/16 CI requires API 34 isolated-side and API 35/36 both-side emulator checks; geometry, save and settings assertions retained. Not native emulator testing.\n"
+  },
+  {
+    "test": "tools/equipment-summary-checks.cjs",
+    "status": "passed",
+    "output": "PASS: inventory HUD tolerates unavailable historical gear IDs without changing saved equipment.\n"
+  },
+  {
+    "test": "tools/frontier-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: Hearthstead progression and NPC food-repair flags guarded; legitimate saves intact.\n"
+  },
+  {
+    "test": "tools/gameplay-checks.cjs",
+    "status": "passed",
+    "output": "in save state.\nPASS: local map opens, renders, closes, and preserves an existing pause state. Canvas calls mocked.\nPASS: healing consumes a potion and immediately persists HP and inventory; no save for unused items. Mocked state, not device testing.\n"
+  },
+  {
+    "test": "tools/gather-node-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: malformed gathering cooldowns rejected; old saves and existing progress preserved.\n"
+  },
+  {
+    "test": "tools/gathering-forge-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: invalid gathering/forge progress rejected without overwriting saved characters; older valid progress accepted.\n"
+  },
+  {
+    "test": "tools/hero-gear-save-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 30 hero equipment preservation checks\n"
+  },
+  {
+    "test": "tools/hero-progression-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 36/36: corrupt saved progression preserves local and legacy bytes, blocks paid delivery; valid and historical cases save (mocked WebView)\n"
+  },
+  {
+    "test": "tools/hero-vitals-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 30/30: corrupt saved vitals preserve local and legacy bytes, block paid delivery; valid and historical cases save (mocked WebView)\n"
+  },
+  {
+    "test": "tools/house-storage-ambiguity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: conflicting legacy/modern chests and unrecognized future item containers rejected before save changes; harmless metadata preserved.\n"
+  },
+  {
+    "test": "tools/house-storage-skills-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 74/74: malformed chests, gathering XP and forge ranks protected; older saves remain valid (mocked WebView)\n"
+  },
+  {
+    "test": "tools/human-companion-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: corrupt human companion rosters, active slots, health and coordinates rejected before save import; valid and historical states accepted.\n"
+  },
+  {
+    "test": "tools/last-lantern-checks.cjs",
+    "status": "passed",
+    "output": "objects/enemies, shared walls and doors, independent quest, reward gates, no duplicates, partial/completed/legacy save restoration, slot isolation, cloud validation, scaling and town/sanctuary safety. Mock runtime; browser combat checked separately.\n"
+  },
+  {
+    "test": "tools/legacy-enemy-position-checks.cjs",
+    "status": "passed",
+    "output": "PASS: historical enemy snapshots preserve valid enemy coordinates.\n"
+  },
+  {
+    "test": "tools/legacy-inventory-checks.cjs",
+    "status": "passed",
+    "output": "PASS: legacy catalog item IDs stay saved and visible without silently filling the bag; normal and quest items unchanged.\nPASS: merchant Sell tab ignores unavailable historical IDs without losing saved items.\n"
+  },
+  {
+    "test": "tools/legacy-only-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 8/8: legacy-only corruption blocks overwrites and checkout; fresh, valid legacy and authoritative slots remain functional (mocked WebView)\n"
+  },
+  {
+    "test": "tools/legacy-save-migration-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 1.0.57 legacy migration, quota resistance, valid slots, malformed-slot preservation, consent-only recovery, backup failure, corrupt-mirror isolation and valid empty-store safety. Mocked startup only, not physical Android upgrade.\n"
+  },
+  {
+    "test": "tools/legacy-signed-157-cloud-restore-checks.cjs",
+    "status": "passed",
+    "output": "PASS: real signed 1.0.57 serializer snapshot -> current Cloud Save; two slots, active selection, progress, recovery, downgrade refusal, invalid pet rejection. Mocked JS, not Android/Play delivery.\n"
+  },
+  {
+    "test": "tools/local-active-map-id-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS 37/37: active map ID does not get erased by local save or Play purchase (mocked storage)\n"
+  },
+  {
+    "test": "tools/local-atlas-input-checks.cjs",
+    "status": "passed",
+    "output": "PASS: local-map opening releases movement/touch/attack/autowalk input and retains pause state. Mocked state only.\n"
+  },
+  {
+    "test": "tools/local-forward-hero-fields-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 64/64: future hero fields protected in slots, legacy saves, live snapshots and Play receipt commits (mocked WebView)\n"
+  },
+  {
+    "test": "tools/local-future-region-metadata-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS 260/260: 40 future/unsafe saves blocked, 20 historical/current saves permitted.\n"
+  },
+  {
+    "test": "tools/local-future-state-fields-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 72/72: unknown top-level fields protected in stored slots, legacy saves, snapshots and simulated receipts\n"
+  },
+  {
+    "test": "tools/local-future-storage-skill-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS 113/113: 16 blocked and 11 permitted mocked save/purchase scenarios\n"
+  },
+  {
+    "test": "tools/local-hero-gender-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 88/88: 14 damaged stored states blocked, 8 valid/legacy stored states permitted; 11 runtime save and purchase checks (mocked WebView)\n"
+  },
+  {
+    "test": "tools/local-map-state-array-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS 54/54: map-state array integrity across saves and purchase (mocked WebView storage)\n"
+  },
+  {
+    "test": "tools/local-map-state-object-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS 75/75: rune/chest/treasure save and purchase durability (mocked WebView storage)\n"
+  },
+  {
+    "test": "tools/local-map-state-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS 18/18: future regional progress protected; historical saves remain writable (mock WebView)\n"
+  },
+  {
+    "test": "tools/local-quest-flags-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 126/126 scenarios: quest flag and defeated-count guard validates stored/legacy/live saves and Play receipt commits (mocked WebView)\n"
+  },
+  {
+    "test": "tools/local-town-flag-preservation-checks.cjs",
+    "status": "passed",
+    "output": "PASS 68/68: town relic and owned house save/purchase preservation (mocked storage)\n"
+  },
+  {
+    "test": "tools/maintained-upgrade-preflight-checks.cjs",
+    "status": "passed",
+    "output": "e determined is blocked\nPASS: multiline device API cannot be reinterpreted\nPASS: candidate missing minimum SDK blocks\nPASS: ambiguous installed base APKs are rejected\nPASS: all twenty-one read-only preflight checks (mock Android commands; no device)\n"
+  },
+  {
+    "test": "tools/mining-progression-checks.cjs",
+    "status": "passed",
+    "output": "tes fog after movement, reuses stationary cache and preserves visited cells.\nPASS: all four ordinary level-1 classes mine local copper and train to Mining 5; 60 high-tier regions have mixed ores; depletion and silver gates preserved. Mocked runtime.\n"
+  },
+  {
+    "test": "tools/monster-catalog-save-isolation-checks.cjs",
+    "status": "passed",
+    "output": "PASS character switching clears temporary catalog summons without losing durable enemy state.\n"
+  },
+  {
+    "test": "tools/native-billing-connection-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-connection-checks.cjs:88:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-launch-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-launch-checks.cjs:122:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-ledger-checks.cjs",
+    "status": "passed",
+    "output": "nishing and checkout, teardown suppresses late callbacks.\nPASS (static): corrupted Play receipt identity cannot inherit delivery/finish state or bypass native acknowledgement guards; Android CI compiles Java and runs purchase simulations separately.\n"
+  },
+  {
+    "test": "tools/native-billing-legacy-offer-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-legacy-offer-checks.cjs:58:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-offer-checks.cjs",
+    "status": "passed",
+    "output": "e non-rental/non-preorder offers, and uses the selected offer token. Live Play eligibility not tested.\nPASS (static): price-query errors, zero active SKUs, and restore errors have distinct messaging without revoking saved receipts on failed queries.\n"
+  },
+  {
+    "test": "tools/native-billing-ownership-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-ownership-checks.cjs:100:12)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-purchase-callback-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-purchase-callback-checks.cjs:72:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-refresh-race-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-refresh-race-checks.cjs:51:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-refresh-runtime-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-refresh-runtime-checks.cjs:55:11)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-restore-list-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-restore-list-checks.cjs:332:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-snapshot-guard-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac: undefinedundefined\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-snapshot-guard-checks.cjs:51:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: '==',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/native-billing-unfetched-checks.cjs",
+    "status": "failed",
+    "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: javac failed: Error: spawnSync javac ENOENT\n\nnull !== 0\n\n    at Object.<anonymous> (/workspace/emberfall-game./tools/native-billing-unfetched-checks.cjs:46:10)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: null,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+  },
+  {
+    "test": "tools/pet-id-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: unknown/inherited pet ids rejected before restore; installed pets and local characters preserved.\n"
+  },
+  {
+    "test": "tools/play-billing-catalog-parity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 15 Google Play SKUs match catalog, deliver exactly once, and retired checkout is blocked; purchase safety guards intact\n"
+  },
+  {
+    "test": "tools/play-catalog-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 15 Java/HTML SKU definitions match; 4 retired products remain restorable but unsellable; negative fixtures rejected.\n"
+  },
+  {
+    "test": "tools/play-catalog-parity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 15 native, HTML and JS SKUs agree; 4 progression products remain restorable but cannot be sold; 11 sale-candidate IDs have consistent receipt types.\nNOTE: Play Console activation, actual checkout, and Play signing are not tested.\n"
+  },
+  {
+    "test": "tools/playtest-editor-checks.cjs",
+    "status": "passed",
+    "output": "Editor checks passed: one split request, Dan gating, capture context, persisted flags, mismatched ack, failed delivery retention, acknowledged deletion. No Android UI tested.\n"
+  },
+  {
+    "test": "tools/premium-catalog-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 15 native/game SKUs, 4 retired sale IDs, and consumption policy agree\n"
+  },
+  {
+    "test": "tools/progress-flag-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: quest milestones and home ownership cannot flip during Cloud Save import; historical flags compatible.\n"
+  },
+  {
+    "test": "tools/purchase-api-checks.cjs",
+    "status": "passed",
+    "output": "sale catalog and checkout are blocked; shop wrapper delegates without offering retired categories.\nPASS: premium menu distinguishes Android Google Play from web preview; public Buy/Restore routes remain gated by native billing and character storage.\n"
+  },
+  {
+    "test": "tools/purchase-checks.cjs",
+    "status": "passed",
+    "output": "protection; wrong character; invalid SKU/receipt; boost credits; cosmetic restore; storage failure and atomic reward ledger.\nPASS: XP and level packs retired from new sales; legacy Play receipt verification and purchased credit use remain available.\n"
+  },
+  {
+    "test": "tools/purchase-ledger-safety-checks.cjs",
+    "status": "passed",
+    "output": "level-pack restore remains exactly once and immutable\nPASS: invalid receipt hash is rejected\nPASS: unknown product cannot grant an item\nPASS: unrelated character state is not mutated by grants\nPASS: 13 production purchase-ledger regression scenarios\n"
+  },
+  {
+    "test": "tools/purchase-ledger-shape-checks.cjs",
+    "status": "passed",
+    "output": "PASS: purchase credits and entitlement ledgers reject corrupt/overflowing saved shapes without acknowledging paid receipts; null legacy credits, replay prevention and existing rewards preserved.\n"
+  },
+  {
+    "test": "tools/purchase-persist-ack-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 5 purchase persistence/acknowledgment scenarios (including silent WebView storage refusal).\n"
+  },
+  {
+    "test": "tools/purchase-quest-state-integrity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: reject malformed quest-state container before acknowledging paid cosmetics; preserve missing/null legacy state and idempotent credits.\n"
+  },
+  {
+    "test": "tools/purchase-receipt-conflict-checks.cjs",
+    "status": "passed",
+    "output": "PASS: corrupt/conflicting saved receipt rows reject payment acknowledgement; valid duplicate and first delivery preserved.\n"
+  },
+  {
+    "test": "tools/quest-kill-counter-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: quest/slayer/camp kill counters validated; older saves accepted.\n"
+  },
+  {
+    "test": "tools/regional-checks.cjs",
+    "status": "passed",
+    "output": "Regional checks passed: fog, hidden HUD, safe respawns, panel pause, atlas centering.\n"
+  },
+  {
+    "test": "tools/release-candidate-cloud-import-checks.cjs",
+    "status": "passed",
+    "output": "\nPASS confirmed empty-device restore persists slot and selection\nPASS silent slot-write failure rolls back selection\nPASS export/import preserves precise forged gear and home chest values\nPASS: 13 of 13 signed-candidate save-compatibility assertions\n"
+  },
+  {
+    "test": "tools/release-identity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 1.0.69 package identity, pinned baseline and exact Last Lantern content overlay\n"
+  },
+  {
+    "test": "tools/release-save-transaction-checks.cjs",
+    "status": "passed",
+    "output": "ASS forge rank string is rejected\nPASS invalid Briar Hollow clue list is rejected\nPASS storage quota failure during restore preserves original data\nPASS damaged local data requires explicit approval\nPASS: 14 independent Cloud Save transaction checks\n"
+  },
+  {
+    "test": "tools/render-checks.cjs",
+    "status": "passed",
+    "output": "{\"status\":\"passed\",\"idleDrawCalls\":1,\"movingDrawCalls\":36,\"scope\":\"Camera, mirrored zoom, rotation fallback, offscreen culling, idle and moving artwork\"}\n"
+  },
+  {
+    "test": "tools/reviewer-checks.cjs",
+    "status": "passed",
+    "output": "PASS: ordinary characters cannot use test grants; developer grants remain local and separate from Play receipt ledger; developer checkout blocked.\n"
+  },
+  {
+    "test": "tools/rune-trap-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: rune and trap progress flags validated before Cloud Save import/local restore; historical snapshots supported.\n"
+  },
+  {
+    "test": "tools/runtime-integration-checks.cjs",
+    "status": "passed",
+    "output": "2\nPASS: town entry, render cycles and save reload sunmere NPCs: 13\nPASS: four town-entry mock runtime regressions (not Android/Play testing).\nPASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.\n"
+  },
+  {
+    "test": "tools/runtime-save-state-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 10/10: unsafe in-memory saves and purchase commits rejected; previous save bytes preserved (mocked WebView)\n"
+  },
+  {
+    "test": "tools/save-atomicity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: primary save slot committed first; legacy mirror/pref failures do not destroy progress; primary failure preserves prior save and warns. Mocked storage only.\n"
+  },
+  {
+    "test": "tools/save-readback-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 4 real-saveGame durability cases (normal, silent refusal, quota rejection, title menu), plus verified retry and unchanged storage keys.\n"
+  },
+  {
+    "test": "tools/settlement-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: 23 settlement corruption cases rejected; valid and legacy saves preserved.\n"
+  },
+  {
+    "test": "tools/slayer-ledger-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: corrupt Slayer Hall marks, rewards, hunts rejected; historical saves accepted.\n"
+  },
+  {
+    "test": "tools/snapshot-failure-save-guard-checks.cjs",
+    "status": "passed",
+    "output": "PASS 4/4: unsafe fallback blocked and healthy retries verified (mocked WebView)\n"
+  },
+  {
+    "test": "tools/soft-fog-checks.cjs",
+    "status": "passed",
+    "output": "PASS: fog cache, discovery updates, character/region isolation, bounded canvas and compositing restoration. Visual appearance needs live browser.\n"
+  },
+  {
+    "test": "tools/town-progress-checks.cjs",
+    "status": "passed",
+    "output": "PASS: acceptance, fresh patrol requirement, town-only delivery, capacity protection, duplicate reward protection, save roundtrip and rotation\n"
+  },
+  {
+    "test": "tools/town-quest-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: town quest acceptance, claim and rescue flags are validated before restore; legacy counts remain valid.\n"
+  },
+  {
+    "test": "tools/vampire-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: vampire quest save flags, hunt count, clues and timers validated; legacy saves retained.\n"
+  },
+  {
+    "test": "tools/workflow-package-identity-checks.cjs",
+    "status": "passed",
+    "output": "PASS: every Android APK entry point uses the maintained package and checked Gradle build\n"
+  },
+  {
+    "test": "tools/world-runtime-checks.cjs",
+    "status": "passed",
+    "output": "12\nPASS: town entry, render cycles and save reload stonewatch NPCs: 12\nPASS: town entry, render cycles and save reload sunmere NPCs: 13\nPASS: four town-entry mock runtime regressions (not Android/Play testing).\nPASS: real exploration invalidates fog after movement, reuses stationary cache and preserves visited cells.\nPASS: 388 class/region entry, frame and snapshot combinations (mocked graphics).\n"
+  },
+  {
+    "test": "tools/xp-progress-import-checks.cjs",
+    "status": "passed",
+    "output": "PASS: game XP concatenation reproduced; numeric and legacy XP accepted; corrupt imports/local slots rejected without replacement.\n"
+  }
+]
