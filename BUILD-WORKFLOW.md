@@ -1,6 +1,8 @@
 # Thornhaven build and test workflow
 
-Current main development source: 1.0.68, Android versionCode 170.
+Current main development source: 1.0.69, Android versionCode 171.
+
+Current candidate integrates owner-approved browser v11: compact Party HUD, painted atlas, smoother movement/following, terrain/scale improvements and nonnegative defeated-enemy health. Native save keys and bridge retained. New build/signing/Play acceptance pending; previous 1.0.68 evidence below is historical.
 
 Development candidate: Alabama-inspired atlas geography; original 81 regions and quest routes retained. The original-key signed 1.0.68 APK/AAB passed offline verification; see the new atlas playtest links in README.md. The signed 1.0.67 candidate below remains the previous release.
 
@@ -12,13 +14,13 @@ Before submission, check the HIGHEST versionCode already uploaded to Google Play
 On a computer with a connected, authorized Android device and the Android SDK `adb`, `aapt` and `apksigner` tools installed, run:
 
 ```bash
-python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.68-maintained-key.apk
+python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.69-maintained-key.apk
 ```
 
 To compare a **saved historical APK file** without attaching a phone, run:
 
 ```bash
-python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.68-maintained-key.apk --installed-apk /path/to/Thornhaven-1.0.57.apk
+python3 tools/android-upgrade-preflight.py /path/to/Thornhaven-1.0.69-maintained-key.apk --installed-apk /path/to/Thornhaven-1.0.57.apk
 ```
 
 This archive-only check reads the two APK manifests and signing certificates without `adb`, and fails closed on historical development-key APKs. The two known 1.0.57 development APKs are JAR/v1-only signed; the checker can recognize their certificates using bounded API-23 verification solely to display the specific blocking warning. It never reports a compatibility PASS on an APK that verifies only with legacy v1 signing. A passing archive comparison **does not verify what is installed on the Samsung phone**, its Play App Signing certificate, or saved characters; use the device preflight or a Play-delivered update for those gates. Never uninstall or clear app data to resolve a mismatch.

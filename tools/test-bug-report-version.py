@@ -22,7 +22,7 @@ def main() -> None:
     version = inspect_version(html, gradle)
     target = b"const context=()=>({build:'" + version.encode('ascii') + b"',map:"
     assert html.count(target) == 1
-    for wrong_version in (b'1.0.49', b'1.0.69'):
+    for wrong_version in (b'1.0.49', b'999.0.0'):
         corrupted = html.replace(target, b"const context=()=>({build:'" + wrong_version + b"',map:", 1)
         assert corrupted != html
         try:

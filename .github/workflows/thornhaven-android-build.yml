@@ -28,7 +28,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Restore hash-verified Thornhaven game source
-        run: python3 tools/restore-game-source.py
+        run: |
+          python3 tools/restore-game-source.py
+          python3 tools/restore-1.0.69.py
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -157,7 +159,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: thornhaven-1.0.68-compiled-release-browser-qa
+          name: thornhaven-1.0.69-compiled-release-browser-qa
           path: |
             reports/browser-compiled-release-qa/*.png
             reports/browser-compiled-camp-story-qa/*.png
@@ -171,12 +173,12 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee apk-badging.txt
-          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='170' versionName='1.0.68'" apk-badging.txt
+          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='171' versionName='1.0.69'" apk-badging.txt
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
           sha256sum "$APK"
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-1.0.68-debug-test-apk
+          name: thornhaven-1.0.69-debug-test-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -184,7 +186,7 @@ jobs:
         run: |
           python3 tools/check-android-billing-manifest.py \
             --apk app/build/outputs/apk/release/app-release-unsigned.apk \
-            --version-code 170
+            --version-code 171
       - name: Verify release payload asset and save-origin compatibility
         run: |
           python3 tools/release-payload-checks.py \
@@ -207,8 +209,8 @@ jobs:
           printf '%s  %s\n' a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29 "$tool" | sha256sum -c -
           java -jar "$tool" validate --bundle="$aab"
           test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@package)" = 'com.vaelbrink.ashvale.newjourney'
-          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '170'
-          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionName)" = '1.0.68'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '171'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionName)" = '1.0.69'
           test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/uses-sdk/@android:targetSdkVersion)" = '36'
           # Disposable QA signing for bundletool's generated APK. Never distribute it.
           qa_key="$RUNNER_TEMP/thornhaven-bundletool-qa.p12"
@@ -225,7 +227,7 @@ jobs:
           test -s "$qa_apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$qa_apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$qa_apk" | \
-            grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='170' versionName='1.0.68'"
+            grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='171' versionName='1.0.69'"
           cmp <(unzip -p "$aab" base/assets/index.html) <(unzip -p "$qa_apk" assets/index.html)
           rm -f "$qa_key" "$qa_set" "$qa_apk" "$tool"
           echo 'PASS: bundletool 1.18.3 validated the AAB and generated a matching QA-signed universal APK. NOT a Play-delivered update.'
@@ -247,7 +249,7 @@ jobs:
           echo "Release outputs are UNSIGNED. Never install or distribute as a Play update."
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-1.0.68-UNSIGNED-release-payload
+          name: thornhaven-1.0.69-UNSIGNED-release-payload
           path: release-payload/
           if-no-files-found: error
           retention-days: 7

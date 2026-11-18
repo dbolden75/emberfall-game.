@@ -84,9 +84,7 @@ def assert_hit_targets(page, mode):
     A control can be within the viewport yet be covered by another overlay;
     center taps must reach the joystick and all three battle actions.
     """
-    selectors = ['#attack', '#skillButton', '#dodgeButton',
-                 '#explorationActions button:first-child',
-                 '#explorationActions button:last-child']
+    selectors = ['#attack', '#skillButton', '#dodgeButton', '#hudDetailsToggle']
     if mode == 'arrows':
         selectors.append('.shell .controls')
     hits = page.evaluate("""selectors => selectors.map(selector => {
@@ -100,6 +98,20 @@ def assert_hit_targets(page, mode):
               top: top && (top.id || top.className || top.tagName)};
     })""", selectors)
     assert all(hit['hit'] for hit in hits), f'Controls covered by another UI layer: {hits}'
+    # Exploration controls now live in a collapsible, scrollable Party panel.
+    # Retain their hit-test coverage after opening it, including short landscapes.
+    assert page.locator('#hudDetails').is_hidden()
+    page.locator('#hudDetailsToggle').click()
+    assert page.locator('#hudDetailsToggle').get_attribute('aria-expanded') == 'true'
+    for selector in ('#explorationActions button:first-child',
+                     '#explorationActions button:last-child'):
+        target = page.locator(selector)
+        target.scroll_into_view_if_needed()
+        assert target.evaluate('''e => {const r=e.getBoundingClientRect();
+          const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+          return r.width>0 && r.height>0 && !!top && (top===e || e.contains(top));}'''), selector
+    page.locator('#hudDetailsToggle').click()
+    assert page.locator('#hudDetails').is_hidden()
 
 
 def steer(page):
@@ -165,6 +177,8 @@ def check_case(browser, assets: Path, evidence: Path, name: str, w: int, h: int)
             resumed.locator('#titleContinue').click()
             state=resumed.evaluate("({name:player.name,side:document.body.dataset.controlSide,mode:document.body.dataset.movementMode})")
             assert state=={'name':hero,'side':'left','mode':'touch'},f'Preferences lost on reload: {state}'
+            assert resumed.locator('#hudDetails').is_hidden(), 'HUD must resume collapsed'
+            assert resumed.locator('#compactHealth').is_visible(), 'Resumed health is missing'
         finally:
             resumed.close()
         assert not errors and not resume_errors, f'Uncaught game JS errors: {errors+resume_errors}'
