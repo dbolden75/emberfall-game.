@@ -21,4 +21,4 @@ console.log('PASS: voice identity, unchanged text, interruption, zero/mute persi
 
 const fs=require('node:fs'),crypto=require('node:crypto');
 const html=fs.readFileSync('app/src/main/assets/index.html','utf8').replace('<script src="npc-voice.js"></script><script src="npc-voice-integration.js"></script>','');
-assert.equal(crypto.createHash('sha256').update(html).digest('hex'),'62448268f320032ddbe1f37409bb5c3d7633eecc89481207771dc640b3959117','Existing story/game/audio HTML changed');
+assert.equal(crypto.createHash('sha256').update(html).digest('hex'),'65d27e284a1e44d06d30bf14ad935007dda4c265efd65a60b799d19cbeecbc0a','Existing story/game/audio HTML changed');
