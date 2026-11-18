@@ -37,7 +37,7 @@ vm.runInContext(`
  m.enemies[0].hp-=3;const retreatHp=m.enemies[0].hp;m.enemies[0].windup=.5;
  use('lantern_return');assert.equal(mapId,'briarhollow');interact();adventureChoices[0].action();assert.equal(mapId,'last_lantern');assert.equal(m.enemies[0].hp,retreatHp);assert.equal(m.enemies[0].windup,0);
  finishEnemy(m.enemies[0],player.class);assert(townQuestState.last_lantern.yard);assert(!m.enemies[0].alive);
- const partial=snapshotGameState();applySavedGame(original);assert(m.enemies.every(e=>e.alive),'slot leak');assert(!townQuestState.last_lantern);
+ const partial=snapshotGameState();applySavedGame(original);assert(m.enemies.every(e=>!e.alive),'closed slot exposed');assert(snapshotGameState().mapStates.last_lantern.enemies.every(e=>e.alive),'canonical slot leak');assert(!townQuestState.last_lantern);
  applySavedGame(partial);assert(!m.enemies[0].alive);assert(m.enemies.slice(1).every(e=>e.alive));assert(townQuestState.last_lantern.register);
  const captain=m.enemies[3];assert.equal(enemyPattern(captain).label,'CRIMSON SWEEP');assert.equal(encounterLevel(captain,22,13),24);assert.equal(encounterLevel(m.enemies[1],22,13),22);
  for(const e of m.enemies.filter(e=>e.alive))finishEnemy(e,player.class);
@@ -56,7 +56,7 @@ vm.runInContext(`
  townQuestState._lastLanternAccess={revealed:true};setMap('last_lantern',80,490,false);assert(m.enemies.every(e=>!e.alive));const preservedCoins=player.coins;use('lantern_light');assert.equal(player.coins,preservedCoins);
  const badAccess=structuredClone(row);badAccess.state.townQuestState._lastLanternAccess={revealed:'true'};assert.throws(()=>core.parse(core.encode({slot1:badAccess},'slot1',100)));
  const legacy=structuredClone(original);delete legacy.mapStates.last_lantern;delete legacy.townQuestState.last_lantern;
- applySavedGame(legacy);assert(m.enemies.every(e=>e.alive));assert(!townQuestState.last_lantern);assert(!mapPlacementBlocked(mapId,player.x,player.y,player.r));
+ applySavedGame(legacy);assert(m.enemies.every(e=>!e.alive));assert(snapshotGameState().mapStates.last_lantern.enemies.every(e=>e.alive));assert(!townQuestState.last_lantern);assert(!mapPlacementBlocked(mapId,player.x,player.y,player.r));
  for(const town of ['ashvale','sunmere','brackenford','stonewatch']){setMap(town,480,320,false);assert(!enemies.length);assert(npcs.length>0);}
  assert.equal(maps.veilhaven.npcs.filter(n=>n.vampireId).length,3);assert(!maps.veilhaven.enemies.length);
 `,root);

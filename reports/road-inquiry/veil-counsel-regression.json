@@ -1,0 +1,28 @@
+[
+  {
+    "orientation": "landscape",
+    "passed": [
+      "default closed",
+      "real NPC interaction and evidence review",
+      "three differing proposals",
+      "confirmed recommendation and branch-specific follow-up",
+      "partial/completed document reload",
+      "reentry consequences",
+      "gate removed hides new content"
+    ],
+    "pageErrors": []
+  },
+  {
+    "orientation": "portrait",
+    "passed": [
+      "default closed",
+      "real NPC interaction and evidence review",
+      "three differing proposals",
+      "confirmed recommendation and branch-specific follow-up",
+      "partial/completed document reload",
+      "reentry consequences",
+      "gate removed hides new content"
+    ],
+    "pageErrors": []
+  }
+]
