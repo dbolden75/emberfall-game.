@@ -95,6 +95,14 @@ webview_phase verify upgraded
 webview_phase create upgraded
 adb exec-out screencap -p > reports/emulator/qa-release-gameplay.png
 
+# Test actual Activity Home/resume before process death, with independent audio
+# controls and optional device speech remaining OFF. No audible output claim.
+webview_phase audio-stage upgraded
+adb shell input keyevent KEYCODE_HOME
+sleep 6
+start_game audio-resume
+webview_phase audio-resume audio-resume
+
 # A real process/activity restart must not lose either character or active slot.
 adb shell input keyevent KEYCODE_HOME
 sleep 6

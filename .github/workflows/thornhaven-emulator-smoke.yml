@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - integration/thornhaven-1.0.70-rc-20261118
       # Targeted nonbreaking atlas QA before merging PR #302.
       - feature/alabama-inspired-atlas
       # Run the full matrix for new fixes without editing this list each time.

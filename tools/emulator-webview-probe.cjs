@@ -5,7 +5,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const phase=process.argv[2];
-assert(['create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape','control-preferences-portrait-left','control-preferences-portrait-right','control-preferences-landscape-left','control-preferences-landscape-right'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
+assert(['audio-stage','audio-resume','create','create-controls','preupgrade','verify','picker-save','picker-load','picker-cancel','picker-saved','picker-reviewed','picker-prepare-restore','picker-commit','picker-restored','lifecycle-stage','lifecycle-check','town-edge-entry','touch-controls','orientation-controls','control-preferences','control-preferences-portrait','control-preferences-landscape','control-preferences-portrait-left','control-preferences-portrait-right','control-preferences-landscape-left','control-preferences-landscape-right'].includes(phase),'Usage: node emulator-webview-probe.cjs create|preupgrade|verify|picker-save|picker-load|picker-cancel');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function target(){
@@ -72,6 +72,33 @@ async function session(url){
   }
   return {ws,evaluate};
 }
+
+// Native WebView controls/lifecycle only: the headless emulator uses -noaudio.
+// Do not claim human listening, physical Bluetooth focus or installed TTS quality.
+const audioStage=String.raw`(()=>{
+ const audio=window.ThornhavenAudio,voice=window.ThornhavenVoice;
+ if(!audio||!voice||typeof window.ThornhavenNativeVoice?.status!=='function')throw Error('Native audio/voice APIs missing');
+ if(!voice.preferences().muted)throw Error('Fresh upgrade must keep optional speech OFF');
+ if(voice.speak({speakerId:'npc:qa',text:'This must remain silent.'}))throw Error('Default-off voice accepted speech');
+ window.__audioQaOriginal=audio.preferences();
+ audio.set('music',{volume:.2,muted:false});audio.set('effects',{volume:.6,muted:false});
+ if(audio.preferences().music.volume!==.2||audio.preferences().effects.volume!==.6||!voice.preferences().muted)throw Error('Audio controls coupled');
+ audio.unlock();if(!audio.status().unlocked||audio.status().paused)throw Error('Audio unlock failed in foreground');
+ localStorage.removeItem('thornhaven_audio_lifecycle_qa');
+ const record=()=>{if(audio.status().paused)localStorage.setItem('thornhaven_audio_lifecycle_qa',JSON.stringify({paused:true,voiceMuted:voice.preferences().muted,event:'native-background'}));};
+ window.addEventListener('pagehide',record);window.addEventListener('blur',record);document.addEventListener('visibilitychange',record);
+ return JSON.stringify({defaultSpeechOff:true,independentControls:true,unlocked:true,nativeEngineStatus:voice.status(),scope:'Native WebView state; no audible output claim'});
+})()`;
+const audioResume=String.raw`(()=>{
+ const audio=window.ThornhavenAudio,voice=window.ThornhavenVoice;
+ const marker=JSON.parse(localStorage.getItem('thornhaven_audio_lifecycle_qa')||'null');
+ if(!marker?.paused||!marker.voiceMuted)throw Error('Native Home did not pause audio with voice muted');
+ if(audio.status().paused||!audio.status().unlocked)throw Error('Native resume did not restore foreground audio state');
+ if(!voice.preferences().muted)throw Error('Native resume enabled optional speech');
+ if(audio.preferences().music.volume!==.2||audio.preferences().effects.volume!==.6)throw Error('Lifecycle lost independent audio controls');
+ for(const [bus,pref] of Object.entries(window.__audioQaOriginal))audio.set(bus,pref);
+ return JSON.stringify({nativeHomePaused:true,nativeResumeRestored:true,speechRemainedOff:true,controlsPreserved:true,scope:'Headless emulator; no TTS synthesis, speaker output or physical-device claim'});
+})()`;
 
 // Minimal synthetic save fixture for the dedicated control-matrix emulator.
 // The separate release-smoke emulator already performs the full four-town,
@@ -841,7 +868,7 @@ const orientationControls=String.raw`(async()=>{
       await sleep(1000);
     }
     assert(ready,'Game JavaScript did not initialize in native Android WebView');
-    const scripts={create,'create-controls':createControls,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'control-preferences-portrait':controlPreferencesFor('portrait'),'control-preferences-landscape':controlPreferencesFor('landscape'),'control-preferences-portrait-left':controlPreferencesFor('portrait','left'),'control-preferences-portrait-right':controlPreferencesFor('portrait','right'),'control-preferences-landscape-left':controlPreferencesFor('landscape','left'),'control-preferences-landscape-right':controlPreferencesFor('landscape','right'),'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
+    const scripts={'audio-stage':audioStage,'audio-resume':audioResume,create,'create-controls':createControls,preupgrade:verify,verify,'lifecycle-stage':lifecycleStage,'lifecycle-check':lifecycleCheck,'town-edge-entry':townEdgeEntry,'touch-controls':touchControls,'orientation-controls':orientationControls,'control-preferences':controlPreferences,'control-preferences-portrait':controlPreferencesFor('portrait'),'control-preferences-landscape':controlPreferencesFor('landscape'),'control-preferences-portrait-left':controlPreferencesFor('portrait','left'),'control-preferences-portrait-right':controlPreferencesFor('portrait','right'),'control-preferences-landscape-left':controlPreferencesFor('landscape','left'),'control-preferences-landscape-right':controlPreferencesFor('landscape','right'),'picker-save':pickerSave,'picker-load':pickerLoad,'picker-cancel':pickerCancel,'picker-saved':pickerSaved,'picker-reviewed':pickerReviewed,'picker-prepare-restore':pickerPrepareRestore,'picker-commit':pickerCommit,'picker-restored':pickerRestored};
     // The controls-preferences probe performs native rotation twice and eight
     // settings navigations; allow time for slow Android14 renderer transitions.
     const result=JSON.parse(await evaluate(scripts[phase],phase.startsWith('control-preferences')?60000:15000));
