@@ -33,6 +33,8 @@ body .shell #hudDetails #partyPortraits canvas,body .shell #hudDetails #partyPor
 body .shell #hudDetails .stats{width:100%!important}
 body:has(#gameView:not([hidden])) .shell #hudDetails #explorationActions{position:static;left:auto;transform:none;width:auto;display:flex;gap:5px}
 body .shell #hudDetails #explorationActions button{min-height:44px}
+/* Expanded Party controls must stay tappable above movement controls in short landscape. */
+body:has(#gameView:not([hidden])) .shell .hud:has(.hudSide.detailsExpanded){z-index:9}
 body.previewExpanded:has(#gameView:not([hidden])) .shell .top{padding-left:54px!important}
 @media(max-width:440px){body.previewExpanded:has(#gameView:not([hidden])) .brand{font-size:11px;letter-spacing:.08em}body.previewExpanded:has(#gameView:not([hidden])) .top .status{gap:3px}}
 @media(orientation:landscape) and (max-height:500px){#hudDetails{max-height:calc(100dvh - 102px)}}
