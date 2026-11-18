@@ -82,6 +82,7 @@ jobs:
           python3 tools/browser-veil-counsel-qa.py
           python3 tools/browser-road-inquiry-qa.py
           python3 tools/browser-early-quest-choices-qa.py
+          python3 tools/browser-ashvale-quest-choices-qa.py
           # Run each orientation in its own Chromium process to bound 26-MB HTML memory.
           python3 tools/browser-purchase-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-purchase-qa --orientation portrait
@@ -99,6 +100,8 @@ jobs:
             reports/browser-joystick-qa/*.png
             reports/early-quest-choices/*.png
             reports/early-quest-choices/results.json
+            reports/ashvale-quest-choices/*.png
+            reports/ashvale-quest-choices/results.json
             reports/last-lantern/*.png
             reports/last-lantern/results.json
             reports/veil-counsel/*.png

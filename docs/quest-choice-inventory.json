@@ -6,7 +6,7 @@
       "id": "camp_caller",
       "title": "The Unknown Caller",
       "group": "catalog",
-      "status": "implemented this batch",
+      "status": "implemented in PR318",
       "priority": "covered",
       "evidence": "early-quest-choices.js",
       "consequence": "Footprints versus public-seal comparison followed by a board report; different earned knowledge, same essential Briar lead."
@@ -312,19 +312,19 @@
       "id": "ashvale_watch",
       "title": "Whisperwood Watch",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "ashvale-quest-choices.js",
+      "consequence": "Three Ash Slimes plus three Ash Motes earn 36 crowns; alternatively two logs plus one ration establish a refuge for 24 crowns, unlocking quiet-road healing (20 vitality / five minutes). Both advance the chapter."
     },
     {
       "id": "ashvale_scout",
       "title": "Scout\u2019s Report",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "ashvale-quest-choices.js",
+      "consequence": "Recover the patrol signal with two kills/two motes, or compare Rowan\u2019s departure log and Dalen\u2019s gate account at camp. Different objectives and earned knowledge; both earn the Ashvale seal."
     },
     {
       "id": "bracken_patrol",
@@ -420,7 +420,7 @@
       "id": "regional_willowfen",
       "title": "The Lost Lanterns",
       "group": "catalog",
-      "status": "implemented this batch",
+      "status": "implemented in PR318",
       "priority": "covered",
       "evidence": "early-quest-choices.js",
       "consequence": "Return recovered lanterns versus spend three Wood Logs to rehang them; permanent visible guide lights on the second route."
@@ -501,7 +501,7 @@
       "id": "camp_patrol",
       "title": "Keep the Roads Open",
       "group": "catalog",
-      "status": "implemented this batch",
+      "status": "implemented in PR318",
       "priority": "covered",
       "evidence": "early-quest-choices.js",
       "consequence": "Each repeat cycle: three kills versus three physical repairs consuming three Wood Logs; foes remain on repair route."
@@ -749,5 +749,6 @@
       "evidence": "index.html: resetStoryChallenge / collectStoryCache",
       "consequence": "Reset enemies, kill all guards/boss, claim cache; replay/decline is not branching."
     }
-  ]
+  ],
+  "incremental_base": "124009429f5ac45d4e4af1bcc8a6ca8c7960adcf"
 }

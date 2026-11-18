@@ -1,0 +1,18 @@
+[
+  {
+    "orientation": "portrait",
+    "watch": "shelter",
+    "scout": "accounts",
+    "passed": true,
+    "errors": [],
+    "scope": "Actual UI, initial camp/recruitment, both chapters and reload. QA relocation, gathering setup and accelerated combat; not normal-speed/device play."
+  },
+  {
+    "orientation": "landscape",
+    "watch": "clear",
+    "scout": "recover",
+    "passed": true,
+    "errors": [],
+    "scope": "Actual UI, initial camp/recruitment, both chapters and reload. QA relocation, gathering setup and accelerated combat; not normal-speed/device play."
+  }
+]

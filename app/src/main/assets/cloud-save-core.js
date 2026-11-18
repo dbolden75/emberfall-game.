@@ -456,6 +456,14 @@ function safeTownQuestFlags(quests){
   if(key==='_campPatrol'&&row.method!=null&&(!Number.isSafeInteger(row.completed)||row.completed<0))return false;
   if(key==='regional_willowfen'&&row.method!=null&&(!Array.isArray(row.found)||row.found.length>3||new Set(row.found).size!==row.found.length||!row.found.every(i=>[0,1,2].includes(i))))return false;
  }
+ // Ashvale's optional methods do not reinterpret pre-choice saves.
+ for(const [key,methods] of [['ashvale_watch',['clear','shelter']],['ashvale_scout',['recover','accounts']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['built','fieldRead','accountRead'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  if(row.restAt!=null&&(!Number.isSafeInteger(row.restAt)||row.restAt<0))return false;
+ }
  const lanternAccess=quests._lastLanternAccess;
  if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
  const lantern=quests.last_lantern;
