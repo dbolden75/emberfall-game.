@@ -475,6 +475,16 @@ function safeTownQuestFlags(quests){
   if(row.reserved!=null&&![2,4].includes(row.reserved))return false;
   if(row.method==='reserve'&&(![2,4].includes(row.reserved)||typeof row.delivered!=='boolean'))return false;
  }
+ // Eryn's beacon engineering choices; legacy rows without methods remain valid.
+ for(const [key,methods] of [['sunmere_hunt',['reinforce','vent']],['sunmere_weavers',['weave','shutters']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['vented','converted','mounted'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  for(const dial of ['harbor','pass'])if(row[dial]!=null&&(!Number.isInteger(row[dial])||row[dial]<0||row[dial]>3))return false;
+  if(row.method==='vent'&&(!Number.isInteger(row.harbor)||!Number.isInteger(row.pass)||typeof row.vented!=='boolean'))return false;
+  if(row.method==='shutters'&&(typeof row.converted!=='boolean'||typeof row.mounted!=='boolean'))return false;
+ }
  const lanternAccess=quests._lastLanternAccess;
  if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
  const lantern=quests.last_lantern;

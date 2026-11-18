@@ -366,19 +366,19 @@
       "id": "sunmere_hunt",
       "title": "Pass Watch",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "sunmere-quest-choices.js",
+      "consequence": "Four Frostmarch defeats/four shards for 55 crowns, or a two-dial pressure puzzle for 40 crowns; venting earns knowledge that halves the following silk requirement."
     },
     {
       "id": "sunmere_weavers",
       "title": "Cold Silk",
       "group": "catalog",
-      "status": "linear / remaining",
-      "priority": "P1",
-      "evidence": "index.html: questCatalogRaw / relevant quest handler",
-      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "sunmere-quest-choices.js",
+      "consequence": "Two fresh Weaver defeats and one/two silk restore the ward for 36 crowns/24 XP; alternatively convert the town control and fit a field shutter linkage for 24 crowns/36 XP. Persistent beacon mode and town response; all combinations earn the seal."
     },
     {
       "id": "regional_greenhollow",
