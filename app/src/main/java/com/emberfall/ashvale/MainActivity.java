@@ -270,6 +270,11 @@ public class MainActivity extends Activity {
         lifecyclePaused = false;
         ++pauseEpoch;
         if (game != null) { game.onResume(); game.resumeTimers(); }
+        // WebView visibility is not consistently updated on Android task resume.
+        if (game != null) {
+            try { game.evaluateJavascript("window.dispatchEvent(new Event('pageshow'));", null); }
+            catch (RuntimeException ignored) { /* Next trusted gesture retries audio. */ }
+        }
         if (backgroundSaveUnverified) {
             backgroundSaveUnverified = false;
             android.widget.Toast.makeText(this,

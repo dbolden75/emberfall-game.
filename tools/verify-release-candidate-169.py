@@ -26,7 +26,7 @@ if code != 171 and version != "1.0.69":
 assert (code, version) == (171, "1.0.69"), "Incomplete 1.0.69 version promotion"
 
 expected = {
-    "app/src/main/assets/index.html": "801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24",
+    "app/src/main/assets/index.html": "62448268f320032ddbe1f37409bb5c3d7633eecc89481207771dc640b3959117",
     "app/src/main/assets/compact-hud.js": "31767d516d7d5afd78088627ce83c1bcc152d1a3de3ee7aea1e2ef2ada6f5fff",
     "app/src/main/assets/immersive-atlas.css": "1906ac055b55bfca73b898c8564d512b49d85c823cb1c316682f8b5460ad63e8",
     "app/src/main/assets/immersive-atlas.js": "357240a78caf57ce20b0464f92dbd8778dbab9e653f89ac3fe9b613a1aa1cb28",
@@ -37,6 +37,8 @@ expected = {
     "app/src/main/assets/art/atlas-painted-v1.png": "75c062ed33b5db9a26378bef7491c6664de3430f6571dee2f3939848a6d715af",
     "source-payload/current-browser-1.0.69-patch.json": "01de61a20c80ce3bc4d83e8c8e52cfe4fbea13dc1d3ac21e0510146926fe2155",
 }
+# Audio files are additive; all unrelated approved asset pins remain unchanged.
+expected.update(json.loads((root / "source-payload/audio-sha256.json").read_text()))
 for path, wanted in expected.items():
     source = root / path
     assert source.is_file(), f"Missing 1.0.69 release asset: {path}"

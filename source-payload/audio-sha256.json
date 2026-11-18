@@ -1,0 +1,6 @@
+{
+  "app/src/main/assets/audio-catalog.js": "2af5c8bf3d5ec70985a5b76ea89a60c735e1bb295c2b8e13cd042eff66486747",
+  "app/src/main/assets/game-audio.js": "2e4314a94b9228b3b182bc1ca625eda57e27dabb58731fd5183a76335bb4425c",
+  "app/src/main/assets/audio-integration.js": "a0d4753febf711cc0f8510a41e4bfab450343e93e526e72d8441c639c503d0aa",
+  "tools/apply-audio-overlay.py": "f65607ee3101c176843b341f223a1fb12c51259d57bb371aade73fce7e9a29f6"
+}
