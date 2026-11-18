@@ -36,6 +36,14 @@ with ZipFile(io.BytesIO(packed)) as archive:
     for name in assets:
         destination = root / name
         data = archive.read(name)
+        # The signed candidate exposed a short-landscape hit-test collision.
+        # Apply this audited CSS-only repair deterministically after authenticating
+        # the original bundle, so generated sources and checked-in assets agree.
+        if name == 'app/src/main/assets/compact-hud.js':
+            anchor = b'body.previewExpanded:has(#gameView:not([hidden])) .shell .top{padding-left:54px!important}'
+            assert data.count(anchor) == 1, 'Party-panel stacking anchor changed'
+            data = data.replace(anchor, b'/* Expanded Party controls must stay tappable above movement controls in short landscape. */\nbody:has(#gameView:not([hidden])) .shell .hud:has(.hudSide.detailsExpanded){z-index:9}\n' + anchor, 1)
+            assert hashlib.sha256(data).hexdigest() == '31767d516d7d5afd78088627ce83c1bcc152d1a3de3ee7aea1e2ef2ada6f5fff', 'Party-panel repair digest mismatch'
         if destination.exists():
             assert destination.read_bytes() == data, f'Conflicting native asset: {name}'
         else:
