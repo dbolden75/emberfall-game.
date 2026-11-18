@@ -55,12 +55,14 @@ def main():
         assets = work / 'app/src/main/assets'
         assets.mkdir(parents=True)
         (assets / 'index.html').write_bytes(b'fixture game asset')
-        def write_unsigned(contents=b'fixture game asset', duplicate=False):
+        def write_unsigned(contents=b'fixture game asset', duplicate=False, extra=False):
             with zipfile.ZipFile(apk, 'w') as archive:
                 if contents is not None:
                     archive.writestr('assets/index.html', contents)
                     if duplicate:
                         archive.writestr('assets/index.html', contents)
+                if extra:
+                    archive.writestr('assets/stale-old-script.js', b'stale debug payload')
         write_unsigned()
         gradle = work / 'app/build.gradle'
         gradle.write_text("defaultConfig {\n applicationId 'com.vaelbrink.ashvale.newjourney'\n versionName '1.0.67'\n versionCode 169\n}")
@@ -120,12 +122,13 @@ def main():
             assert not list((work / 'dist').glob('*.pending-*.apk')), 'pending release file leaked'
             assert not apk.with_name('app-release-aligned.apk').exists(), 'aligned APK leaked'
 
-        for label, contents, duplicate in [
-            ('stale game asset', b'old game payload', False),
-            ('missing game asset', None, False),
-            ('duplicate game asset', b'fixture game asset', True),
+        for label, contents, duplicate, extra in [
+            ('stale game asset', b'old game payload', False, False),
+            ('missing game asset', None, False, False),
+            ('duplicate game asset', b'fixture game asset', True, False),
+            ('unexpected stale APK asset', b'fixture game asset', False, True),
         ]:
-            write_unsigned(contents, duplicate)
+            write_unsigned(contents, duplicate, extra)
             bad = invoke()
             assert bad.returncode != 0, label + ': unsigned APK accepted'
             assert signed.read_bytes() == previous, label + ': verified release overwritten'
