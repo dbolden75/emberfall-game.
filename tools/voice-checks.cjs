@@ -1,0 +1,24 @@
+'use strict';
+const assert=require('node:assert/strict'),create=require('../app/src/main/assets/npc-voice.js');
+const calls=[],saved={};let state='ready';
+const bridge={status:()=>state,stop:()=>calls.push(['stop']),speak:(...args)=>calls.push(args)};
+const storage={getItem:k=>saved[k]??null,setItem:(k,v)=>saved[k]=v};
+const voice=create({bridge,storage});
+assert.equal(voice.generation(),0);
+assert(voice.speak({speakerId:'npc:Tilda',profile:'merchant',text:'Existing words.'}));
+assert.equal(voice.generation(),1);
+assert.deepEqual(calls.at(-1),['npc:Tilda','merchant','Existing words.',.85]);
+voice.speak({speakerId:'npc:Edda',profile:'carpenter',text:'Next words.'});assert.equal(calls.at(-2)[0],'stop');
+const beforeStop=voice.generation();voice.stop();assert.equal(voice.generation(),beforeStop+1);
+voice.set({volume:0});assert(!voice.speak({speakerId:'npc:Tilda',text:'Muted'}));
+voice.set({volume:.6,muted:true});assert(!voice.speak({speakerId:'npc:Tilda',text:'Muted'}));
+const restored=create({bridge,storage});assert.deepEqual(restored.preferences(),{volume:.6,muted:true});
+voice.set({muted:false});voice.suspend();assert(!voice.speak({speakerId:'npc:Tilda',text:'Background'}));const count=calls.length;voice.resume();assert.equal(calls.length,count,'Resume must not replay');
+state='loading';assert(!voice.speak({speakerId:'npc:Tilda',text:'Loading'}));state='no-offline-english';assert(!voice.speak({speakerId:'npc:Tilda',text:'Unavailable'}));
+state='ready';assert(!voice.speak({speakerId:'npc:Tilda',text:'x'.repeat(3501)}));assert(!voice.speak({text:'No identity'}));
+const absent=create({storage:{getItem(){throw Error('blocked')},setItem(){throw Error('quota')}}});assert.equal(absent.status(),'unavailable');absent.set({volume:0});assert(!absent.speak({speakerId:'npc:x',text:'Offline text'}));
+console.log('PASS: voice identity, unchanged text, interruption, zero/mute persistence, background/no stale resume, missing/loading engine and failed storage');
+
+const fs=require('node:fs'),crypto=require('node:crypto');
+const html=fs.readFileSync('app/src/main/assets/index.html','utf8').replace('<script src="npc-voice.js"></script><script src="npc-voice-integration.js"></script>','');
+assert.equal(crypto.createHash('sha256').update(html).digest('hex'),'65d27e284a1e44d06d30bf14ad935007dda4c265efd65a60b799d19cbeecbc0a','Existing story/game/audio HTML changed');

@@ -55,12 +55,14 @@ def main():
         assets = work / 'app/src/main/assets'
         assets.mkdir(parents=True)
         (assets / 'index.html').write_bytes(b'fixture game asset')
-        def write_unsigned(contents=b'fixture game asset', duplicate=False):
+        def write_unsigned(contents=b'fixture game asset', duplicate=False, extra=False):
             with zipfile.ZipFile(apk, 'w') as archive:
                 if contents is not None:
                     archive.writestr('assets/index.html', contents)
                     if duplicate:
                         archive.writestr('assets/index.html', contents)
+                if extra:
+                    archive.writestr('assets/stale-old-script.js', b'stale debug payload')
         write_unsigned()
         gradle = work / 'app/build.gradle'
         gradle.write_text("defaultConfig {\n applicationId 'com.vaelbrink.ashvale.newjourney'\n versionName '1.0.67'\n versionCode 169\n}")
@@ -94,6 +96,15 @@ def main():
         # Failed retries must preserve an existing verified release artifact.
         previous = b'PREVIOUS VERIFIED RELEASE (mock fixture)'
         signed.write_bytes(previous)
+        # New audio must never be signed using the already issued 171/1.0.69
+        # identity. This safety gate runs before any signing utilities.
+        audio_marker = assets / 'audio-integration.js'
+        audio_marker.write_text('// fixture marker; no production audio loaded')
+        blocked_audio = invoke()
+        assert blocked_audio.returncode != 0, 'reused-version audio APK accepted'
+        assert 'Refusing audio release with reused versionCode' in (blocked_audio.stdout + blocked_audio.stderr)
+        assert signed.read_bytes() == previous, 'audio collision altered prior release'
+        audio_marker.unlink()
         for overrides, reason in [
             ({'FAKE_NO_V3': '1'}, 'missing v3 accepted'),
             ({'FAKE_DEBUGGABLE': '1'}, 'debuggable release accepted'),
@@ -111,12 +122,13 @@ def main():
             assert not list((work / 'dist').glob('*.pending-*.apk')), 'pending release file leaked'
             assert not apk.with_name('app-release-aligned.apk').exists(), 'aligned APK leaked'
 
-        for label, contents, duplicate in [
-            ('stale game asset', b'old game payload', False),
-            ('missing game asset', None, False),
-            ('duplicate game asset', b'fixture game asset', True),
+        for label, contents, duplicate, extra in [
+            ('stale game asset', b'old game payload', False, False),
+            ('missing game asset', None, False, False),
+            ('duplicate game asset', b'fixture game asset', True, False),
+            ('unexpected stale APK asset', b'fixture game asset', False, True),
         ]:
-            write_unsigned(contents, duplicate)
+            write_unsigned(contents, duplicate, extra)
             bad = invoke()
             assert bad.returncode != 0, label + ': unsigned APK accepted'
             assert signed.read_bytes() == previous, label + ': verified release overwritten'

@@ -32,23 +32,24 @@ class PreflightTests(unittest.TestCase):
     def test_valid_in_place_candidate(self):
         self.assertEqual(self.verify(), (157, 169))
 
-    def test_current_1_0_69_upgrade_paths_and_gradle_identity(self):
-        # Protect the actual 1.0.67 -> 1.0.69 release path, not just a
+    def test_current_1_0_70_upgrade_paths_and_gradle_identity(self):
+        # Protect the actual 1.0.67 -> 1.0.70 release path, not just a
         # generic old fixture. Neither assertion touches Android/device data.
         gradle = (modpath.parents[1] / 'app' / 'build.gradle').read_text(encoding='utf-8')
         self.assertIn("applicationId 'com.vaelbrink.ashvale.newjourney'", gradle)
-        self.assertIn('versionCode 171', gradle)
-        self.assertIn("versionName '1.0.69'", gradle)
-        self.assertEqual(self.verify(old=169, new=171), (169, 171))
-        self.assertEqual(self.verify(old=159, new=171), (159, 171))
+        self.assertIn('versionCode 172', gradle)
+        self.assertIn("versionName '1.0.70'", gradle)
+        self.assertEqual(self.verify(old=169, new=172), (169, 172))
+        self.assertEqual(self.verify(old=159, new=172), (159, 172))
+        self.assertEqual(self.verify(old=171, new=172), (171, 172))  # maintained 1.0.69
         with self.assertRaisesRegex(preflight.PreflightError, 'not newer'):
-            self.verify(old=171, new=171)
+            self.verify(old=172, new=172)
         with self.assertRaisesRegex(preflight.PreflightError, 'Installed signer differs'):
-            self.verify(old=169, new=171, current_cert=self.OTHER_CERT)
+            self.verify(old=169, new=172, current_cert=self.OTHER_CERT)
         for legacy_signer in preflight.HISTORICAL_DEV_SIGNERS:
             with self.subTest(legacy_signer=legacy_signer), self.assertRaisesRegex(
                     preflight.PreflightError, 'cannot update it in place'):
-                self.verify(old=158, new=171, current_cert=legacy_signer)
+                self.verify(old=158, new=172, current_cert=legacy_signer)
 
     def test_play_app_signing_mismatch_fails_closed(self):
         with self.assertRaisesRegex(preflight.PreflightError, 'Installed signer differs'):
@@ -129,8 +130,8 @@ class UpgradePreflightCliTests(unittest.TestCase):
             def fake_command(args):
                 calls.append(tuple(args))
                 if args[0] == 'aapt':
-                    code = 171 if str(candidate) == args[-1] else (158 if installed_dev_signer else 159)
-                    name = {171: '1.0.69', 159: '1.0.57', 158: '1.0.56-dev'}[code]
+                    code = 172 if str(candidate) == args[-1] else (158 if installed_dev_signer else 159)
+                    name = {172: '1.0.70', 159: '1.0.57', 158: '1.0.56-dev'}[code]
                     extra = ''
                     if str(candidate) == args[-1]:
                         if debuggable:
@@ -274,33 +275,33 @@ class ReleaseCandidateValidationTests(unittest.TestCase):
                 f'Signer #1 certificate SHA-256 digest: {preflight.EXPECTED_RELEASE_SIGNER}\n')
 
     def badge(self, extra=''):
-        return (f"package: name='{preflight.PACKAGE}' versionCode='171' "
-                "versionName='1.0.69'\nsdkVersion:'24'\n" + extra)
+        return (f"package: name='{preflight.PACKAGE}' versionCode='172' "
+                "versionName='1.0.70'\nsdkVersion:'24'\n" + extra)
 
     def test_valid_release_metadata(self):
         self.assertEqual(preflight.validate_release_candidate(self.badge(), self.report()),
-                         (171, 24))
+                         (172, 24))
 
     def test_stale_maintained_signed_candidate_is_not_upgrade_ready(self):
         # Signature parity with an older APK is insufficient: an operator
         # can select a valid but obsolete maintained-key release by mistake.
         for stale in (
-                self.badge().replace("versionCode='171'", "versionCode='169'"),
-                self.badge().replace("versionName='1.0.69'", "versionName='1.0.67'"),
-                self.badge().replace("versionName='1.0.69'", "")):
+                self.badge().replace("versionCode='172'", "versionCode='169'"),
+                self.badge().replace("versionName='1.0.70'", "versionName='1.0.67'"),
+                self.badge().replace("versionName='1.0.70'", "")):
             with self.subTest(badging=stale), self.assertRaisesRegex(
                     preflight.PreflightError, 'Candidate release identity'):
                 preflight.validate_release_candidate(stale, self.report())
 
     def test_source_version_change_invalidates_old_apk(self):
         with mock.patch.object(preflight, 'expected_source_release_identity',
-                               return_value=(172, '1.0.69')):
+                               return_value=(173, '1.0.71')):
             with self.assertRaisesRegex(preflight.PreflightError,
-                                        r'expected 1\.0\.69 \(versionCode 172\)'):
+                                        r'expected 1\.0\.71 \(versionCode 173\)'):
                 preflight.validate_release_candidate(self.badge(), self.report())
 
     def test_valid_source_gradle_release_metadata(self):
-        self.assertEqual(preflight.expected_source_release_identity(), (171, '1.0.69'))
+        self.assertEqual(preflight.expected_source_release_identity(), (172, '1.0.70'))
 
     def test_missing_or_ambiguous_minimum_sdk_rejected(self):
         for bad in (self.badge().replace("sdkVersion:'24'\n", ''),
@@ -416,8 +417,8 @@ class OfflineArchivePreflightTests(unittest.TestCase):
                 is_candidate = argv[-1] == str(candidate)
                 if argv[0] == 'aapt':
                     pkg = preflight.PACKAGE if is_candidate else (installed_package or preflight.PACKAGE)
-                    code = 171 if is_candidate else (158 if current_signer in preflight.HISTORICAL_DEV_SIGNERS else 159)
-                    name = '1.0.69' if is_candidate else ('1.0.56-dev' if code == 158 else '1.0.57')
+                    code = 172 if is_candidate else (158 if current_signer in preflight.HISTORICAL_DEV_SIGNERS else 159)
+                    name = '1.0.70' if is_candidate else ('1.0.56-dev' if code == 158 else '1.0.57')
                     return (f"package: name='{pkg}' versionCode='{code}' versionName='{name}'\n"
                             "sdkVersion:'24'\n")
                 if argv[0] == 'apksigner':
@@ -517,7 +518,7 @@ class OfflineArchivePreflightTests(unittest.TestCase):
 
 
 class CurrentReleaseUpgradeTests(unittest.TestCase):
-    """Protect the 1.0.67 (169) -> 1.0.69 (171) boundary and 158 dev APKs.
+    """Protect the 1.0.67 (169) -> 1.0.70 (172) boundary and 158 dev APKs.
 
     These are SDK-free metadata/certificate simulations; the signed APK
     pair and the real phone still require independent verification.
@@ -535,16 +536,16 @@ class CurrentReleaseUpgradeTests(unittest.TestCase):
         signed = self.certificate(preflight.EXPECTED_RELEASE_SIGNER)
         self.assertEqual(
             preflight.validate_pair(
-                self.badging(169), signed, self.badging(171), signed),
-            (169, 171))
+                self.badging(169), signed, self.badging(172), signed),
+            (169, 172))
 
     def test_168_blocks_same_version_and_downgrade_preflight(self):
         signed = self.certificate(preflight.EXPECTED_RELEASE_SIGNER)
-        for installed in (171, 172):
+        for installed in (172, 173):
             with self.subTest(installed=installed), self.assertRaisesRegex(
                     preflight.PreflightError, 'not newer'):
                 preflight.validate_pair(
-                    self.badging(installed), signed, self.badging(171), signed)
+                    self.badging(installed), signed, self.badging(172), signed)
 
     def test_168_blocks_historical_development_signers(self):
         release = self.certificate(preflight.EXPECTED_RELEASE_SIGNER)
@@ -553,7 +554,7 @@ class CurrentReleaseUpgradeTests(unittest.TestCase):
                     preflight.PreflightError, 'cannot update it in place'):
                 preflight.validate_pair(
                     self.badging(158), self.certificate(digest),
-                    self.badging(171), release)
+                    self.badging(172), release)
 
 
 

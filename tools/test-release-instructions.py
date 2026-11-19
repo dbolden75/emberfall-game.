@@ -24,14 +24,18 @@ def main():
     code = one(r'^\s*versionCode\s+(\d+)\s*$', gradle, 'Android versionCode')
     if package != 'com.vaelbrink.ashvale.newjourney':
         raise SystemExit('FAIL: Android application ID changed, existing installs/saves at risk')
-    documented = one(r'^Current main development source: ([^,\n]+), Android versionCode (\d+)(?=[,.])',
+    documented = one(r'^Current (?:main|audio-branch) development source: ([^,\n]+), Android versionCode (\d+)(?=[,.])',
                      guide, 'documented current release identity')
     if documented != (version, code):
         raise SystemExit(f'FAIL: BUILD-WORKFLOW.md says {documented}; Android source is {(version, code)}')
+    # The draft branch must not direct Play operators to an unsigned artifact.
+    # The last maintained-signed upload can be older than Android Gradle.
+    signed_code = one(r'\*\*Release target:\*\* Thornhaven \*\*[0-9.]+\*\*, versionCode \*\*(\d+)\*\*',
+                      guide, 'maintained-signed release code')
     play_candidate = one(r'current candidate versionCode (\d+) may not be available',
                          guide, 'Play submission versionCode')
-    if play_candidate != code:
-        raise SystemExit(f'FAIL: Play submission instructions use stale code {play_candidate}; Android Gradle requires {code}')
+    if play_candidate != signed_code or int(signed_code) >= int(code):
+        raise SystemExit('FAIL: Play instructions do not match last maintained-signed release')
     documented_package = one(r'^Package: ([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)', guide,
                              'documented package')
     if documented_package != package:
@@ -45,7 +49,15 @@ def main():
     preflight_guide = guide.split(section_header, 1)[1].split('BUILD-STATUS.txt', 1)[0]
     candidates = re.findall(r'^python3 tools/android-upgrade-preflight\.py\s+(\S+)',
                             preflight_guide, re.M)
-    expected_candidate = f'/path/to/Thornhaven-{version}-maintained-key.apk'
+    # The development source can be ahead of the last signed, deliverable APK.
+    # Prefer the explicit current release-handover marker; the historic SHA
+    # provenance below remains separate and must not be mislabelled as current.
+    signed_candidates = re.findall(
+        r'maintained-signed ([0-9.]+) release remains the last installable candidate', guide)
+    if len(signed_candidates) > 1:
+        raise SystemExit('FAIL: ambiguous last installable maintained-signed APK')
+    signed_candidate_version = signed_candidates[0] if signed_candidates else version
+    expected_candidate = f'/path/to/Thornhaven-{signed_candidate_version}-maintained-key.apk'
     if len(candidates) != 2 or candidates != [expected_candidate] * 2:
         raise SystemExit(
             f'FAIL: upgrade preflight examples must use current signed APK '
@@ -128,6 +140,40 @@ def main():
             if marker not in workflow or workflow.index(preflight_gate) > workflow.index(marker):
                 raise SystemExit('FAIL: signed release tests must precede maintained-key handling')
     print('PASS: both Android workflows enforce upgrade-preflight safety before signing')
+
+    # The audio catalog checks invoke FFmpeg to decode every actual OGG file.
+    # A release workflow that omits FFmpeg fails before signing, even if
+    # the ordinary Android build and emulator jobs have all passed.
+    for workflow_path in ('.github/workflows/thornhaven-android-build.yml',
+                          '.github/workflows/thornhaven-release.yml'):
+        workflow = (ROOT / workflow_path).read_text(encoding='utf-8')
+        ffmpeg_step = '      - name: Install FFmpeg for native-rate audio validation'
+        ffmpeg_install = 'sudo apt-get install -y --no-install-recommends ffmpeg'
+        if workflow.count(ffmpeg_step) != 1 or workflow.count(ffmpeg_install) != 1:
+            raise SystemExit(f'FAIL: {workflow_path} must install FFmpeg for source audio validation')
+        source_tests = ('      - name: Verify source and regression tests'
+                        if workflow_path.endswith('thornhaven-android-build.yml')
+                        else '      - name: Verify source, gameplay and save regression suites')
+        if (workflow.count(source_tests) != 1 or
+                workflow.index(ffmpeg_step) >= workflow.index(source_tests) or
+                workflow.index(ffmpeg_install) >= workflow.index(source_tests)):
+            raise SystemExit(f'FAIL: {workflow_path} must install FFmpeg before audio regression suites')
+    print('PASS: unsigned and maintained-key release workflows install FFmpeg before audio validation')
+    # A successful unsigned Android build is not enough to release native speech.
+    # The maintained-key signing workflow must recheck compiled APK and AAB
+    # before it touches private signing credentials or signs any artifact.
+    release_workflow = (ROOT / '.github/workflows/thornhaven-release.yml').read_text(encoding='utf-8')
+    compiled_voice_gate = 'python3 tools/compiled-npc-voice-payload-check.py'
+    compiled_binaries_ready = 'test -s "$unsigned" && test -s "$aab"'
+    release_apk_sign = '/apksigner" sign'
+    if (release_workflow.count(compiled_voice_gate) != 1 or
+            release_workflow.count(compiled_binaries_ready) != 1 or
+            release_workflow.count(release_apk_sign) != 1 or
+            not (release_workflow.index(compiled_binaries_ready) <
+                 release_workflow.index(compiled_voice_gate) <
+                 release_workflow.index(release_apk_sign))):
+        raise SystemExit('FAIL: maintained-key signing must recheck compiled APK/AAB audio and NPC voice bridge')
+    print('PASS: maintained-key signing rejects missing or altered compiled audio/NPC speech payloads')
     # An edit to the gameplay source or regression scripts must not silently
     # skip Android CI. A skipped build is not proof of a tested release.
     build_workflow = (ROOT / '.github/workflows/thornhaven-android-build.yml').read_text(encoding='utf-8')

@@ -132,6 +132,13 @@ with zipfile.ZipFile(out, 'w') as z:
         assert output.is_file() and output.stat().st_size > 0
         print('PASS: correctly signed mock AAB is published')
         previous = output.read_bytes()
+        audio_marker = work / 'app/src/main/assets/audio-integration.js'
+        audio_marker.write_text('// fixture marker; no production audio loaded')
+        blocked_audio = invoke()
+        assert blocked_audio.returncode != 0, 'reused-version audio AAB accepted'
+        assert 'Refusing audio release with reused versionCode' in (blocked_audio.stdout + blocked_audio.stderr)
+        assert output.read_bytes() == previous, 'audio collision altered verified AAB'
+        audio_marker.unlink()
         valid_collision = invoke({'FAKE_DIFFERENT_VALID_BUNDLE': '1'})
         assert valid_collision.returncode != 0, 'different valid AAB replaced published release'
         assert output.read_bytes() == previous, 'valid collision replaced signed AAB'
