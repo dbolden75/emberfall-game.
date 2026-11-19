@@ -159,6 +159,21 @@ def main():
                 workflow.index(ffmpeg_install) >= workflow.index(source_tests)):
             raise SystemExit(f'FAIL: {workflow_path} must install FFmpeg before audio regression suites')
     print('PASS: unsigned and maintained-key release workflows install FFmpeg before audio validation')
+    # A successful unsigned Android build is not enough to release native speech.
+    # The maintained-key signing workflow must recheck compiled APK and AAB
+    # before it touches private signing credentials or signs any artifact.
+    release_workflow = (ROOT / '.github/workflows/thornhaven-release.yml').read_text(encoding='utf-8')
+    compiled_voice_gate = 'python3 tools/compiled-npc-voice-payload-check.py'
+    compiled_binaries_ready = 'test -s "$unsigned" && test -s "$aab"'
+    release_apk_sign = '/apksigner" sign'
+    if (release_workflow.count(compiled_voice_gate) != 1 or
+            release_workflow.count(compiled_binaries_ready) != 1 or
+            release_workflow.count(release_apk_sign) != 1 or
+            not (release_workflow.index(compiled_binaries_ready) <
+                 release_workflow.index(compiled_voice_gate) <
+                 release_workflow.index(release_apk_sign))):
+        raise SystemExit('FAIL: maintained-key signing must recheck compiled APK/AAB audio and NPC voice bridge')
+    print('PASS: maintained-key signing rejects missing or altered compiled audio/NPC speech payloads')
     # An edit to the gameplay source or regression scripts must not silently
     # skip Android CI. A skipped build is not proof of a tested release.
     build_workflow = (ROOT / '.github/workflows/thornhaven-android-build.yml').read_text(encoding='utf-8')
