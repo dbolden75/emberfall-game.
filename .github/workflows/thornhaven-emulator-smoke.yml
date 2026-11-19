@@ -379,13 +379,13 @@ jobs:
           # Use the Android emulator runner's documented SwiftShader indirect mode,
           # which has better Chromium/WebView compatibility than -gpu swiftshader.
           # Continue disabling guest Vulkan to isolate hosted graphics issues.
-          # Android 14 portrait-left and portrait-right have lost hosted QEMU
-          # processes even with free host memory and no Android app exception.
-          # Portrait-left already passed with the alternate swangle renderer.
-          # Apply the same graphics path to both isolated portrait legs; keep
-          # every native settings, geometry, movement and save assertion.
-          # Landscape and Android 16 legs retain SwiftShader indirect.
-          emulator-options: ${{ matrix.api-level == 34 && matrix.orientation == 'portrait' && '-no-window -gpu swangle_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' || '-no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' }}
+          # Android 14 left-control legs have lost hosted QEMU/DevTools under
+          # SwiftShader despite free host memory and no app exception. Portrait-left
+          # passed with swangle; landscape-left disconnected twice at orientation.
+          # Use the proven alternate renderer for both isolated left-side legs.
+          # Keep every native settings, geometry, movement and save assertion.
+          # Android 14 right-side and Android 15/16 legs retain SwiftShader indirect.
+          emulator-options: ${{ matrix.api-level == 34 && matrix.side == 'left' && '-no-window -gpu swangle_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' || '-no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' }}
           script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}
       - name: Upload independent control matrix and crash diagnostics
         if: always()
