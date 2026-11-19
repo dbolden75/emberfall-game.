@@ -16,7 +16,7 @@ gradle = (root / 'app/build.gradle').read_text()
 code = re.findall(r"(?m)^\s*versionCode\s+(\d+)\s*$", gradle)
 version = re.findall(r"(?m)^\s*versionName\s+'([^']+)'\s*$", gradle)
 assert len(code) == len(version) == 1, 'Missing Android version field'
-if (code[0], version[0]) != ('171', '1.0.69'):
+if (code[0], version[0]) not in (('171', '1.0.69'), ('172', '1.0.70')):
     assert (code[0], version[0]) == ('170', '1.0.68'), 'Unsupported source/version combination'
     print('1.0.69 overlay skipped for original 1.0.68')
     raise SystemExit(0)
@@ -67,3 +67,14 @@ updated = b''.join(merged)
 assert hashlib.sha256(updated).hexdigest() == '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24', 'v1.0.69 release HTML digest mismatch'
 html_path.write_bytes(updated)
 print('PASS: 1.0.69 native game restored from hash-verified baseline and 20 immutable source chunks')
+
+# Authenticate historical source first, then apply both reviewed overlays.
+import runpy
+runpy.run_path(str(root / 'tools/apply-audio-overlay.py'))
+runpy.run_path(str(root / 'tools/apply-last-lantern.py'), run_name='__main__')
+if (code[0], version[0]) == ('172', '1.0.70'):
+    content = html_path.read_text()
+    for old in ('New Journey · v1.0.69', 'Version 1.0.69 · Ashvale Reach', "const context=()=>({build:'1.0.69',map:"):
+        assert content.count(old) == 1, 'Release label anchor changed'
+        content = content.replace(old, old.replace('1.0.69', '1.0.70'), 1)
+    html_path.write_text(content)

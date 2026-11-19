@@ -1,3 +1,5 @@
+Provisional integration candidate: **1.0.70 / versionCode 172**, pending confirmation of the highest uploaded Play code. Audio PR312 and PR316 evidence-led reveal, Last Lantern and political counsel are integrated; PR313/314/315 remain excluded. Release held pending combined verification, maintained-key signing and Play access. No signed candidate artifacts exist; signed hashes below belong to prior releases. Specific early spoiler paths are gated. Full normal-speed campaign progression and overall mystery pacing are not verified.
+
 # Thornhaven — Continuity and Release Handover
 
 ## Current 1.0.69 release handover — November 18, 2026

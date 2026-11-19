@@ -58,12 +58,20 @@ for(const orientation of ['portrait','landscape']){
   }
 }
 assert(workflow.includes('api-level: ${{ matrix.api-level }}'));
-// Both isolated Android 14 portrait legs must use the tested alternate
-// renderer; left-only selection allowed repeated right-side QEMU exits.
+// All isolated Android 14 left-control legs use the tested alternate
+// renderer. Right-side and Android 15/16 legs retain SwiftShader indirect.
 const options=workflow.split(String.fromCharCode(10)).filter(line=>line.trim().startsWith('emulator-options:'));
-assert(options.some(line=>line.includes("matrix.api-level == 34 && matrix.orientation == 'portrait'") &&
-  line.includes('-gpu swangle_indirect') && !line.includes("matrix.side == 'left'")),
-  'Both Android14 portrait handedness legs must select swangle, without losing a test leg');
+assert.equal(options.length,2,'Expected separate release-smoke and control-matrix emulator renderer expressions');
+const matrixOptions=options.filter(line=>line.includes("matrix.api-level == 34 && matrix.side == 'left'"));
+const smokeOptions=options.filter(line=>!line.includes('matrix.'));
+assert.equal(matrixOptions.length,1,'Expected one matrix-scoped control renderer expression');
+assert.equal(smokeOptions.length,1,'Expected one stable release-smoke renderer expression');
+assert(matrixOptions[0].includes('-gpu swangle_indirect') &&
+  matrixOptions[0].includes("|| '-no-window -gpu swiftshader_indirect"),
+  'Android14 left-side legs must select swangle; right-side and newer API legs must retain SwiftShader');
+assert(smokeOptions[0].includes('-gpu swiftshader_indirect') &&
+  !smokeOptions[0].includes('swangle_indirect'),
+  'The independent release-smoke emulator must retain the stable SwiftShader indirect renderer');
 assert.match(workflow,/fail-fast: false/);
 assert(workflow.includes('script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}'));
 // Derive the evidence artifact version from Gradle; stale 1.0.67 names must

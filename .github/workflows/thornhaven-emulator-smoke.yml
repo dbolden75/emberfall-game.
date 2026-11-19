@@ -1,11 +1,18 @@
 name: Thornhaven Android emulator smoke
 on:
   workflow_dispatch:
+  # Run native WebView/save-upgrade tests for PRs targeting this held candidate.
+  pull_request:
+    branches:
+      - integration/thornhaven-1.0.70-rc-20261118
+    types: [opened, synchronize, reopened, ready_for_review]
   # Run Android WebView/save-upgrade regressions on main source changes
   # and on targeted QA branches. This never accesses a release keystore.
   push:
     branches:
       - main
+      # Held candidate: verify native behavior after story integration.
+      - integration/thornhaven-1.0.70-rc-20261118
       # Targeted nonbreaking atlas QA before merging PR #302.
       - feature/alabama-inspired-atlas
       # Run the full matrix for new fixes without editing this list each time.
@@ -130,7 +137,7 @@ jobs:
           ref: ec7236466c7efa494826c584f95fa61f236ec8ca
           path: qa-historical-157
           persist-credentials: false
-      - name: Build historical 1.0.57 and current 1.0.69 debug APKs
+      - name: Build historical 1.0.57 and current 1.0.70 debug APKs
         run: |
           set -euo pipefail
           # Prove that the older HTML is the independently archived 1.0.57
@@ -139,9 +146,9 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24' 'app/src/main/assets/index.html' | sha256sum -c -
-          grep -q 'versionCode 171' app/build.gradle
-          grep -q "versionName '1.0.69'" app/build.gradle
+          printf '%s  %s\n' '1bd3c28082a9e5aaea9971b3c6f792d4357e3562687a3fe88597131a0d175ef3' 'app/src/main/assets/index.html' | sha256sum -c -
+          grep -q 'versionCode 172' app/build.gradle
+          grep -q "versionName '1.0.70'" app/build.gradle
           # Keep a byte-exact copy of the uninstrumented production-variant
           # AAB before enabling the temporary WebView debugger for synthetic
           # save tests. Only the disposable QA-derived APK will be installed.
@@ -162,7 +169,7 @@ jobs:
           PY
           (cd qa-historical-157 && gradle --no-daemon :app:assembleDebug :app:assembleRelease)
           gradle --no-daemon :app:assembleDebug :app:assembleRelease
-          echo 'Built audited 1.0.57 DEBUG/RELEASE and 1.0.69 DEBUG/RELEASE; no maintained signing credentials used.'
+          echo 'Built audited 1.0.57 DEBUG/RELEASE and 1.0.70 DEBUG/RELEASE; no maintained signing credentials used.'
       - name: Sign historical and current RELEASE APKs with the SAME disposable QA key
         run: |
           set -euo pipefail
@@ -196,9 +203,9 @@ jobs:
           sign_qa qa-historical-157/app/build/outputs/apk/release/app-release-unsigned.apk \
             qa-historical-157/app/build/outputs/apk/release/thornhaven-ephemeral-historical-release-QA.apk 159 1.0.57
           sign_qa app/build/outputs/apk/release/app-release-unsigned.apk \
-            app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk 171 1.0.69
-          cmp "$RUNNER_TEMP/qa-release-159-cert" "$RUNNER_TEMP/qa-release-171-cert"
-          ! grep -q '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22' "$RUNNER_TEMP/qa-release-171-cert"
+            app/build/outputs/apk/release/thornhaven-ephemeral-release-QA.apk 172 1.0.70
+          cmp "$RUNNER_TEMP/qa-release-159-cert" "$RUNNER_TEMP/qa-release-172-cert"
+          ! grep -q '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22' "$RUNNER_TEMP/qa-release-172-cert"
           # Google Play installs APKs generated from an AAB, rather than
           # copying our directly signed standalone release APK. Add a real
           # emulator install smoke for that conversion without private keys.
@@ -209,7 +216,7 @@ jobs:
           printf '%s  %s\n' 'a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29' "$tool" | sha256sum -c -
           java -jar "$tool" validate --bundle="$aab"
           test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@package)" = 'com.vaelbrink.ashvale.newjourney'
-          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '171'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '172'
           apks="$RUNNER_TEMP/thornhaven-aab-install-qa.apks"
           universal="$RUNNER_TEMP/thornhaven-aab-install-qa.apk"
           java -jar "$tool" build-apks --bundle="$aab" --output="$apks" \
@@ -221,13 +228,13 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$universal" > reports/emulator/qa-aab-universal-signer.txt
           universal_cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' reports/emulator/qa-aab-universal-signer.txt | head -n 1)"
           test -n "$universal_cert"
-          test "$universal_cert" = "$(cat "$RUNNER_TEMP/qa-release-171-cert")" || { echo 'AAB-universal QA signer differs from synthetic release-QA signer'; exit 1; }
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$universal" | grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='171' versionName='1.0.69'"
+          test "$universal_cert" = "$(cat "$RUNNER_TEMP/qa-release-172-cert")" || { echo 'AAB-universal QA signer differs from synthetic release-QA signer'; exit 1; }
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$universal" | grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='172' versionName='1.0.70'"
           cmp <(unzip -p "$aab" base/assets/index.html) <(unzip -p "$universal" assets/index.html)
           sha256sum "$aab" "$universal" > reports/emulator/qa-aab-universal-hashes.txt
           rm -f "$keystore" "$tool" "$apks"
           echo 'PASS: clean production AAB generated a disposable QA-signed universal APK with the same temporary key as the emulator release fixture.'
-          echo 'PASS: disposable 1.0.57 and 1.0.69 RELEASE APKs share one QA signer, distinct from the maintained original. Neither APK will be published.'
+          echo 'PASS: disposable 1.0.57 and 1.0.70 RELEASE APKs share one QA signer, distinct from the maintained original. Neither APK will be published.'
       - name: Release build daemons before booting memory-heavy emulator
         run: |
           gradle --stop || true
@@ -262,7 +269,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-171-android-emulator-smoke-evidence
+          name: thornhaven-172-android-emulator-smoke-evidence
           path: reports/emulator/
           if-no-files-found: ignore
           retention-days: 7
@@ -308,11 +315,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Restore audited gameplay with v1.0.69 release labels
+      - name: Restore audited gameplay with v1.0.70 release labels
         run: |
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
-          printf '%s  %s\n' '801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '1bd3c28082a9e5aaea9971b3c6f792d4357e3562687a3fe88597131a0d175ef3' 'app/src/main/assets/index.html' | sha256sum -c -
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -372,19 +379,19 @@ jobs:
           # Use the Android emulator runner's documented SwiftShader indirect mode,
           # which has better Chromium/WebView compatibility than -gpu swiftshader.
           # Continue disabling guest Vulkan to isolate hosted graphics issues.
-          # Android 14 portrait-left and portrait-right have lost hosted QEMU
-          # processes even with free host memory and no Android app exception.
-          # Portrait-left already passed with the alternate swangle renderer.
-          # Apply the same graphics path to both isolated portrait legs; keep
-          # every native settings, geometry, movement and save assertion.
-          # Landscape and Android 16 legs retain SwiftShader indirect.
-          emulator-options: ${{ matrix.api-level == 34 && matrix.orientation == 'portrait' && '-no-window -gpu swangle_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' || '-no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' }}
+          # Android 14 left-control legs have lost hosted QEMU/DevTools under
+          # SwiftShader despite free host memory and no app exception. Portrait-left
+          # passed with swangle; landscape-left disconnected twice at orientation.
+          # Use the proven alternate renderer for both isolated left-side legs.
+          # Keep every native settings, geometry, movement and save assertion.
+          # Android 14 right-side and Android 15/16 legs retain SwiftShader indirect.
+          emulator-options: ${{ matrix.api-level == 34 && matrix.side == 'left' && '-no-window -gpu swangle_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' || '-no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim' }}
           script: bash tools/emulator-control-matrix-qa.sh ${{ matrix.orientation }} ${{ matrix.side }}
       - name: Upload independent control matrix and crash diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-171-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence
+          name: thornhaven-172-android-api${{ matrix.api-level }}-${{ matrix.orientation }}-${{ matrix.side }}-evidence
           path: reports/control-matrix/
           if-no-files-found: ignore
           retention-days: 7

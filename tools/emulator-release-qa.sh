@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Disposable Android 14 same-signer RELEASE -> RELEASE upgrade with synthetic saves.
-# Both 1.0.57 and 1.0.69 APKs use the SAME one-run QA certificate, never the
+# Both 1.0.57 and 1.0.70 APKs use the SAME one-run QA certificate, never the
 # maintained Play/upload key. No APK here may be distributed to players.
 set -euo pipefail
 PKG=com.vaelbrink.ashvale.newjourney
@@ -34,7 +34,7 @@ done
 "$AAPT" dump badging "$OLD_APK" | tee reports/emulator/qa-release-old-badging.txt
 "$AAPT" dump badging "$APK" | tee reports/emulator/qa-release-badging.txt
 grep -q "package: name='$PKG' versionCode='159' versionName='1.0.57'" reports/emulator/qa-release-old-badging.txt
-grep -q "package: name='$PKG' versionCode='171' versionName='1.0.69'" reports/emulator/qa-release-badging.txt
+grep -q "package: name='$PKG' versionCode='172' versionName='1.0.70'" reports/emulator/qa-release-badging.txt
 
 # This emulator is disposable: the preceding DEBUG-key smoke/upgrade phases
 # created only synthetic QA saves. A different QA key cannot update that app.
@@ -87,13 +87,21 @@ adb shell am force-stop "$PKG"
 # NO adb uninstall or pm clear is permitted between the two installs.
 adb install -r "$APK" | tee reports/emulator/qa-release-in-place-upgrade.txt
 adb shell dumpsys package "$PKG" > reports/emulator/qa-release-package.txt
-grep -q 'versionCode=171' reports/emulator/qa-release-package.txt
+grep -q 'versionCode=172' reports/emulator/qa-release-package.txt
 start_game upgraded
 webview_phase verify upgraded
 # Re-render all four towns in the NEW release variant and save again. The
 # second QA create uses the same synthetic fixture, not player information.
 webview_phase create upgraded
 adb exec-out screencap -p > reports/emulator/qa-release-gameplay.png
+
+# Test actual Activity Home/resume before process death, with independent audio
+# controls and optional device speech remaining OFF. No audible output claim.
+webview_phase audio-stage upgraded
+adb shell input keyevent KEYCODE_HOME
+sleep 6
+start_game audio-resume
+webview_phase audio-resume audio-resume
 
 # A real process/activity restart must not lose either character or active slot.
 adb shell input keyevent KEYCODE_HOME
@@ -129,5 +137,5 @@ if grep -q "Process: $PKG," reports/emulator/qa-release-logcat.txt; then
   echo 'FAIL: Android Runtime recorded release-variant process crash'
   exit 1
 fi
-echo 'PASS: same disposable QA signer: 1.0.57 RELEASE -> 1.0.69 RELEASE upgrade retained 2 character slots, inventory, XP and active slot; four towns rendered before/after; cold restart and Android background lifecycle saves passed.'
+echo 'PASS: same disposable QA signer: 1.0.57 RELEASE -> 1.0.70 RELEASE upgrade retained 2 character slots, inventory, XP and active slot; four towns rendered before/after; cold restart and Android background lifecycle saves passed.'
 echo 'NOT VERIFIED: maintained-key APK installation, Google Play distribution/signing/versionCode acceptance, physical Samsung, authenticated Drive account.'

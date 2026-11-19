@@ -1,4 +1,4 @@
-name: Thornhaven 1.0.69 maintained-key AAB
+name: Thornhaven 1.0.70 maintained-key AAB
 on:
   workflow_dispatch:
   # Automated main builds produce unsigned payloads. Maintained credentials
@@ -14,8 +14,8 @@ jobs:
         run: |
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
-          grep -q "versionCode 171" app/build.gradle
-          grep -q "versionName '1.0.69'" app/build.gradle
+          grep -q "versionCode 172" app/build.gradle
+          grep -q "versionName '1.0.70'" app/build.gradle
           grep -q "THORNHAVEN_157_GEAR_BEGIN" app/src/main/assets/playtest-update.js
       - uses: actions/setup-node@v4
         with:
@@ -110,16 +110,16 @@ jobs:
           gradle --no-daemon :app:assembleRelease :app:bundleRelease
           mkdir -p release-output
           unsigned=app/build/outputs/apk/release/app-release-unsigned.apk
-          aligned=release-output/thornhaven-1.0.69-aligned-unsigned.apk
-          apk=release-output/Thornhaven-1.0.69-maintained-key.apk
+          aligned=release-output/thornhaven-1.0.70-aligned-unsigned.apk
+          apk=release-output/Thornhaven-1.0.70-maintained-key.apk
           aab=app/build/outputs/bundle/release/app-release.aab
           test -s "$unsigned" && test -s "$aab"
           # Enforce compiled package/save identity and Play Billing component safety
           # in this manually dispatched release path, not only regular Android CI.
-          python3 tools/check-android-billing-manifest.py --apk "$unsigned" --version-code 171
+          python3 tools/check-android-billing-manifest.py --apk "$unsigned" --version-code 172
           # Fail closed if the built Play bundle has an unexpected package or version.
           # The same check is repeated after signing; an APK badge alone is insufficient.
-          PYTHONPATH=tools python3 -c "from pathlib import Path; from aab_manifest_identity import verify_aab_file; verify_aab_file(Path('$aab'), 'com.vaelbrink.ashvale.newjourney', 171, '1.0.69')"
+          PYTHONPATH=tools python3 -c "from pathlib import Path; from aab_manifest_identity import verify_aab_file; verify_aab_file(Path('$aab'), 'com.vaelbrink.ashvale.newjourney', 172, '1.0.70')"
           "$ANDROID_HOME/build-tools/36.0.0/zipalign" -P 16 -f 4 "$unsigned" "$aligned"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign --ks "$RUNNER_TEMP/thornhaven-signing/maintained.jks" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:KEY_PASSWORD --v2-signing-enabled true --v3-signing-enabled true --out "$apk" "$aligned"
           rm "$aligned"
@@ -129,14 +129,14 @@ jobs:
           grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' release-output/apk-signature.txt
           grep -qi '38dc061e50f36b8eaeab5a582f8519d93a2ec9b5c256409219744351097cdd22' release-output/apk-signature.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | tee release-output/apk-badging.txt
-          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='171' versionName='1.0.69'" release-output/apk-badging.txt
-          python3 tools/check-android-billing-manifest.py --apk "$apk" --version-code 171
+          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='172' versionName='1.0.70'" release-output/apk-badging.txt
+          python3 tools/check-android-billing-manifest.py --apk "$apk" --version-code 172
           unzip -t "$apk" >/dev/null
           unzip -p "$apk" assets/playtest-update.js | grep THORNHAVEN_157_GEAR_BEGIN >/dev/null
           cp "$aab" release-output/pre-sign-unsigned.aab
           jarsigner -keystore "$RUNNER_TEMP/thornhaven-signing/maintained.jks" -storepass:env STORE_PASSWORD -keypass:env KEY_PASSWORD "$aab" "$KEY_ALIAS"
           jarsigner -verify "$aab" | grep -q 'jar verified'
-          PYTHONPATH=tools python3 -c "from pathlib import Path; from aab_manifest_identity import verify_aab_file; verify_aab_file(Path('$aab'), 'com.vaelbrink.ashvale.newjourney', 171, '1.0.69')"
+          PYTHONPATH=tools python3 -c "from pathlib import Path; from aab_manifest_identity import verify_aab_file; verify_aab_file(Path('$aab'), 'com.vaelbrink.ashvale.newjourney', 172, '1.0.70')"
           # The AAB is uploaded to Play, so independently check its actual
           # certificate, not just the APK certificate or keystore alias.
           keytool -printcert -jarfile "$aab" > release-output/aab-signing-cert.txt
@@ -152,15 +152,15 @@ jobs:
           python3 tools/release-payload-checks.py --apk "$apk" --aab "$aab" --assets app/src/main/assets --gradle app/build.gradle --activity app/src/main/java/com/emberfall/ashvale/MainActivity.java --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
           unzip -t "$aab" >/dev/null
           unzip -p "$aab" base/assets/playtest-update.js | grep THORNHAVEN_157_GEAR_BEGIN >/dev/null
-          cp "$aab" release-output/Thornhaven-1.0.69-maintained-key.aab
-          sha256sum "$apk" release-output/Thornhaven-1.0.69-maintained-key.aab | tee release-output/SHA256SUMS.txt
+          cp "$aab" release-output/Thornhaven-1.0.70-maintained-key.aab
+          sha256sum "$apk" release-output/Thornhaven-1.0.70-maintained-key.aab | tee release-output/SHA256SUMS.txt
           echo 'Signed release artifacts verified; NOT delivered through Google Play.'
       - uses: actions/upload-artifact@v4
         with:
-          name: Thornhaven-1.0.69-maintained-signed-release
+          name: Thornhaven-1.0.70-maintained-signed-release
           path: |
-            release-output/Thornhaven-1.0.69-maintained-key.apk
-            release-output/Thornhaven-1.0.69-maintained-key.aab
+            release-output/Thornhaven-1.0.70-maintained-key.apk
+            release-output/Thornhaven-1.0.70-maintained-key.aab
             release-output/SHA256SUMS.txt
             release-output/apk-signature.txt
             release-output/apk-badging.txt

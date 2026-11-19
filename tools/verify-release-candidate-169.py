@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Fail closed when promoting Thornhaven v1.0.69 without its complete approved payload.
+"""Fail closed when promoting Thornhaven v1.0.70 without its complete approved payload.
 
 Run after restore-game-source.py. This only reads source files and never edits saves.
 """
 import hashlib
 import json
 import re
+import runpy
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
@@ -20,13 +21,13 @@ package = field(r"^\s*applicationId\s+'([^']+)'")
 code = int(field(r"^\s*versionCode\s+(\d+)"))
 version = field(r"^\s*versionName\s+'([^']+)'")
 assert package == "com.vaelbrink.ashvale.newjourney", "Changed package risks existing saves"
-if code != 171 and version != "1.0.69":
-    print(f"PASS: package preserved; 1.0.69 gate not applicable to {version}/{code}")
+if code != 172 and version != "1.0.70":
+    print(f"PASS: package preserved; 1.0.70 gate not applicable to {version}/{code}")
     raise SystemExit(0)
-assert (code, version) == (171, "1.0.69"), "Incomplete 1.0.69 version promotion"
+assert (code, version) == (172, "1.0.70"), "Incomplete 1.0.70 version promotion"
 
 expected = {
-    "app/src/main/assets/index.html": "801d9f3394aaa4987410b0cf6e96517a3952686546b6d613e2e95f4bda2a2e24",
+    "app/src/main/assets/index.html": "4255396addb1741cc18f8c21c35f86e3204d308e09bd0edfe17ccb11eb0212a3",
     "app/src/main/assets/compact-hud.js": "31767d516d7d5afd78088627ce83c1bcc152d1a3de3ee7aea1e2ef2ada6f5fff",
     "app/src/main/assets/immersive-atlas.css": "1906ac055b55bfca73b898c8564d512b49d85c823cb1c316682f8b5460ad63e8",
     "app/src/main/assets/immersive-atlas.js": "357240a78caf57ce20b0464f92dbd8778dbab9e653f89ac3fe9b613a1aa1cb28",
@@ -37,10 +38,16 @@ expected = {
     "app/src/main/assets/art/atlas-painted-v1.png": "75c062ed33b5db9a26378bef7491c6664de3430f6571dee2f3939848a6d715af",
     "source-payload/current-browser-1.0.69-patch.json": "01de61a20c80ce3bc4d83e8c8e52cfe4fbea13dc1d3ac21e0510146926fe2155",
 }
+# Audio files are additive; all unrelated approved asset pins remain unchanged.
+expected.update(json.loads((root / "source-payload/audio-sha256.json").read_text()))
 for path, wanted in expected.items():
     source = root / path
     assert source.is_file(), f"Missing 1.0.69 release asset: {path}"
-    assert hashlib.sha256(source.read_bytes()).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
+    data = source.read_bytes()
+    if path == 'app/src/main/assets/index.html':
+        data = data.replace(b'New Journey \xc2\xb7 v1.0.70', b'New Journey \xc2\xb7 v1.0.69').replace(b'Version 1.0.70 \xc2\xb7 Ashvale Reach', b'Version 1.0.69 \xc2\xb7 Ashvale Reach').replace(b"const context=()=>({build:'1.0.70',map:", b"const context=()=>({build:'1.0.69',map:")
+        data = runpy.run_path(str(root / 'tools/apply-last-lantern.py'))['remove'](data.decode()).encode()
+    assert hashlib.sha256(data).hexdigest() == wanted, f"Modified 1.0.69 asset: {path}"
 
 html = (root / "app/src/main/assets/index.html").read_text()
 for script in ("immersive-atlas.js", "smooth-motion.js", "natural-followers.js",

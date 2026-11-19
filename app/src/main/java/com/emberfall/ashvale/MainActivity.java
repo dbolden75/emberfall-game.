@@ -18,6 +18,7 @@ public class MainActivity extends Activity {
     private PlayBillingPreparation billing;
     private PlaytestConnection playtest;
     private CloudSaveDocuments cloudSave;
+    private NpcSpeech npcSpeech;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +48,8 @@ public class MainActivity extends Activity {
 
         WebSettings settings = game.getSettings();
         settings.setJavaScriptEnabled(true);
+        npcSpeech = new NpcSpeech(this);
+        game.addJavascriptInterface(npcSpeech, "ThornhavenNativeVoice");
         game.addJavascriptInterface(new DevicePreferences(), "ThornhavenDevice");
         playtest = new PlaytestConnection(this, game);
         game.addJavascriptInterface(playtest, "ThornhavenPlaytest");
@@ -215,6 +218,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        if (npcSpeech != null) npcSpeech.setForeground(false);
         lifecyclePaused = true;
         final WebView pausedView = game;
         final int epoch = ++pauseEpoch;
@@ -266,10 +270,16 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onResume() {
+        if (npcSpeech != null) npcSpeech.setForeground(true);
         super.onResume();
         lifecyclePaused = false;
         ++pauseEpoch;
         if (game != null) { game.onResume(); game.resumeTimers(); }
+        // WebView visibility is not consistently updated on Android task resume.
+        if (game != null) {
+            try { game.evaluateJavascript("window.dispatchEvent(new Event('pageshow'));", null); }
+            catch (RuntimeException ignored) { /* Next trusted gesture retries audio. */ }
+        }
         if (backgroundSaveUnverified) {
             backgroundSaveUnverified = false;
             android.widget.Toast.makeText(this,
@@ -283,6 +293,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         lifecyclePaused = false;
         ++pauseEpoch;
+        if (npcSpeech != null) npcSpeech.close();
         if (playtest != null) playtest.close();
         if (cloudSave != null) cloudSave.close();
         if (billing != null) billing.close();

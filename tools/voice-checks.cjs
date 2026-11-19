@@ -1,0 +1,26 @@
+'use strict';
+const assert=require('node:assert/strict'),create=require('../app/src/main/assets/npc-voice.js');
+const calls=[],saved={};let state='ready';
+const bridge={status:()=>state,stop:()=>calls.push(['stop']),speak:(...args)=>calls.push(args)};
+const storage={getItem:k=>saved[k]??null,setItem:(k,v)=>saved[k]=v};
+const voice=create({bridge,storage});
+assert.equal(voice.generation(),0);
+assert.equal(voice.preferences().muted,true);
+assert(!voice.speak({speakerId:'npc:Tilda',text:'Silent by default'}));
+assert(!calls.some(c=>c[0]==='npc:Tilda'));
+voice.set({muted:false});
+assert(voice.speak({speakerId:'npc:Tilda',profile:'merchant',text:'Existing words.'}));
+assert.equal(voice.generation(),3);
+assert.deepEqual(calls.at(-1),['npc:Tilda','merchant','Existing words.',.85]);
+voice.speak({speakerId:'npc:Edda',profile:'carpenter',text:'Next words.'});assert.equal(calls.at(-2)[0],'stop');
+const beforeStop=voice.generation();voice.stop();assert.equal(voice.generation(),beforeStop+1);
+voice.set({volume:0});assert(!voice.speak({speakerId:'npc:Tilda',text:'Muted'}));
+voice.set({volume:.6,muted:true});assert(!voice.speak({speakerId:'npc:Tilda',text:'Muted'}));
+const restored=create({bridge,storage});assert.deepEqual(restored.preferences(),{volume:.6,muted:true});
+voice.set({muted:false});voice.suspend();assert(!voice.speak({speakerId:'npc:Tilda',text:'Background'}));const count=calls.length;voice.resume();assert.equal(calls.length,count,'Resume must not replay');
+state='loading';assert(!voice.speak({speakerId:'npc:Tilda',text:'Loading'}));state='no-offline-english';assert(!voice.speak({speakerId:'npc:Tilda',text:'Unavailable'}));
+state='ready';assert(!voice.speak({speakerId:'npc:Tilda',text:'x'.repeat(3501)}));assert(!voice.speak({text:'No identity'}));
+const absent=create({storage:{getItem(){throw Error('blocked')},setItem(){throw Error('quota')}}});assert.equal(absent.status(),'unavailable');absent.set({volume:0});assert(!absent.speak({speakerId:'npc:x',text:'Offline text'}));
+console.log('PASS: voice identity, unchanged text, interruption, zero/mute persistence, background/no stale resume, missing/loading engine and failed storage');
+
+require('node:child_process').execFileSync('python3',['tools/verify-release-candidate-169.py'],{stdio:'inherit'});

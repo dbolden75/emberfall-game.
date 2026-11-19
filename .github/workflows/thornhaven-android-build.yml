@@ -36,6 +36,13 @@ jobs:
           node-version: '22'
       - name: Verify Alabama-inspired atlas integration
         run: node scripts/test-atlas-geography.cjs
+      - name: Install FFmpeg for native-rate audio validation
+        if: ${{ hashFiles('tools/audio-assets-checks.cjs') != '' }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -hide_banner -version
       - name: Verify source and regression tests
         run: |
           python3 tools/verify-release-candidate-169.py
@@ -68,6 +75,12 @@ jobs:
             --evidence-dir reports/browser-pet-combat-qa
           python3 tools/browser-joystick-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-joystick-qa
+          python3 tools/browser-last-lantern-qa.py
+          python3 tools/browser-audio-qa.py
+          python3 tools/browser-audio-media-qa.py
+          python3 tools/browser-voice-qa.py
+          python3 tools/browser-veil-counsel-qa.py
+          python3 tools/browser-road-inquiry-qa.py
           # Run each orientation in its own Chromium process to bound 26-MB HTML memory.
           python3 tools/browser-purchase-qa.py --assets app/src/main/assets \
             --evidence-dir reports/browser-purchase-qa --orientation portrait
@@ -83,6 +96,12 @@ jobs:
             reports/browser-gathering-qa/*.png
             reports/browser-pet-combat-qa/*.png
             reports/browser-joystick-qa/*.png
+            reports/last-lantern/*.png
+            reports/last-lantern/results.json
+            reports/veil-counsel/*.png
+            reports/veil-counsel/results.json
+            reports/road-inquiry/*.png
+            reports/road-inquiry/results.json
             reports/browser-purchase-qa/*.png
           if-no-files-found: ignore
       - uses: actions/setup-java@v4
@@ -134,7 +153,7 @@ jobs:
       - name: Build APK
         run: |
           test -f app/build.gradle || { echo 'Android project not uploaded yet'; exit 1; }
-          gradle --no-daemon :app:lintDebug :app:assembleDebug :app:assembleRelease :app:bundleRelease
+          gradle --no-daemon :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease :app:bundleRelease
       # Test the exact game HTML packaged into the compiled Android release,
       # not merely the restored source tree. A packaging divergence must fail CI.
       - name: Browser-test compiled Android release APK assets
@@ -159,7 +178,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: thornhaven-1.0.69-compiled-release-browser-qa
+          name: thornhaven-1.0.70-compiled-release-browser-qa
           path: |
             reports/browser-compiled-release-qa/*.png
             reports/browser-compiled-camp-story-qa/*.png
@@ -173,12 +192,12 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee apk-badging.txt
-          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='171' versionName='1.0.69'" apk-badging.txt
+          grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='172' versionName='1.0.70'" apk-badging.txt
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
           sha256sum "$APK"
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-1.0.69-debug-test-apk
+          name: thornhaven-1.0.70-debug-test-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -186,7 +205,7 @@ jobs:
         run: |
           python3 tools/check-android-billing-manifest.py \
             --apk app/build/outputs/apk/release/app-release-unsigned.apk \
-            --version-code 171
+            --version-code 172
       - name: Verify release payload asset and save-origin compatibility
         run: |
           python3 tools/release-payload-checks.py \
@@ -196,6 +215,13 @@ jobs:
             --gradle app/build.gradle \
             --activity app/src/main/java/com/emberfall/ashvale/MainActivity.java \
             --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt"
+      - name: Verify offline NPC speech bridge is present in compiled APK and AAB
+        run: |
+          python3 tools/compiled-audio-release-checks.py
+          python3 tools/compiled-npc-voice-payload-check.py \
+            --apk app/build/outputs/apk/release/app-release-unsigned.apk \
+            --aab app/build/outputs/bundle/release/app-release.aab \
+            --assets app/src/main/assets
       - name: Validate Google Play bundle format and QA-generated universal APK
         shell: bash
         run: |
@@ -209,8 +235,8 @@ jobs:
           printf '%s  %s\n' a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29 "$tool" | sha256sum -c -
           java -jar "$tool" validate --bundle="$aab"
           test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@package)" = 'com.vaelbrink.ashvale.newjourney'
-          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '171'
-          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionName)" = '1.0.69'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionCode)" = '172'
+          test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/@android:versionName)" = '1.0.70'
           test "$(java -jar "$tool" dump manifest --bundle="$aab" --xpath=/manifest/uses-sdk/@android:targetSdkVersion)" = '36'
           # Disposable QA signing for bundletool's generated APK. Never distribute it.
           qa_key="$RUNNER_TEMP/thornhaven-bundletool-qa.p12"
@@ -227,7 +253,7 @@ jobs:
           test -s "$qa_apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$qa_apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$qa_apk" | \
-            grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='171' versionName='1.0.69'"
+            grep -q "package: name='com.vaelbrink.ashvale.newjourney' versionCode='172' versionName='1.0.70'"
           cmp <(unzip -p "$aab" base/assets/index.html) <(unzip -p "$qa_apk" assets/index.html)
           rm -f "$qa_key" "$qa_set" "$qa_apk" "$tool"
           echo 'PASS: bundletool 1.18.3 validated the AAB and generated a matching QA-signed universal APK. NOT a Play-delivered update.'
@@ -249,7 +275,7 @@ jobs:
           echo "Release outputs are UNSIGNED. Never install or distribute as a Play update."
       - uses: actions/upload-artifact@v4
         with:
-          name: thornhaven-1.0.69-UNSIGNED-release-payload
+          name: thornhaven-1.0.70-UNSIGNED-release-payload
           path: release-payload/
           if-no-files-found: error
           retention-days: 7

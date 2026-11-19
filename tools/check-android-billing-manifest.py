@@ -129,8 +129,8 @@ def validate(nodes, version_code):
         issues.append('Unexpected app package (must not change installation/save identity)')
     if len(root) != 1 or root[0].get('versionCode') != version_code:
         issues.append('APK versionCode does not match configured release')
-    if len(root) != 1 or root[0].get('versionName') != '1.0.69':
-        issues.append('APK versionName is not the configured 1.0.69 release')
+    if len(root) != 1 or root[0].get('versionName') != '1.0.70':
+        issues.append('APK versionName is not the configured 1.0.70 release')
     sdks = entries('manifest/uses-sdk')
     if len(sdks) != 1 or sdks[0].get('minSdkVersion') != 24 or sdks[0].get('targetSdkVersion') != 36:
         issues.append('Unexpected minSdk or targetSdk in compiled APK')
