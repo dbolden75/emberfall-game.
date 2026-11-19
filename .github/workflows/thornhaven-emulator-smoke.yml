@@ -1,6 +1,11 @@
 name: Thornhaven Android emulator smoke
 on:
   workflow_dispatch:
+  # Run native WebView/save-upgrade tests for PRs targeting this held candidate.
+  pull_request:
+    branches:
+      - integration/thornhaven-1.0.70-rc-20261118
+    types: [opened, synchronize, reopened, ready_for_review]
   # Run Android WebView/save-upgrade regressions on main source changes
   # and on targeted QA branches. This never accesses a release keystore.
   push:
