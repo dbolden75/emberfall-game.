@@ -95,6 +95,9 @@ on:
       - 'tools/emulator-webview-probe.cjs'
       # New Cloud Save regressions must exercise the emulator at the exact PR head.
       - 'tools/*checks.cjs'
+      - 'tools/test-*.py'
+      - 'tools/verify*.py'
+      - 'tools/restore-*.py'
       - 'tools/emulator-document-picker.py'
 jobs:
   emulator-smoke:
