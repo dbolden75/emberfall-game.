@@ -1,0 +1,18 @@
+[
+  {
+    "orientation": "portrait",
+    "method": "gong",
+    "vigil": "open_vigil",
+    "passed": true,
+    "errors": [],
+    "scope": "Actual camp recruitment and chapter UI, normal-price Buckler purchase and equipped-copy protection, open vigil and reload. QA relocation, other materials and accelerated combat; not normal-speed survival/device play."
+  },
+  {
+    "orientation": "landscape",
+    "method": "iron",
+    "vigil": "cloth",
+    "passed": true,
+    "errors": [],
+    "scope": "Actual camp recruitment and chapter UI, normal-price Buckler purchase and equipped-copy protection, open vigil and reload. QA relocation, other materials and accelerated combat; not normal-speed survival/device play."
+  }
+]

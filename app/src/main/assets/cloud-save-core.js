@@ -445,6 +445,56 @@ function safeTownQuestFlags(quests){
  if(!safeTownStock(quests._townStock))return false;
  if(!safeSlayerLedger(quests._slayers))return false;
  if(!safeVampireStory(quests._vampire))return false;
+ // Explicit early quest methods; absent fields keep legacy objectives.
+ for(const [key,methods] of [['_camp',['pending','tracks','seal']],['_campPatrol',['clear','repair']],['regional_willowfen',['return','rehang']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  if(row.compared!=null&&typeof row.compared!=='boolean')return false;
+  if(row.markers!=null&&(!Array.isArray(row.markers)||row.markers.length>3||new Set(row.markers).size!==row.markers.length||!row.markers.every(i=>[0,1,2].includes(i))))return false;
+  if(key==='_campPatrol'&&row.method==='repair'&&!Array.isArray(row.markers))return false;
+  if(key==='_campPatrol'&&row.method!=null&&(!Number.isSafeInteger(row.completed)||row.completed<0))return false;
+  if(key==='regional_willowfen'&&row.method!=null&&(!Array.isArray(row.found)||row.found.length>3||new Set(row.found).size!==row.found.length||!row.found.every(i=>[0,1,2].includes(i))))return false;
+ }
+ // Ashvale's optional methods do not reinterpret pre-choice saves.
+ for(const [key,methods] of [['ashvale_watch',['clear','shelter']],['ashvale_scout',['recover','accounts']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['built','fieldRead','accountRead'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  if(row.restAt!=null&&(!Number.isSafeInteger(row.restAt)||row.restAt<0))return false;
+ }
+ // Redfen's timed crossing and reserved medicine are character-local.
+ for(const [key,methods] of [['bracken_patrol',['clear_route','diversion']],['bracken_herbs',['brew','reserve']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['signal','delivered'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  if(row.held!=null&&(!Number.isFinite(row.held)||row.held<0||row.held>12))return false;
+  if(row.method==='diversion'&&(!Number.isFinite(row.held)||typeof row.signal!=='boolean'))return false;
+  if(row.reserved!=null&&![2,4].includes(row.reserved))return false;
+  if(row.method==='reserve'&&(![2,4].includes(row.reserved)||typeof row.delivered!=='boolean'))return false;
+ }
+ // Eryn's beacon engineering choices; legacy rows without methods remain valid.
+ for(const [key,methods] of [['sunmere_hunt',['reinforce','vent']],['sunmere_weavers',['weave','shutters']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['vented','converted','mounted'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  for(const dial of ['harbor','pass'])if(row[dial]!=null&&(!Number.isInteger(row[dial])||row[dial]<0||row[dial]>3))return false;
+  if(row.method==='vent'&&(!Number.isInteger(row.harbor)||!Number.isInteger(row.pass)||typeof row.vented!=='boolean'))return false;
+  if(row.method==='shutters'&&(typeof row.converted!=='boolean'||typeof row.mounted!=='boolean'))return false;
+ }
+ // Corin's warning and voluntary witness route, without rewriting legacy rows.
+ for(const [key,methods] of [['stonewatch_sweep',['iron','gong']],['stonewatch_silk',['cloth','open_vigil']]]){
+  const row=quests[key];if(row==null)continue;
+  if(typeof row!=='object'||Array.isArray(row))return false;
+  if(row.method!=null&&!methods.includes(row.method))return false;
+  for(const flag of ['hung','closed'])if(row[flag]!=null&&typeof row[flag]!=='boolean')return false;
+  if(row.steps!=null&&(!Number.isInteger(row.steps)||row.steps<0||row.steps>2))return false;
+  if(row.method==='gong'&&typeof row.hung!=='boolean')return false;
+  if(row.method==='open_vigil'&&(!Number.isInteger(row.steps)||typeof row.closed!=='boolean'||row.closed&&row.steps!==2))return false;
+ }
  const lanternAccess=quests._lastLanternAccess;
  if(lanternAccess!=null&&(typeof lanternAccess!=='object'||Array.isArray(lanternAccess)||(lanternAccess.revealed!=null&&typeof lanternAccess.revealed!=='boolean')))return false;
  const lantern=quests.last_lantern;

@@ -1,0 +1,18 @@
+[
+  {
+    "orientation": "portrait",
+    "route": "diversion",
+    "medicine": "reserve",
+    "passed": true,
+    "errors": [],
+    "scope": "Actual UI, camp recruitment, both chapters and reload; real-frame signal timer and pause. QA relocation, material setup and accelerated combat; not normal-speed survival or device play."
+  },
+  {
+    "orientation": "landscape",
+    "route": "clear_route",
+    "medicine": "brew",
+    "passed": true,
+    "errors": [],
+    "scope": "Actual UI, camp recruitment, both chapters and reload; real-frame signal timer and pause. QA relocation, material setup and accelerated combat; not normal-speed survival or device play."
+  }
+]

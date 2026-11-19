@@ -1,0 +1,33 @@
+{
+  "base": "7db450dbc28044a57dc42940a84b75f9ee2887a1",
+  "final_payload_sha256": "a73a5d3b230ccf185dc9fd2fcbde8603558ea0c641a3d33295ee153be309a33d",
+  "final_focused_passed": [
+    "node tools/early-quest-choices-checks.cjs",
+    "node tools/render-checks.cjs",
+    "python3 tools/verify.py",
+    "python3 tools/verify-release-candidate-169.py",
+    "python3 tools/browser-early-quest-choices-qa.py"
+  ],
+  "camp_browser_regression": {
+    "passed": true,
+    "orientations": [
+      "portrait",
+      "landscape"
+    ],
+    "verified": [
+      "original footprint branch",
+      "one-time reward",
+      "Ashvale return interaction",
+      "real ArrowDown camp exit",
+      "fresh page save resume"
+    ],
+    "page_errors": 0
+  },
+  "unrun": [
+    "normal-speed full campaign/balance",
+    "Android build/device/upgrade",
+    "hosted CI for this new branch",
+    "Play upload/release"
+  ],
+  "scope": "159-check aggregate precedes final renderer-only change; focused final checks and screenshot-backed UI reload run followed it. Browser setup uses QA relocation/resources and accelerated marsh combat."
+}

@@ -1,0 +1,754 @@
+{
+  "base": "7db450dbc28044a57dc42940a84b75f9ee2887a1",
+  "scope": "83 quest, milestone and repeatable templates; four tutorial lessons listed separately in prose. No infinite repeat-cycle inflation.",
+  "entries": [
+    {
+      "id": "camp_caller",
+      "title": "The Unknown Caller",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "early-quest-choices.js",
+      "consequence": "Footprints versus public-seal comparison followed by a board report; different earned knowledge, same essential Briar lead."
+    },
+    {
+      "id": "briar_hollow",
+      "title": "The Town That Did Not Wake",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Free watch versus consume one ration, then the same signal and rescue. No timed wait or different rescue outcome. Limited resource/dialogue choice; still needs a substantive branch."
+    },
+    {
+      "id": "frontier_hearth",
+      "title": "A Hearth Worth Keeping",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "slayer_intro",
+      "title": "The Monster Slayers Hall",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "main_hunt",
+      "title": "First Hunt",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "main_seals",
+      "title": "The Fourfold Keystone",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "main_rune",
+      "title": "The Ember Rune",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "main_maze",
+      "title": "Rootbound Maze \u00b7 Floor II",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "main_heart",
+      "title": "Heart Chamber \u00b7 Floor III",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "main_vault",
+      "title": "Beneath Ashvale",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "story_embercrypt",
+      "title": "Ember Crypt",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "story_tidevault",
+      "title": "Tide Vault",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "story_stormspire",
+      "title": "Storm Spire",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "story_hollowcrown",
+      "title": "Hollow Crown Keep",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "epilogue_dalen",
+      "title": "Dalen \u00b7 The Open Gate",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Road versus home commitment grants a different permanent companion attack/defense bonus."
+    },
+    {
+      "id": "epilogue_sylvi",
+      "title": "Sylvi \u00b7 An Honest Map",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Road versus home commitment grants a different permanent companion attack/defense bonus."
+    },
+    {
+      "id": "epilogue_corin",
+      "title": "Corin \u00b7 The Last Bell",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Road versus home commitment grants a different permanent companion attack/defense bonus."
+    },
+    {
+      "id": "epilogue_eryn",
+      "title": "Eryn \u00b7 A Steady Beacon",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Road versus home commitment grants a different permanent companion attack/defense bonus."
+    },
+    {
+      "id": "crossroads_medicine",
+      "title": "Medicine at the Crossroads",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Mercy: 35 crowns and recurring party healer; profit: 75 crowns, no healer and worse relations."
+    },
+    {
+      "id": "main_caches",
+      "title": "Caches off the Beaten Path",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_warrior_weapon",
+      "title": "Emberguard Blade \u00b7 The Hunt",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_warrior_armor",
+      "title": "Emberguard Plate \u00b7 Supply the Armory",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_warrior_shield",
+      "title": "Emberguard Aegis \u00b7 The Three Waystones",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_rogue_weapon",
+      "title": "Shadowthorn Dagger \u00b7 The Hunt",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_rogue_armor",
+      "title": "Shadowthorn Leathers \u00b7 Supply the Armory",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_rogue_shield",
+      "title": "Shadowthorn Buckler \u00b7 The Three Waystones",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_mage_weapon",
+      "title": "Tideglass Staff \u00b7 The Hunt",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_mage_armor",
+      "title": "Tideglass Robes \u00b7 Supply the Armory",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_mage_shield",
+      "title": "Tideglass Ward \u00b7 The Three Waystones",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_cleric_weapon",
+      "title": "Dawnwarden Mace \u00b7 The Hunt",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_cleric_armor",
+      "title": "Dawnwarden Vestments \u00b7 Supply the Armory",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "gear_cleric_shield",
+      "title": "Dawnwarden Shield \u00b7 The Three Waystones",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "world_watchtower",
+      "title": "The Silent Watchtower",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "world_rescue",
+      "title": "A Prisoner on the Southern Road",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "ashvale_watch",
+      "title": "Whisperwood Watch",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "ashvale-quest-choices.js",
+      "consequence": "Three Ash Slimes plus three Ash Motes earn 36 crowns; alternatively two logs plus one ration establish a refuge for 24 crowns, unlocking quiet-road healing (20 vitality / five minutes). Both advance the chapter."
+    },
+    {
+      "id": "ashvale_scout",
+      "title": "Scout\u2019s Report",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "ashvale-quest-choices.js",
+      "consequence": "Recover the patrol signal with two kills/two motes, or compare Rowan\u2019s departure log and Dalen\u2019s gate account at camp. Different objectives and earned knowledge; both earn the Ashvale seal."
+    },
+    {
+      "id": "bracken_patrol",
+      "title": "Redfen Patrol",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "brackenford-quest-choices.js",
+      "consequence": "Clear the direct trail with three kills/three resin, or spend three resin covering twelve active seconds at a signal. Diversion changes the following reserve-medicine cost from two to four bottles."
+    },
+    {
+      "id": "bracken_herbs",
+      "title": "Marsh Samples",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "brackenford-quest-choices.js",
+      "consequence": "Distill two fresh Fen Stalker samples to unlock a venom-for-medicine barter, or reserve and deliver two/four potions, depleting shared shop stock until normal delivery. All combinations earn the seal."
+    },
+    {
+      "id": "stonewatch_sweep",
+      "title": "Clear the Moor",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "stonewatch-quest-choices.js",
+      "consequence": "Three skeleton defeats/three Grave Iron, or permanently repurpose one spare Buckler at the warning frame. Equipped copies are protected. The warning chosen sets the open vigil station order."
+    },
+    {
+      "id": "stonewatch_silk",
+      "title": "A Weaver\u2019s Thread",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "stonewatch-quest-choices.js",
+      "consequence": "Two fresh Weaver defeats/two silk for a covered vigil (28 crowns/20 XP), or witness the two Highmoor stations in the requested order and close an open vigil (18 crowns/30 XP). No player vows; both earn the seal."
+    },
+    {
+      "id": "sunmere_hunt",
+      "title": "Pass Watch",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "sunmere-quest-choices.js",
+      "consequence": "Four Frostmarch defeats/four shards for 55 crowns, or a two-dial pressure puzzle for 40 crowns; venting earns knowledge that halves the following silk requirement."
+    },
+    {
+      "id": "sunmere_weavers",
+      "title": "Cold Silk",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "sunmere-quest-choices.js",
+      "consequence": "Two fresh Weaver defeats and one/two silk restore the ward for 36 crowns/24 XP; alternatively convert the town control and fit a field shutter linkage for 24 crowns/36 XP. Persistent beacon mode and town response; all combinations earn the seal."
+    },
+    {
+      "id": "regional_greenhollow",
+      "title": "The Briar Nest",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "regional_sunharbor",
+      "title": "The Drowned Bell",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "regional_crowfield",
+      "title": "The Broken Mill",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "regional_glassridge",
+      "title": "Frostglass Echo",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "regional_willowfen",
+      "title": "The Lost Lanterns",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "early-quest-choices.js",
+      "consequence": "Return recovered lanterns versus spend three Wood Logs to rehang them; permanent visible guide lights on the second route."
+    },
+    {
+      "id": "regional_cinderfields",
+      "title": "The Cinder Breach",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "regional_frostwood",
+      "title": "Shelter in the Snow",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "wayfarer_compass",
+      "title": "The Lost Wayfarer\u2019s Compass",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "road_inquiry",
+      "title": "The Uncounted Passengers",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "road-inquiry.js",
+      "consequence": "Paper corroboration versus witness corroboration earns distinct evidence; both reach the late archive comparison."
+    },
+    {
+      "id": "recruit_dalen",
+      "title": "Dalen the Guard \u00b7 A Shared Summons",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "recruit_sylvi",
+      "title": "Sylvi the Outrider \u00b7 A Shared Summons",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "recruit_corin",
+      "title": "Corin the Acolyte \u00b7 A Shared Summons",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "recruit_eryn",
+      "title": "Eryn the Arcanist \u00b7 A Shared Summons",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "camp_patrol",
+      "title": "Keep the Roads Open",
+      "group": "catalog",
+      "status": "implemented in PR318",
+      "priority": "covered",
+      "evidence": "early-quest-choices.js",
+      "consequence": "Each repeat cycle: three kills versus three physical repairs consuming three Wood Logs; foes remain on repair route."
+    },
+    {
+      "id": "npc_mara",
+      "title": "The Name on the Ledger",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Shelter retains Mara and reduces the later ambush; exile pays bounty and leaves five attackers for Sera."
+    },
+    {
+      "id": "npc_sera",
+      "title": "The Cost of Shelter",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Protect food preserves families and exchange; divert gains stone, halves garden output until reparations."
+    },
+    {
+      "id": "night_visitor",
+      "title": "The Night Visitor",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: questCatalogRaw / relevant quest handler",
+      "consequence": "Hunt, ally, transformation and cure paths change vampire state and follow-up; later reveal gated."
+    },
+    {
+      "id": "last_lantern",
+      "title": "A Light Beneath the Ruins",
+      "group": "catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "last-lantern.js",
+      "consequence": "One completion condition. Acceptance, tracking, pausing, combat tactics and reward collection are not branches."
+    },
+    {
+      "id": "veil_counsel",
+      "title": "The Weight of a Record",
+      "group": "catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "last-lantern.js",
+      "consequence": "Refuge, testimony or watch recommendation needs a different resident follow-up and persists disagreement/journal history."
+    },
+    {
+      "id": "frontier_bells",
+      "title": "The Bell Beneath the Well",
+      "group": "conditional catalog",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: frontierInteract / frontierQuestEntries",
+      "consequence": "One fixed completion condition; no alternate objective or persistent outcome."
+    },
+    {
+      "id": "frontier_memory",
+      "title": "The River That Remembers",
+      "group": "conditional catalog",
+      "status": "existing meaningful choice",
+      "priority": "covered",
+      "evidence": "index.html: chooseMemory / memoryTask / memoryResident",
+      "consequence": "River: stone-consuming channel restoration, Iona and food trade; beacon: ordered waypost tuning, Orren and stone trade."
+    },
+    {
+      "id": "campaign_ending",
+      "title": "The Fifth Bell \u00b7 ending decision",
+      "group": "chronicle",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: finishCampaign / campaignAftermath",
+      "consequence": "Persisted share/watch choice changes ending prose only; no verified changed objective, world state or town relations. Cosmetic branch, not counted as meaningful coverage."
+    },
+    {
+      "id": "slayer_ash_slimes",
+      "title": "Ash Slime Patrol",
+      "group": "repeatable hunt",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: acceptSlayerContract / claimSlayerContract",
+      "consequence": "Fresh kills of a fixed target; choosing a separate contract or abandoning does not branch this contract."
+    },
+    {
+      "id": "slayer_fen_stalkers",
+      "title": "Fangs in the Fen",
+      "group": "repeatable hunt",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: acceptSlayerContract / claimSlayerContract",
+      "consequence": "Fresh kills of a fixed target; choosing a separate contract or abandoning does not branch this contract."
+    },
+    {
+      "id": "slayer_briar_spiders",
+      "title": "The Briar Web",
+      "group": "repeatable hunt",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: acceptSlayerContract / claimSlayerContract",
+      "consequence": "Fresh kills of a fixed target; choosing a separate contract or abandoning does not branch this contract."
+    },
+    {
+      "id": "slayer_moor_wardens",
+      "title": "Silence the Old Guard",
+      "group": "repeatable hunt",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: acceptSlayerContract / claimSlayerContract",
+      "consequence": "Fresh kills of a fixed target; choosing a separate contract or abandoning does not branch this contract."
+    },
+    {
+      "id": "slayer_willow_stalkers",
+      "title": "Willowfang Hunt",
+      "group": "repeatable hunt",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: acceptSlayerContract / claimSlayerContract",
+      "consequence": "Fresh kills of a fixed target; choosing a separate contract or abandoning does not branch this contract."
+    },
+    {
+      "id": "slayer_frost_weavers",
+      "title": "Webs of Winter",
+      "group": "repeatable hunt",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: acceptSlayerContract / claimSlayerContract",
+      "consequence": "Fresh kills of a fixed target; choosing a separate contract or abandoning does not branch this contract."
+    },
+    {
+      "id": "slayer_glass_sentinels",
+      "title": "Shattered Watch",
+      "group": "repeatable hunt",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "index.html: acceptSlayerContract / claimSlayerContract",
+      "consequence": "Fresh kills of a fixed target; choosing a separate contract or abandoning does not branch this contract."
+    },
+    {
+      "id": "settlement_hearth",
+      "title": "A place to belong",
+      "group": "small settlement task",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: settlementTasks / claimSettlementTask",
+      "consequence": "One fixed completion condition; no alternate objective or persistent outcome."
+    },
+    {
+      "id": "settlement_lumber",
+      "title": "Timber for tomorrow",
+      "group": "small settlement task",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: settlementTasks / claimSettlementTask",
+      "consequence": "One fixed completion condition; no alternate objective or persistent outcome."
+    },
+    {
+      "id": "settlement_stone",
+      "title": "Foundations of stone",
+      "group": "small settlement task",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: settlementTasks / claimSettlementTask",
+      "consequence": "One fixed completion condition; no alternate objective or persistent outcome."
+    },
+    {
+      "id": "settlement_roads",
+      "title": "Safe roads home",
+      "group": "small settlement task",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: settlementTasks / claimSettlementTask",
+      "consequence": "One fixed completion condition; no alternate objective or persistent outcome."
+    },
+    {
+      "id": "settlement_promise",
+      "title": "A promise kept",
+      "group": "small settlement task",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: settlementTasks / claimSettlementTask",
+      "consequence": "One fixed completion condition; no alternate objective or persistent outcome."
+    },
+    {
+      "id": "settlement_home",
+      "title": "From camp to community",
+      "group": "small settlement task",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: settlementTasks / claimSettlementTask",
+      "consequence": "One fixed completion condition; no alternate objective or persistent outcome."
+    },
+    {
+      "id": "commission_timber",
+      "title": "Timber for the households",
+      "group": "repeatable commission",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "town-progress.js: townCommission / deliverTownCommission",
+      "consequence": "Fixed supplies plus three fresh wilderness kills. Automatic alternation is not a player choice."
+    },
+    {
+      "id": "commission_iron",
+      "title": "Iron for the workshops",
+      "group": "repeatable commission",
+      "status": "linear / remaining",
+      "priority": "P1",
+      "evidence": "town-progress.js: townCommission / deliverTownCommission",
+      "consequence": "Fixed supplies plus three fresh wilderness kills. Automatic alternation is not a player choice."
+    },
+    {
+      "id": "challenge_embercrypt",
+      "title": "Ember Crypt \u00b7 challenge replay",
+      "group": "repeatable challenge",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: resetStoryChallenge / collectStoryCache",
+      "consequence": "Reset enemies, kill all guards/boss, claim cache; replay/decline is not branching."
+    },
+    {
+      "id": "challenge_tidevault",
+      "title": "Tide Vault \u00b7 challenge replay",
+      "group": "repeatable challenge",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: resetStoryChallenge / collectStoryCache",
+      "consequence": "Reset enemies, kill all guards/boss, claim cache; replay/decline is not branching."
+    },
+    {
+      "id": "challenge_stormspire",
+      "title": "Storm Spire \u00b7 challenge replay",
+      "group": "repeatable challenge",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: resetStoryChallenge / collectStoryCache",
+      "consequence": "Reset enemies, kill all guards/boss, claim cache; replay/decline is not branching."
+    },
+    {
+      "id": "challenge_hollowcrown",
+      "title": "Hollow Crown Keep \u00b7 challenge replay",
+      "group": "repeatable challenge",
+      "status": "linear / remaining",
+      "priority": "P2",
+      "evidence": "index.html: resetStoryChallenge / collectStoryCache",
+      "consequence": "Reset enemies, kill all guards/boss, claim cache; replay/decline is not branching."
+    }
+  ],
+  "incremental_base": "124009429f5ac45d4e4af1bcc8a6ca8c7960adcf"
+}

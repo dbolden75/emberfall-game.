@@ -48,7 +48,7 @@ def run(browser,orientation,width,height):
  page.screenshot(path=str(OUT/f'{orientation}-early-guidance.png'));close()
  # Complete the opening camp through its real UI, then Briar Hollow.
  inspect('camp_fire','wayfarers_camp');page.get_by_role('button',name='Record the clue',exact=True).click()
- inspect('camp_letter','wayfarers_camp');page.get_by_role('button',name='Keep the letter in my journal',exact=True).click()
+ inspect('camp_letter','wayfarers_camp');page.get_by_role('button',name='Follow the footprints',exact=True).click()
  inspect('camp_tracks','wayfarers_camp');page.get_by_role('button',name='Follow the south road to Ashvale',exact=True).click()
  inspect('briar_sign','briarhollow');page.get_by_role('button',name='Investigate the abandoned town',exact=True).click();close()
  for clue in ['briar_bell','briar_clinic','briar_gate']:inspect(clue,'briarhollow');close()

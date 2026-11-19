@@ -1,0 +1,14 @@
+[
+  {
+    "orientation": "portrait",
+    "passed": true,
+    "errors": [],
+    "scope": "Real UI interactions and reload; QA relocation/resource setup and accelerated marsh combat, not normal-speed traversal."
+  },
+  {
+    "orientation": "landscape",
+    "passed": true,
+    "errors": [],
+    "scope": "Real UI interactions and reload; QA relocation/resource setup and accelerated marsh combat, not normal-speed traversal."
+  }
+]

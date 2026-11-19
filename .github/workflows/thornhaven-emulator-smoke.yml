@@ -1,6 +1,14 @@
 name: Thornhaven Android emulator smoke
 on:
   workflow_dispatch:
+  # Feature PRs targeting the held 1.0.70 integration candidate need the same
+  # native WebView/save-upgrade matrix as direct pushes to the candidate branch.
+  pull_request:
+    branches:
+      - integration/thornhaven-1.0.70-rc-20261118
+      # Run the exact quest-choice PR head through the native emulator matrix.
+      - feat/early-quest-choices-20261118
+    types: [opened, synchronize, reopened, ready_for_review]
   # Run Android WebView/save-upgrade regressions on main source changes
   # and on targeted QA branches. This never accesses a release keystore.
   push:
@@ -141,7 +149,7 @@ jobs:
           printf '%s  %s\n' '9e266784b17b65fcd11303f742e2d7f9fb91c727f2a3a1d7ebb6dd7e8d3c0e4f' 'qa-historical-157/app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 159' qa-historical-157/app/build.gradle
           grep -q "versionName '1.0.57'" qa-historical-157/app/build.gradle
-          printf '%s  %s\n' '1bd3c28082a9e5aaea9971b3c6f792d4357e3562687a3fe88597131a0d175ef3' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '20b1830d201257637b8a2af79aa345e3e6888952cd56d01a74fe4d13d2b25d53' 'app/src/main/assets/index.html' | sha256sum -c -
           grep -q 'versionCode 172' app/build.gradle
           grep -q "versionName '1.0.70'" app/build.gradle
           # Keep a byte-exact copy of the uninstrumented production-variant
@@ -314,7 +322,7 @@ jobs:
         run: |
           python3 tools/restore-game-source.py
           python3 tools/restore-1.0.69.py
-          printf '%s  %s\n' '1bd3c28082a9e5aaea9971b3c6f792d4357e3562687a3fe88597131a0d175ef3' 'app/src/main/assets/index.html' | sha256sum -c -
+          printf '%s  %s\n' '20b1830d201257637b8a2af79aa345e3e6888952cd56d01a74fe4d13d2b25d53' 'app/src/main/assets/index.html' | sha256sum -c -
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

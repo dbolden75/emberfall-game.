@@ -1,0 +1,32 @@
+[
+  {
+    "orientation": "landscape",
+    "method": "paper",
+    "passed": [
+      "new character spoiler gates",
+      "Briar rescue through UI without reveal",
+      "campaign prerequisite QA seeded, not replayed",
+      "earned inquiry records and exclusive method",
+      "partial/completed document reload",
+      "production reveal without QA reveal flag",
+      "Last Lantern entrance and retreat",
+      "Veilhaven free round-trip ferry"
+    ],
+    "pageErrors": []
+  },
+  {
+    "orientation": "portrait",
+    "method": "witness",
+    "passed": [
+      "new character spoiler gates",
+      "Briar rescue through UI without reveal",
+      "campaign prerequisite QA seeded, not replayed",
+      "earned inquiry records and exclusive method",
+      "partial/completed document reload",
+      "production reveal without QA reveal flag",
+      "Last Lantern entrance and retreat",
+      "Veilhaven free round-trip ferry"
+    ],
+    "pageErrors": []
+  }
+]
