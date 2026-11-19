@@ -1,13 +1,10 @@
 name: Thornhaven Android emulator smoke
 on:
   workflow_dispatch:
-  # Feature PRs targeting the held 1.0.70 integration candidate need the same
-  # native WebView/save-upgrade matrix as direct pushes to the candidate branch.
+  # Mirror the integration-base trigger so the PR merge commit is tested.
   pull_request:
     branches:
       - integration/thornhaven-1.0.70-rc-20261118
-      # Run the exact quest-choice PR head through the native emulator matrix.
-      - feat/early-quest-choices-20261118
     types: [opened, synchronize, reopened, ready_for_review]
   # Run Android WebView/save-upgrade regressions on main source changes
   # and on targeted QA branches. This never accesses a release keystore.
