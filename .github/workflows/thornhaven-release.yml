@@ -121,6 +121,11 @@ jobs:
           apk=release-output/Thornhaven-1.0.70-maintained-key.apk
           aab=app/build/outputs/bundle/release/app-release.aab
           test -s "$unsigned" && test -s "$aab"
+          # A source-level check alone cannot prove that the compiled DEX and
+          # signed deliverables contain the NPC speech bridge and pinned audio.
+          # Fail before signing if either artifact omits or changes that payload.
+          python3 tools/compiled-npc-voice-payload-check.py \
+            --apk "$unsigned" --aab "$aab" --assets app/src/main/assets
           # Enforce compiled package/save identity and Play Billing component safety
           # in this manually dispatched release path, not only regular Android CI.
           python3 tools/check-android-billing-manifest.py --apk "$unsigned" --version-code 172
